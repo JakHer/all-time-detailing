@@ -1,4 +1,5 @@
-﻿import { navigationItems } from '../data/dashboard';
+﻿import { NavLink } from 'react-router-dom';
+import { navigationItems } from '../data/dashboard';
 
 export function Sidebar() {
   return (
@@ -19,18 +20,21 @@ export function Sidebar() {
         </div>
 
         <nav className="mt-8 grid gap-2.5">
-          {navigationItems.map((item, index) => (
-            <a
-              key={item}
-              href="/"
-              className={`rounded-2xl px-4 py-3.5 text-sm transition ${
-                index === 0
-                  ? 'border border-white/10 bg-white/12 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]'
-                  : 'border border-transparent text-stone-300 hover:border-white/10 hover:bg-white/6 hover:text-white'
-              }`}
+          {navigationItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.to === '/'}
+              className={({ isActive }) =>
+                `rounded-2xl px-4 py-3.5 text-sm transition ${
+                  isActive
+                    ? 'border border-white/10 bg-white/12 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]'
+                    : 'border border-transparent text-stone-300 hover:border-white/10 hover:bg-white/6 hover:text-white'
+                }`
+              }
             >
-              {item}
-            </a>
+              {item.label}
+            </NavLink>
           ))}
         </nav>
       </div>
