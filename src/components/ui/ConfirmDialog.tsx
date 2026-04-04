@@ -1,10 +1,10 @@
-﻿import * as Dialog from "@radix-ui/react-dialog";
+﻿import * as Dialog from '@radix-ui/react-dialog';
 
 type ConfirmDialogProps = {
   title: string;
   description: string;
   confirmLabel: string;
-  tone?: "danger" | "warning";
+  tone?: 'danger' | 'warning';
   onCancel: () => void;
   onConfirm: () => void;
 };
@@ -13,14 +13,14 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel,
-  tone = "danger",
+  tone = 'danger',
   onCancel,
   onConfirm,
 }: ConfirmDialogProps) {
   const confirmButtonClassName =
-    tone === "danger"
-      ? "border-rose-300/20 bg-rose-300/12 text-rose-50 hover:border-rose-300/30 hover:bg-rose-300/18"
-      : "border-amber-300/20 bg-amber-300/12 text-amber-50 hover:border-amber-300/30 hover:bg-amber-300/18";
+    tone === 'danger'
+      ? 'border-rose-300/20 bg-rose-300/12 text-rose-50 hover:border-rose-300/30 hover:bg-rose-300/18'
+      : 'border-amber-300/20 bg-amber-300/12 text-amber-50 hover:border-amber-300/30 hover:bg-amber-300/18';
 
   return (
     <Dialog.Root open onOpenChange={(isOpen) => !isOpen && onCancel()}>

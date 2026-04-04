@@ -1,12 +1,12 @@
-﻿import type { Booking, BookingStatus } from "../../data/bookings";
+﻿import type { Booking, BookingStatus } from '../../data/bookings';
 
 const statusStyles: Record<BookingStatus, string> = {
-  Nowa: "border-sky-300/20 bg-sky-300/12 text-sky-100",
-  Potwierdzona: "border-amber-300/20 bg-amber-300/12 text-amber-100",
-  "W realizacji": "border-violet-300/20 bg-violet-300/12 text-violet-100",
-  "Gotowa do odbioru":
-    "border-emerald-300/20 bg-emerald-300/12 text-emerald-100",
-  Anulowana: "border-rose-300/20 bg-rose-300/12 text-rose-100",
+  Nowa: 'border-sky-300/20 bg-sky-300/12 text-sky-100',
+  Potwierdzona: 'border-amber-300/20 bg-amber-300/12 text-amber-100',
+  'W realizacji': 'border-violet-300/20 bg-violet-300/12 text-violet-100',
+  'Gotowa do odbioru':
+    'border-emerald-300/20 bg-emerald-300/12 text-emerald-100',
+  Anulowana: 'border-rose-300/20 bg-rose-300/12 text-rose-100',
 };
 
 type BookingDetailsProps = {
@@ -32,7 +32,7 @@ export function BookingDetails({
     );
   }
 
-  const isCancelled = booking.status === "Anulowana";
+  const isCancelled = booking.status === 'Anulowana';
 
   return (
     <article className="rounded-4xl border border-white/10 bg-white/6 p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-7">
@@ -84,12 +84,12 @@ export function BookingDetails({
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
         {[
-          { label: "Data", value: booking.date },
-          { label: "Godzina", value: booking.time },
-          { label: "Stanowisko", value: booking.bay },
-          { label: "Wartość", value: booking.amount },
-          { label: "Usługa", value: booking.service },
-          { label: "Rejestracja", value: booking.licensePlate },
+          { label: 'Data', value: booking.date },
+          { label: 'Godzina', value: booking.time },
+          { label: 'Stanowisko', value: booking.bay },
+          { label: 'Wartość', value: booking.amount },
+          { label: 'Usługa', value: booking.service },
+          { label: 'Rejestracja', value: booking.licensePlate },
         ].map((item) => (
           <div
             key={item.label}

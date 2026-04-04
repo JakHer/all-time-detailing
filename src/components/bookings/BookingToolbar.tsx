@@ -1,11 +1,11 @@
-﻿import type { BookingStatus } from "../../data/bookings";
+﻿import type { BookingStatus } from '../../data/bookings';
 
 type BookingToolbarProps = {
   query: string;
   onQueryChange: (value: string) => void;
-  statusFilter: BookingStatus | "Wszystkie";
-  onStatusFilterChange: (value: BookingStatus | "Wszystkie") => void;
-  statuses: Array<BookingStatus | "Wszystkie">;
+  statusFilter: BookingStatus | 'Wszystkie';
+  onStatusFilterChange: (value: BookingStatus | 'Wszystkie') => void;
+  statuses: Array<BookingStatus | 'Wszystkie'>;
   onCreateClick: () => void;
 };
 
@@ -67,8 +67,8 @@ export function BookingToolbar({
               onClick={() => onStatusFilterChange(status)}
               className={`rounded-full border px-4 py-2 text-sm transition ${
                 isActive
-                  ? "border-amber-200/30 bg-amber-300/12 text-amber-100"
-                  : "border-white/10 bg-white/6 text-stone-300 hover:border-white/16 hover:bg-white/8 hover:text-white"
+                  ? 'border-amber-200/30 bg-amber-300/12 text-amber-100'
+                  : 'border-white/10 bg-white/6 text-stone-300 hover:border-white/16 hover:bg-white/8 hover:text-white'
               }`}
             >
               {status}

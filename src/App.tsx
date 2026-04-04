@@ -2,19 +2,19 @@
   Navigate,
   RouterProvider,
   createBrowserRouter,
-} from "react-router-dom";
-import { AppShell } from "./layout/AppShell";
-import { BookingsPage } from "./pages/BookingsPage";
-import { CustomersPage } from "./pages/CustomersPage";
-import { DashboardPage } from "./pages/DashboardPage";
-import { GalleryPage } from "./pages/GalleryPage";
-import { ServicesPage } from "./pages/ServicesPage";
-import { SettingsPage } from "./pages/SettingsPage";
-import { VehiclesPage } from "./pages/VehiclesPage";
+} from 'react-router-dom';
+import { AppShell } from './layout/AppShell';
+import { BookingsPage } from './pages/BookingsPage';
+import { CustomersPage } from './pages/CustomersPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { GalleryPage } from './pages/GalleryPage';
+import { ServicesPage } from './pages/ServicesPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { VehiclesPage } from './pages/VehiclesPage';
 
 const router = createBrowserRouter([
   {
-    path: "/",
+    path: '/',
     element: <AppShell />,
     children: [
       {
@@ -22,31 +22,31 @@ const router = createBrowserRouter([
         element: <DashboardPage />,
       },
       {
-        path: "rezerwacje",
+        path: 'rezerwacje',
         element: <BookingsPage />,
       },
       {
-        path: "klienci",
+        path: 'klienci',
         element: <CustomersPage />,
       },
       {
-        path: "pojazdy",
+        path: 'pojazdy',
         element: <VehiclesPage />,
       },
       {
-        path: "uslugi",
+        path: 'uslugi',
         element: <ServicesPage />,
       },
       {
-        path: "galeria",
+        path: 'galeria',
         element: <GalleryPage />,
       },
       {
-        path: "ustawienia",
+        path: 'ustawienia',
         element: <SettingsPage />,
       },
       {
-        path: "*",
+        path: '*',
         element: <Navigate to="/" replace />,
       },
     ],

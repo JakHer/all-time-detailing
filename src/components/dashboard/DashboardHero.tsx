@@ -1,4 +1,4 @@
-﻿import { quickStats } from "../../data/dashboard";
+﻿import { quickStats } from '../../data/dashboard';
 
 export function DashboardHero() {
   return (

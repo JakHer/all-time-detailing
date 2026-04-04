@@ -10,11 +10,11 @@ export type Database = {
   public: {
     Enums: {
       booking_status:
-        | "Nowa"
-        | "Potwierdzona"
-        | "W realizacji"
-        | "Gotowa do odbioru"
-        | "Anulowana";
+        | 'Nowa'
+        | 'Potwierdzona'
+        | 'W realizacji'
+        | 'Gotowa do odbioru'
+        | 'Anulowana';
     };
     Tables: {
       bookings: {
@@ -26,7 +26,7 @@ export type Database = {
           scheduled_at: string;
           duration_minutes: number;
           price: number;
-          status: Database["public"]["Enums"]["booking_status"];
+          status: Database['public']['Enums']['booking_status'];
           bay: string | null;
           notes: string | null;
           created_at: string;
@@ -40,11 +40,11 @@ export type Database = {
           scheduled_at: string;
           duration_minutes?: number;
           price?: number;
-          status?: Database["public"]["Enums"]["booking_status"];
+          status?: Database['public']['Enums']['booking_status'];
           bay?: string | null;
           notes?: string | null;
         };
-        Update: Partial<Database["public"]["Tables"]["bookings"]["Insert"]>;
+        Update: Partial<Database['public']['Tables']['bookings']['Insert']>;
       };
       clients: {
         Row: {
@@ -63,7 +63,7 @@ export type Database = {
           email?: string | null;
           notes?: string | null;
         };
-        Update: Partial<Database["public"]["Tables"]["clients"]["Insert"]>;
+        Update: Partial<Database['public']['Tables']['clients']['Insert']>;
       };
       services: {
         Row: {
@@ -84,7 +84,7 @@ export type Database = {
           base_price?: number;
           is_active?: boolean;
         };
-        Update: Partial<Database["public"]["Tables"]["services"]["Insert"]>;
+        Update: Partial<Database['public']['Tables']['services']['Insert']>;
       };
       vehicles: {
         Row: {
@@ -109,7 +109,7 @@ export type Database = {
           color?: string | null;
           notes?: string | null;
         };
-        Update: Partial<Database["public"]["Tables"]["vehicles"]["Insert"]>;
+        Update: Partial<Database['public']['Tables']['vehicles']['Insert']>;
       };
     };
   };

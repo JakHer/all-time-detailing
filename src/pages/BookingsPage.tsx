@@ -1,16 +1,17 @@
-import { useDeferredValue, useEffect, useState } from "react";
-import { toast } from "sonner";
-import { BookingDetails } from "../components/bookings/BookingDetails";
-import { BookingList } from "../components/bookings/BookingList";
-import { BookingModal } from "../components/bookings/BookingModal";
-import { BookingToolbar } from "../components/bookings/BookingToolbar";
-import { PageIntro } from "../components/PageIntro";
-import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useDeferredValue, useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { BookingDetails } from '../components/bookings/BookingDetails';
+import { BookingList } from '../components/bookings/BookingList';
+import { BookingModal } from '../components/bookings/BookingModal';
+import { BookingToolbar } from '../components/bookings/BookingToolbar';
+import { PageIntro } from '../components/PageIntro';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import {
   bookingStatuses,
   type Booking,
   type BookingStatus,
-} from "../data/bookings";
+} from '../data/bookings';
 import {
   createBooking,
   deleteBooking,
@@ -19,89 +20,177 @@ import {
   restoreBooking,
   updateBooking,
   updateBookingStatus,
-  type ClientOption,
-  type ServiceOption,
-  type VehicleOption,
-} from "../lib/bookings";
+  type BookingFormOptions,
+} from '../lib/bookings';
 
-const allStatuses: Array<BookingStatus | "Wszystkie"> = [
-  "Wszystkie",
+const allStatuses: Array<BookingStatus | 'Wszystkie'> = [
+  'Wszystkie',
   ...bookingStatuses,
 ];
+const bookingsQueryKey = ['bookings'] as const;
+const bookingFormOptionsQueryKey = ['booking-form-options'] as const;
 
-type ModalMode = "create" | "edit" | null;
-type NewBookingPayload = Omit<Booking, "id">;
+type ModalMode = 'create' | 'edit' | null;
+type NewBookingPayload = Omit<Booking, 'id'>;
 
 function reportBookingError(error: unknown) {
   if (import.meta.env.DEV) {
-    window.dispatchEvent(new CustomEvent("booking-error", { detail: error }));
+    window.dispatchEvent(new CustomEvent('booking-error', { detail: error }));
   }
 }
 
 export function BookingsPage() {
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [clients, setClients] = useState<ClientOption[]>([]);
-  const [vehicles, setVehicles] = useState<VehicleOption[]>([]);
-  const [services, setServices] = useState<ServiceOption[]>([]);
+  const queryClient = useQueryClient();
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
     null,
   );
-  const [statusFilter, setStatusFilter] = useState<BookingStatus | "Wszystkie">(
-    "Wszystkie",
+  const [statusFilter, setStatusFilter] = useState<BookingStatus | 'Wszystkie'>(
+    'Wszystkie',
   );
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
   const deferredQuery = useDeferredValue(query);
   const normalizedQuery = deferredQuery.trim().toLowerCase();
 
-  useEffect(() => {
-    let isMounted = true;
+  const bookingsQuery = useQuery({
+    queryKey: bookingsQueryKey,
+    queryFn: fetchBookings,
+  });
 
-    async function loadBookingsPage() {
-      try {
-        setIsLoading(true);
-        const [bookingsData, options] = await Promise.all([
-          fetchBookings(),
-          fetchBookingFormOptions(),
-        ]);
+  const bookingFormOptionsQuery = useQuery({
+    queryKey: bookingFormOptionsQueryKey,
+    queryFn: fetchBookingFormOptions,
+  });
 
-        if (!isMounted) {
-          return;
-        }
-
-        setBookings(bookingsData);
-        setClients(options.clients);
-        setVehicles(options.vehicles);
-        setServices(options.services);
-        setSelectedBookingId(
-          (current) => current ?? bookingsData[0]?.id ?? null,
-        );
-      } catch (error) {
-        reportBookingError(error);
-        toast.error("Nie udało się pobrać danych rezerwacji", {
-          description:
-            "Sprawdź połączenie z Supabase i czy schema SQL została uruchomiona poprawnie.",
-        });
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    void loadBookingsPage();
-
-    return () => {
-      isMounted = false;
+  const bookings = bookingsQuery.data ?? [];
+  const bookingFormOptions: BookingFormOptions =
+    bookingFormOptionsQuery.data ?? {
+      clients: [],
+      vehicles: [],
+      services: [],
     };
-  }, []);
+  const isLoading =
+    bookingsQuery.isLoading || bookingFormOptionsQuery.isLoading;
+
+  useEffect(() => {
+    if (bookingsQuery.error) {
+      reportBookingError(bookingsQuery.error);
+      toast.error('Nie udało się pobrać danych rezerwacji', {
+        description:
+          'Sprawdź połączenie z Supabase i czy schema SQL została uruchomiona poprawnie.',
+      });
+    }
+  }, [bookingsQuery.error]);
+
+  useEffect(() => {
+    if (bookingFormOptionsQuery.error) {
+      reportBookingError(bookingFormOptionsQuery.error);
+      toast.error('Nie udało się pobrać danych formularza', {
+        description:
+          'Lista klientów, pojazdów lub usług nie mogła zostać wczytana z Supabase.',
+      });
+    }
+  }, [bookingFormOptionsQuery.error]);
+
+  useEffect(() => {
+    setSelectedBookingId((current) => {
+      if (current && bookings.some((booking) => booking.id === current)) {
+        return current;
+      }
+
+      return bookings[0]?.id ?? null;
+    });
+  }, [bookings]);
+
+  const saveBookingMutation = useMutation({
+    mutationFn: async (payload: Booking | NewBookingPayload) => {
+      if ('id' in payload) {
+        return {
+          booking: await updateBooking(payload),
+          mode: 'edit' as const,
+        };
+      }
+
+      return {
+        booking: await createBooking(payload),
+        mode: 'create' as const,
+      };
+    },
+    onSuccess: async ({ booking, mode }) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: bookingsQueryKey }),
+        queryClient.invalidateQueries({ queryKey: bookingFormOptionsQueryKey }),
+      ]);
+
+      setSelectedBookingId(booking.id);
+      setModalMode(null);
+
+      if (mode === 'edit') {
+        toast.success('Wizyta zaktualizowana', {
+          description: `${booking.vehicle} została zapisana z nowymi danymi.`,
+        });
+        return;
+      }
+
+      setStatusFilter('Wszystkie');
+      setQuery('');
+      toast.success('Dodano rezerwację', {
+        description: `${booking.vehicle} została dodana do planu dnia.`,
+      });
+    },
+    onError: (error) => {
+      reportBookingError(error);
+      toast.error('Nie udało się zapisać rezerwacji', {
+        description: 'Sprawdź połączenie z Supabase i strukturę tabel.',
+      });
+    },
+  });
+
+  const cancelBookingMutation = useMutation({
+    mutationFn: ({ bookingId }: { bookingId: string }) =>
+      updateBookingStatus(bookingId, 'Anulowana'),
+    onError: (error) => {
+      reportBookingError(error);
+      toast.error('Nie udało się anulować wizyty');
+    },
+  });
+
+  const restoreStatusMutation = useMutation({
+    mutationFn: ({
+      bookingId,
+      status,
+    }: {
+      bookingId: string;
+      status: BookingStatus;
+    }) => updateBookingStatus(bookingId, status),
+    onError: (error) => {
+      reportBookingError(error);
+      toast.error('Nie udało się cofnąć anulowania');
+    },
+  });
+
+  const deleteBookingMutation = useMutation({
+    mutationFn: ({ bookingId }: { bookingId: string }) =>
+      deleteBooking(bookingId),
+    onError: (error) => {
+      reportBookingError(error);
+      toast.error('Nie udało się usunąć wizyty');
+    },
+  });
+
+  const restoreBookingMutation = useMutation({
+    mutationFn: (booking: Booking) => restoreBooking(booking),
+    onError: (error) => {
+      reportBookingError(error);
+      toast.error('Nie udało się przywrócić wizyty');
+    },
+  });
 
   const filteredBookings = bookings.filter((booking) => {
     const matchesStatus =
-      statusFilter === "Wszystkie" || booking.status === statusFilter;
+      statusFilter === 'Wszystkie' || booking.status === statusFilter;
     const matchesQuery =
       normalizedQuery.length === 0 ||
       booking.client.toLowerCase().includes(normalizedQuery) ||
@@ -119,100 +208,63 @@ export function BookingsPage() {
     null;
 
   const metrics = [
-    { label: "Dzisiaj", value: `${bookings.length} wizyt` },
+    { label: 'Dzisiaj', value: `${bookings.length} wizyt` },
     {
-      label: "Potwierdzone",
-      value: `${bookings.filter((booking) => booking.status === "Potwierdzona").length}`,
+      label: 'Potwierdzone',
+      value: `${bookings.filter((booking) => booking.status === 'Potwierdzona').length}`,
     },
     {
-      label: "W realizacji",
-      value: `${bookings.filter((booking) => booking.status === "W realizacji").length}`,
+      label: 'W realizacji',
+      value: `${bookings.filter((booking) => booking.status === 'W realizacji').length}`,
     },
     {
-      label: "Do kontaktu",
-      value: `${bookings.filter((booking) => booking.status === "Nowa").length}`,
+      label: 'Do kontaktu',
+      value: `${bookings.filter((booking) => booking.status === 'Nowa').length}`,
     },
   ];
 
-  async function handleSaveBooking(payload: Booking | NewBookingPayload) {
-    try {
-      if ("id" in payload) {
-        const updatedBooking = await updateBooking(payload);
-        setBookings((current) =>
-          current.map((booking) =>
-            booking.id === updatedBooking.id ? updatedBooking : booking,
-          ),
-        );
-        setSelectedBookingId(updatedBooking.id);
-        setModalMode(null);
-        toast.success("Wizyta zaktualizowana", {
-          description: `${updatedBooking.vehicle} została zapisana z nowymi danymi.`,
-        });
-        return;
-      }
-
-      const newBooking = await createBooking(payload);
-      setBookings((current) => [newBooking, ...current]);
-      setSelectedBookingId(newBooking.id);
-      setStatusFilter("Wszystkie");
-      setQuery("");
-      setModalMode(null);
-      toast.success("Dodano rezerwację", {
-        description: `${newBooking.vehicle} została dodana do planu dnia.`,
-      });
-    } catch (error) {
-      reportBookingError(error);
-      toast.error("Nie udało się zapisać rezerwacji", {
-        description: "Sprawdź połączenie z Supabase i strukturę tabel.",
-      });
-    }
+  function handleSaveBooking(payload: Booking | NewBookingPayload) {
+    saveBookingMutation.mutate(payload);
   }
 
-  async function handleCancelBooking() {
-    if (!selectedBooking || selectedBooking.status === "Anulowana") {
+  function handleCancelBooking() {
+    if (!selectedBooking || selectedBooking.status === 'Anulowana') {
       return;
     }
 
     const previousBooking = selectedBooking;
 
-    try {
-      const updatedBooking = await updateBookingStatus(
-        selectedBooking.id,
-        "Anulowana",
-      );
-      setBookings((current) =>
-        current.map((booking) =>
-          booking.id === updatedBooking.id ? updatedBooking : booking,
-        ),
-      );
-      setSelectedBookingId(updatedBooking.id);
-      toast.warning("Wizyta anulowana", {
-        description: `${updatedBooking.vehicle} została oznaczona jako anulowana.`,
-        action: {
-          label: "Cofnij",
-          onClick: async () => {
-            try {
-              const restoredBooking = await updateBookingStatus(
-                previousBooking.id,
-                previousBooking.status,
-              );
-              setBookings((current) =>
-                current.map((booking) =>
-                  booking.id === restoredBooking.id ? restoredBooking : booking,
-                ),
-              );
-              setSelectedBookingId(restoredBooking.id);
-            } catch (restoreError) {
-              reportBookingError(restoreError);
-              toast.error("Nie udało się cofnąć anulowania");
-            }
-          },
+    cancelBookingMutation.mutate(
+      { bookingId: selectedBooking.id },
+      {
+        onSuccess: async (updatedBooking) => {
+          await queryClient.invalidateQueries({ queryKey: bookingsQueryKey });
+          setSelectedBookingId(updatedBooking.id);
+          toast.warning('Wizyta anulowana', {
+            description: `${updatedBooking.vehicle} została oznaczona jako anulowana.`,
+            action: {
+              label: 'Cofnij',
+              onClick: () => {
+                restoreStatusMutation.mutate(
+                  {
+                    bookingId: previousBooking.id,
+                    status: previousBooking.status,
+                  },
+                  {
+                    onSuccess: async (restoredBooking) => {
+                      await queryClient.invalidateQueries({
+                        queryKey: bookingsQueryKey,
+                      });
+                      setSelectedBookingId(restoredBooking.id);
+                    },
+                  },
+                );
+              },
+            },
+          });
         },
-      });
-    } catch (error) {
-      reportBookingError(error);
-      toast.error("Nie udało się anulować wizyty");
-    }
+      },
+    );
   }
 
   function openDeleteConfirm() {
@@ -227,7 +279,7 @@ export function BookingsPage() {
     setIsDeleteConfirmOpen(false);
   }
 
-  async function handleDeleteBooking() {
+  function handleDeleteBooking() {
     if (!selectedBooking) {
       return;
     }
@@ -238,35 +290,41 @@ export function BookingsPage() {
     );
     const nextSelectedBookingId = remainingBookings[0]?.id ?? null;
 
-    try {
-      await deleteBooking(bookingToDelete.id);
-      setBookings(remainingBookings);
-      setSelectedBookingId(nextSelectedBookingId);
-      setModalMode(null);
-      setIsDeleteConfirmOpen(false);
-      toast.error("Wizyta usunięta", {
-        description: `${bookingToDelete.vehicle} została usunięta z harmonogramu.`,
-        action: {
-          label: "Cofnij",
-          onClick: async () => {
-            try {
-              const restoredBooking = await restoreBooking(bookingToDelete);
-              setBookings((current) => [restoredBooking, ...current]);
-              setSelectedBookingId(restoredBooking.id);
-            } catch (restoreError) {
-              reportBookingError(restoreError);
-              toast.error("Nie udało się przywrócić wizyty");
-            }
-          },
+    deleteBookingMutation.mutate(
+      { bookingId: bookingToDelete.id },
+      {
+        onSuccess: async () => {
+          await queryClient.invalidateQueries({ queryKey: bookingsQueryKey });
+          setSelectedBookingId(nextSelectedBookingId);
+          setModalMode(null);
+          setIsDeleteConfirmOpen(false);
+          toast.error('Wizyta usunięta', {
+            description: `${bookingToDelete.vehicle} została usunięta z harmonogramu.`,
+            action: {
+              label: 'Cofnij',
+              onClick: () => {
+                restoreBookingMutation.mutate(bookingToDelete, {
+                  onSuccess: async (restoredBooking) => {
+                    await Promise.all([
+                      queryClient.invalidateQueries({
+                        queryKey: bookingsQueryKey,
+                      }),
+                      queryClient.invalidateQueries({
+                        queryKey: bookingFormOptionsQueryKey,
+                      }),
+                    ]);
+                    setSelectedBookingId(restoredBooking.id);
+                  },
+                });
+              },
+            },
+          });
         },
-      });
-    } catch (error) {
-      reportBookingError(error);
-      toast.error("Nie udało się usunąć wizyty");
-    }
+      },
+    );
   }
 
-  function handleStatusFilterChange(value: BookingStatus | "Wszystkie") {
+  function handleStatusFilterChange(value: BookingStatus | 'Wszystkie') {
     setStatusFilter(value);
   }
 
@@ -275,7 +333,7 @@ export function BookingsPage() {
   }
 
   function openCreateModal() {
-    setModalMode("create");
+    setModalMode('create');
   }
 
   function openEditModal() {
@@ -283,7 +341,7 @@ export function BookingsPage() {
       return;
     }
 
-    setModalMode("edit");
+    setModalMode('edit');
   }
 
   function closeModal() {
@@ -318,16 +376,14 @@ export function BookingsPage() {
         <div className="grid gap-4">
           {isLoading ? (
             <article className="rounded-4xl border border-white/10 bg-white/6 p-6 text-sm text-stone-300 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-7">
-              Ładuję rezerwacje z Supabase...
+              ĹadujÄ™ rezerwacje z Supabase...
             </article>
           ) : null}
 
           <BookingDetails
             booking={selectedBooking ?? undefined}
             onEditClick={openEditModal}
-            onCancelClick={() => {
-              void handleCancelBooking();
-            }}
+            onCancelClick={handleCancelBooking}
             onDeleteClick={openDeleteConfirm}
           />
         </div>
@@ -337,15 +393,13 @@ export function BookingsPage() {
         <BookingModal
           mode={modalMode}
           booking={
-            modalMode === "edit" ? (selectedBooking ?? undefined) : undefined
+            modalMode === 'edit' ? (selectedBooking ?? undefined) : undefined
           }
-          clients={clients}
-          vehicles={vehicles}
-          services={services}
+          clients={bookingFormOptions.clients}
+          vehicles={bookingFormOptions.vehicles}
+          services={bookingFormOptions.services}
           onClose={closeModal}
-          onSave={(payload) => {
-            void handleSaveBooking(payload);
-          }}
+          onSave={handleSaveBooking}
         />
       ) : null}
 
@@ -356,9 +410,7 @@ export function BookingsPage() {
           confirmLabel="Usuń wizytę"
           tone="danger"
           onCancel={closeDeleteConfirm}
-          onConfirm={() => {
-            void handleDeleteBooking();
-          }}
+          onConfirm={handleDeleteBooking}
         />
       ) : null}
     </>

@@ -1,6 +1,6 @@
-import type { Booking, BookingStatus } from "../data/bookings";
-import type { Database } from "./database.types";
-import { supabase } from "./supabase";
+import type { Booking, BookingStatus } from '../data/bookings';
+import type { Database } from './database.types';
+import { supabase } from './supabase';
 
 export type ClientOption = {
   id: string;
@@ -22,17 +22,23 @@ export type ServiceOption = {
   basePrice: number;
 };
 
-type BookingInsert = Omit<Booking, "id">;
+export type BookingFormOptions = {
+  clients: ClientOption[];
+  vehicles: VehicleOption[];
+  services: ServiceOption[];
+};
 
-type BookingRow = Database["public"]["Tables"]["bookings"]["Row"] & {
-  clients: Database["public"]["Tables"]["clients"]["Row"];
-  vehicles: Database["public"]["Tables"]["vehicles"]["Row"];
-  services: Database["public"]["Tables"]["services"]["Row"];
+type BookingInsert = Omit<Booking, 'id'>;
+
+type BookingRow = Database['public']['Tables']['bookings']['Row'] & {
+  clients: Database['public']['Tables']['clients']['Row'];
+  vehicles: Database['public']['Tables']['vehicles']['Row'];
+  services: Database['public']['Tables']['services']['Row'];
 };
 
 export async function fetchBookings() {
   const { data, error } = await supabase
-    .from("bookings")
+    .from('bookings')
     .select(
       `
       id,
@@ -47,7 +53,7 @@ export async function fetchBookings() {
       services!inner(id, name, description, duration_minutes, base_price, is_active, created_at, updated_at)
     `,
     )
-    .order("scheduled_at", { ascending: true });
+    .order('scheduled_at', { ascending: true });
 
   if (error) {
     throw error;
@@ -59,18 +65,18 @@ export async function fetchBookings() {
 export async function fetchBookingFormOptions() {
   const [clientsResult, vehiclesResult, servicesResult] = await Promise.all([
     supabase
-      .from("clients")
-      .select("id, full_name, phone")
-      .order("full_name", { ascending: true }),
+      .from('clients')
+      .select('id, full_name, phone')
+      .order('full_name', { ascending: true }),
     supabase
-      .from("vehicles")
-      .select("id, client_id, make, model, registration")
-      .order("registration", { ascending: true }),
+      .from('vehicles')
+      .select('id, client_id, make, model, registration')
+      .order('registration', { ascending: true }),
     supabase
-      .from("services")
-      .select("id, name, duration_minutes, base_price")
-      .eq("is_active", true)
-      .order("name", { ascending: true }),
+      .from('services')
+      .select('id, name, duration_minutes, base_price')
+      .eq('is_active', true)
+      .order('name', { ascending: true }),
   ]);
 
   if (clientsResult.error) {
@@ -118,7 +124,7 @@ export async function fetchBookingFormOptions() {
 export async function createBooking(input: BookingInsert) {
   const relationIds = await upsertBookingRelations(input);
   const { data, error } = await supabase
-    .from("bookings")
+    .from('bookings')
     .insert({
       client_id: relationIds.clientId,
       vehicle_id: relationIds.vehicleId,
@@ -156,7 +162,7 @@ export async function createBooking(input: BookingInsert) {
 export async function updateBooking(input: Booking) {
   const relationIds = await upsertBookingRelations(input);
   const { data, error } = await supabase
-    .from("bookings")
+    .from('bookings')
     .update({
       client_id: relationIds.clientId,
       vehicle_id: relationIds.vehicleId,
@@ -168,7 +174,7 @@ export async function updateBooking(input: Booking) {
       bay: input.bay,
       notes: input.notes,
     })
-    .eq("id", input.id)
+    .eq('id', input.id)
     .select(
       `
       id,
@@ -197,9 +203,9 @@ export async function updateBookingStatus(
   status: BookingStatus,
 ) {
   const { data, error } = await supabase
-    .from("bookings")
+    .from('bookings')
     .update({ status })
-    .eq("id", bookingId)
+    .eq('id', bookingId)
     .select(
       `
       id,
@@ -225,9 +231,9 @@ export async function updateBookingStatus(
 
 export async function deleteBooking(bookingId: string) {
   const { error } = await supabase
-    .from("bookings")
+    .from('bookings')
     .delete()
-    .eq("id", bookingId);
+    .eq('id', bookingId);
 
   if (error) {
     throw error;
@@ -237,7 +243,7 @@ export async function deleteBooking(bookingId: string) {
 export async function restoreBooking(input: Booking) {
   const relationIds = await upsertBookingRelations(input);
   const { data, error } = await supabase
-    .from("bookings")
+    .from('bookings')
     .insert({
       id: input.id,
       client_id: relationIds.clientId,
@@ -295,10 +301,10 @@ async function upsertBookingRelations(input: BookingInsert | Booking) {
 
 async function upsertClient(fullName: string, phone: string) {
   const { data: existingClient, error: selectError } = await supabase
-    .from("clients")
-    .select("id")
-    .eq("full_name", fullName)
-    .eq("phone", phone)
+    .from('clients')
+    .select('id')
+    .eq('full_name', fullName)
+    .eq('phone', phone)
     .maybeSingle();
 
   if (selectError) {
@@ -310,9 +316,9 @@ async function upsertClient(fullName: string, phone: string) {
   }
 
   const { data, error } = await supabase
-    .from("clients")
+    .from('clients')
     .insert({ full_name: fullName, phone })
-    .select("id")
+    .select('id')
     .single();
 
   if (error) {
@@ -328,9 +334,9 @@ async function upsertVehicle(
   registration: string,
 ) {
   const { data: existingVehicle, error: selectError } = await supabase
-    .from("vehicles")
-    .select("id")
-    .eq("registration", registration)
+    .from('vehicles')
+    .select('id')
+    .eq('registration', registration)
     .maybeSingle();
 
   if (selectError) {
@@ -341,10 +347,10 @@ async function upsertVehicle(
 
   if (existingVehicle) {
     const { data, error } = await supabase
-      .from("vehicles")
+      .from('vehicles')
       .update({ client_id: clientId, make, model })
-      .eq("id", existingVehicle.id)
-      .select("id")
+      .eq('id', existingVehicle.id)
+      .select('id')
       .single();
 
     if (error) {
@@ -355,9 +361,9 @@ async function upsertVehicle(
   }
 
   const { data, error } = await supabase
-    .from("vehicles")
+    .from('vehicles')
     .insert({ client_id: clientId, make, model, registration })
-    .select("id")
+    .select('id')
     .single();
 
   if (error) {
@@ -369,9 +375,9 @@ async function upsertVehicle(
 
 async function upsertService(name: string, duration: string, amount: string) {
   const { data: existingService, error: selectError } = await supabase
-    .from("services")
-    .select("id")
-    .eq("name", name)
+    .from('services')
+    .select('id')
+    .eq('name', name)
     .maybeSingle();
 
   if (selectError) {
@@ -383,10 +389,10 @@ async function upsertService(name: string, duration: string, amount: string) {
 
   if (existingService) {
     const { data, error } = await supabase
-      .from("services")
+      .from('services')
       .update({ duration_minutes: durationMinutes, base_price: basePrice })
-      .eq("id", existingService.id)
-      .select("id")
+      .eq('id', existingService.id)
+      .select('id')
       .single();
 
     if (error) {
@@ -397,9 +403,9 @@ async function upsertService(name: string, duration: string, amount: string) {
   }
 
   const { data, error } = await supabase
-    .from("services")
+    .from('services')
     .insert({ name, duration_minutes: durationMinutes, base_price: basePrice })
-    .select("id")
+    .select('id')
     .single();
 
   if (error) {
@@ -424,17 +430,17 @@ function mapBookingRowToViewModel(row: BookingRow): Booking {
     duration: formatDuration(row.duration_minutes),
     amount: formatPrice(row.price),
     status: row.status,
-    bay: row.bay ?? "",
-    notes: row.notes ?? "",
+    bay: row.bay ?? '',
+    notes: row.notes ?? '',
   };
 }
 
 function splitVehicleLabel(vehicleLabel: string) {
-  const [make = "", ...modelParts] = vehicleLabel.trim().split(/\s+/);
+  const [make = '', ...modelParts] = vehicleLabel.trim().split(/\s+/);
 
   return {
     make,
-    model: modelParts.join(" ") || make,
+    model: modelParts.join(' ') || make,
   };
 }
 
@@ -443,8 +449,8 @@ function combineDateAndTime(date: string, time: string) {
 }
 
 function parseDurationToMinutes(duration: string) {
-  const normalized = duration.replace(",", ".").trim();
-  const numericValue = Number.parseFloat(normalized.replace(/[^\d.]/g, ""));
+  const normalized = duration.replace(',', '.').trim();
+  const numericValue = Number.parseFloat(normalized.replace(/[^\d.]/g, ''));
 
   if (Number.isNaN(numericValue) || numericValue <= 0) {
     return 60;
@@ -454,7 +460,7 @@ function parseDurationToMinutes(duration: string) {
 }
 
 function parsePriceToNumber(amount: string) {
-  const normalized = amount.replace(",", ".").replace(/[^\d.]/g, "");
+  const normalized = amount.replace(',', '.').replace(/[^\d.]/g, '');
   const numericValue = Number.parseFloat(normalized);
 
   if (Number.isNaN(numericValue) || numericValue < 0) {
@@ -470,8 +476,8 @@ function formatDuration(durationMinutes: number) {
 }
 
 function formatPrice(price: number) {
-  return `${new Intl.NumberFormat("pl-PL", {
+  return `${new Intl.NumberFormat('pl-PL', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
-  }).format(price)} zł`;
+  }).format(price)} z\u0142`;
 }
