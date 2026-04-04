@@ -29,9 +29,26 @@ const allStatuses: Array<BookingStatus | 'Wszystkie'> = [
 ];
 const bookingsQueryKey = ['bookings'] as const;
 const bookingFormOptionsQueryKey = ['booking-form-options'] as const;
+const emptyBookings: Booking[] = [];
+const emptyBookingFormOptions: BookingFormOptions = {
+  clients: [],
+  vehicles: [],
+  services: [],
+};
 
 type ModalMode = 'create' | 'edit' | null;
 type NewBookingPayload = Omit<Booking, 'id'>;
+type SaveBookingResult = {
+  booking: Booking;
+  mode: 'create' | 'edit';
+};
+type BookingMutationVariables = {
+  bookingId: string;
+};
+type RestoreStatusVariables = {
+  bookingId: string;
+  status: BookingStatus;
+};
 
 function reportBookingError(error: unknown) {
   if (import.meta.env.DEV) {
@@ -64,22 +81,18 @@ export function BookingsPage() {
     queryFn: fetchBookingFormOptions,
   });
 
-  const bookings = bookingsQuery.data ?? [];
-  const bookingFormOptions: BookingFormOptions =
-    bookingFormOptionsQuery.data ?? {
-      clients: [],
-      vehicles: [],
-      services: [],
-    };
+  const bookings = bookingsQuery.data ?? emptyBookings;
+  const bookingFormOptions =
+    bookingFormOptionsQuery.data ?? emptyBookingFormOptions;
   const isLoading =
     bookingsQuery.isLoading || bookingFormOptionsQuery.isLoading;
 
   useEffect(() => {
     if (bookingsQuery.error) {
       reportBookingError(bookingsQuery.error);
-      toast.error('Nie udało się pobrać danych rezerwacji', {
+      toast.error('Nie uda\u0142o si\u0119 pobra\u0107 danych rezerwacji', {
         description:
-          'Sprawdź połączenie z Supabase i czy schema SQL została uruchomiona poprawnie.',
+          'Sprawd\u017a po\u0142\u0105czenie z Supabase i czy schema SQL zosta\u0142a uruchomiona poprawnie.',
       });
     }
   }, [bookingsQuery.error]);
@@ -87,9 +100,9 @@ export function BookingsPage() {
   useEffect(() => {
     if (bookingFormOptionsQuery.error) {
       reportBookingError(bookingFormOptionsQuery.error);
-      toast.error('Nie udało się pobrać danych formularza', {
+      toast.error('Nie uda\u0142o si\u0119 pobra\u0107 danych formularza', {
         description:
-          'Lista klientów, pojazdów lub usług nie mogła zostać wczytana z Supabase.',
+          'Lista klient\u00f3w, pojazd\u00f3w lub us\u0142ug nie mog\u0142a zosta\u0107 wczytana z Supabase.',
       });
     }
   }, [bookingFormOptionsQuery.error]);
@@ -104,8 +117,12 @@ export function BookingsPage() {
     });
   }, [bookings]);
 
-  const saveBookingMutation = useMutation({
-    mutationFn: async (payload: Booking | NewBookingPayload) => {
+  const saveBookingMutation = useMutation<
+    SaveBookingResult,
+    Error,
+    Booking | NewBookingPayload
+  >({
+    mutationFn: async (payload) => {
       if ('id' in payload) {
         return {
           booking: await updateBooking(payload),
@@ -129,62 +146,68 @@ export function BookingsPage() {
 
       if (mode === 'edit') {
         toast.success('Wizyta zaktualizowana', {
-          description: `${booking.vehicle} została zapisana z nowymi danymi.`,
+          description: `${booking.vehicle} zosta\u0142a zapisana z nowymi danymi.`,
         });
         return;
       }
 
       setStatusFilter('Wszystkie');
       setQuery('');
-      toast.success('Dodano rezerwację', {
-        description: `${booking.vehicle} została dodana do planu dnia.`,
+      toast.success('Dodano rezerwacj\u0119', {
+        description: `${booking.vehicle} zosta\u0142a dodana do planu dnia.`,
       });
     },
     onError: (error) => {
       reportBookingError(error);
-      toast.error('Nie udało się zapisać rezerwacji', {
-        description: 'Sprawdź połączenie z Supabase i strukturę tabel.',
+      toast.error('Nie uda\u0142o si\u0119 zapisa\u0107 rezerwacji', {
+        description:
+          'Sprawd\u017a po\u0142\u0105czenie z Supabase i struktur\u0119 tabel.',
       });
     },
   });
 
-  const cancelBookingMutation = useMutation({
-    mutationFn: ({ bookingId }: { bookingId: string }) =>
-      updateBookingStatus(bookingId, 'Anulowana'),
+  const cancelBookingMutation = useMutation<
+    Booking,
+    Error,
+    BookingMutationVariables
+  >({
+    mutationFn: ({ bookingId }) => updateBookingStatus(bookingId, 'Anulowana'),
     onError: (error) => {
       reportBookingError(error);
-      toast.error('Nie udało się anulować wizyty');
+      toast.error('Nie uda\u0142o si\u0119 anulowa\u0107 wizyty');
     },
   });
 
-  const restoreStatusMutation = useMutation({
-    mutationFn: ({
-      bookingId,
-      status,
-    }: {
-      bookingId: string;
-      status: BookingStatus;
-    }) => updateBookingStatus(bookingId, status),
+  const restoreStatusMutation = useMutation<
+    Booking,
+    Error,
+    RestoreStatusVariables
+  >({
+    mutationFn: ({ bookingId, status }) =>
+      updateBookingStatus(bookingId, status),
     onError: (error) => {
       reportBookingError(error);
-      toast.error('Nie udało się cofnąć anulowania');
+      toast.error('Nie uda\u0142o si\u0119 cofn\u0105\u0107 anulowania');
     },
   });
 
-  const deleteBookingMutation = useMutation({
-    mutationFn: ({ bookingId }: { bookingId: string }) =>
-      deleteBooking(bookingId),
+  const deleteBookingMutation = useMutation<
+    void,
+    Error,
+    BookingMutationVariables
+  >({
+    mutationFn: ({ bookingId }) => deleteBooking(bookingId),
     onError: (error) => {
       reportBookingError(error);
-      toast.error('Nie udało się usunąć wizyty');
+      toast.error('Nie uda\u0142o si\u0119 usun\u0105\u0107 wizyty');
     },
   });
 
-  const restoreBookingMutation = useMutation({
-    mutationFn: (booking: Booking) => restoreBooking(booking),
+  const restoreBookingMutation = useMutation<Booking, Error, Booking>({
+    mutationFn: (booking) => restoreBooking(booking),
     onError: (error) => {
       reportBookingError(error);
-      toast.error('Nie udało się przywrócić wizyty');
+      toast.error('Nie uda\u0142o si\u0119 przywr\u00f3ci\u0107 wizyty');
     },
   });
 
@@ -241,7 +264,7 @@ export function BookingsPage() {
           await queryClient.invalidateQueries({ queryKey: bookingsQueryKey });
           setSelectedBookingId(updatedBooking.id);
           toast.warning('Wizyta anulowana', {
-            description: `${updatedBooking.vehicle} została oznaczona jako anulowana.`,
+            description: `${updatedBooking.vehicle} zosta\u0142a oznaczona jako anulowana.`,
             action: {
               label: 'Cofnij',
               onClick: () => {
@@ -298,8 +321,8 @@ export function BookingsPage() {
           setSelectedBookingId(nextSelectedBookingId);
           setModalMode(null);
           setIsDeleteConfirmOpen(false);
-          toast.error('Wizyta usunięta', {
-            description: `${bookingToDelete.vehicle} została usunięta z harmonogramu.`,
+          toast.error('Wizyta usuni\u0119ta', {
+            description: `${bookingToDelete.vehicle} zosta\u0142a usuni\u0119ta z harmonogramu.`,
             action: {
               label: 'Cofnij',
               onClick: () => {
@@ -376,7 +399,7 @@ export function BookingsPage() {
         <div className="grid gap-4">
           {isLoading ? (
             <article className="rounded-4xl border border-white/10 bg-white/6 p-6 text-sm text-stone-300 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-7">
-              ĹadujÄ™ rezerwacje z Supabase...
+              Ładuję rezerwacje z Supabase...
             </article>
           ) : null}
 

@@ -1,17 +1,31 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
-import {
-  bookingStatuses,
-  type Booking,
-  type BookingStatus,
-} from '../../data/bookings';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { bookingStatuses, type Booking } from '../../data/bookings';
 import type {
   ClientOption,
   ServiceOption,
   VehicleOption,
 } from '../../lib/bookings';
 
-type BookingFormValues = Omit<Booking, 'id'>;
+const bookingSchema = z.object({
+  client: z.string().trim().min(1, 'Wybierz klienta lub wpisz nazwę klienta.'),
+  phone: z.string().trim().min(1, 'Podaj numer telefonu klienta.'),
+  vehicle: z.string().trim().min(1, 'Wybierz pojazd lub wpisz model pojazdu.'),
+  licensePlate: z.string().trim().min(1, 'Podaj numer rejestracyjny.'),
+  date: z.string().trim().min(1, 'Wybierz datę wizyty.'),
+  time: z.string().trim().min(1, 'Wybierz godzinę wizyty.'),
+  service: z.string().trim().min(1, 'Wybierz usługę lub wpisz jej nazwę.'),
+  duration: z.string().trim().min(1, 'Podaj planowany czas trwania.'),
+  amount: z.string().trim().min(1, 'Podaj wartość wizyty.'),
+  bay: z.string().trim().min(1, 'Podaj stanowisko.'),
+  status: z.enum(bookingStatuses),
+  notes: z.string(),
+});
+
+type BookingFormValues = z.infer<typeof bookingSchema>;
 
 type BookingModalProps = {
   mode: 'create' | 'edit';
@@ -38,6 +52,50 @@ const emptyFormValues: BookingFormValues = {
   notes: '',
 };
 
+const copy = {
+  createTitle: 'Dodaj rezerwację',
+  editTitle: 'Zaktualizuj rezerwację',
+  description:
+    'Wybierz istniejącego klienta, pojazd i usługę z bazy Supabase, a formularz sam podpowie resztę danych wizyty.',
+  stepClient: '1. Klient',
+  stepClientDescription:
+    'Najpierw wybierz klienta z bazy. Jeśli ma przypisany tylko jeden samochód, podpowiemy go automatycznie.',
+  stepVehicle: '2. Pojazd',
+  stepVehicleDescription:
+    'Lista pojazdów zawęża się do aut przypisanych do wybranego klienta.',
+  stepService: '3. Usługa i terminy',
+  stepServiceDescription:
+    'Usługa może uzupełnić sugerowany czas i kwotę, ale nadal możesz je poprawić.',
+  pickClient: 'Wybierz klienta',
+  phone: 'Telefon',
+  clientVehicle: 'Pojazd klienta',
+  pickVehicle: 'Wybierz pojazd',
+  pickClientFirst: 'Najpierw wybierz klienta',
+  noVehicles: 'Ten klient nie ma jeszcze przypisanego pojazdu',
+  registration: 'Rejestracja',
+  catalogService: 'Usługa z katalogu',
+  pickService: 'Wybierz usługę',
+  duration: 'Czas trwania',
+  client: 'Klient',
+  vehicle: 'Pojazd',
+  service: 'Usługa',
+  date: 'Data',
+  time: 'Godzina',
+  amount: 'Kwota',
+  amountPlaceholder: 'np. 1 250 zł',
+  bay: 'Stanowisko',
+  status: 'Status',
+  notes: 'Notatki',
+  close: 'Zamknij',
+  cancel: 'Anuluj',
+  saveCreate: 'Zapisz rezerwację',
+  saveEdit: 'Zapisz zmiany',
+  autoHint:
+    'Powiązane dane zostały uzupełnione automatycznie na podstawie wyboru.',
+  emptyService: 'Brak wybranej usługi z katalogu',
+  autoSelected: 'Podpowiedziano automatycznie',
+};
+
 export function BookingModal({
   mode,
   booking,
@@ -47,27 +105,59 @@ export function BookingModal({
   onClose,
   onSave,
 }: BookingModalProps) {
-  const [values, setValues] = useState<BookingFormValues>(
-    booking ? mapBookingToValues(booking) : emptyFormValues,
-  );
   const [selectedClientId, setSelectedClientId] = useState('');
   const [selectedVehicleId, setSelectedVehicleId] = useState('');
   const [selectedServiceId, setSelectedServiceId] = useState('');
 
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<BookingFormValues>({
+    resolver: zodResolver(bookingSchema),
+    defaultValues: booking ? mapBookingToValues(booking) : emptyFormValues,
+  });
+
+  const values = watch();
+
+  const filteredVehicles = useMemo(
+    () =>
+      selectedClientId
+        ? vehicles.filter((vehicle) => vehicle.clientId === selectedClientId)
+        : [],
+    [selectedClientId, vehicles],
+  );
+
+  const selectedClient = clients.find(
+    (client) => client.id === selectedClientId,
+  );
+  const selectedVehicle = filteredVehicles.find(
+    (vehicle) => vehicle.id === selectedVehicleId,
+  );
+  const selectedService = services.find(
+    (service) => service.id === selectedServiceId,
+  );
+
   useEffect(() => {
     const nextValues = booking ? mapBookingToValues(booking) : emptyFormValues;
-    setValues(nextValues);
+    reset(nextValues);
 
-    const matchedClient = clients.find(
-      (client) =>
-        client.fullName === nextValues.client &&
-        client.phone === nextValues.phone,
-    );
     const matchedVehicle = vehicles.find(
       (vehicle) =>
         vehicle.registration === nextValues.licensePlate ||
         vehicle.label === nextValues.vehicle,
     );
+    const inferredClientId = matchedVehicle?.clientId;
+    const matchedClient =
+      clients.find((client) => client.id === inferredClientId) ??
+      clients.find(
+        (client) =>
+          client.fullName === nextValues.client &&
+          client.phone === nextValues.phone,
+      );
     const matchedService = services.find(
       (service) => service.name === nextValues.service,
     );
@@ -75,118 +165,123 @@ export function BookingModal({
     setSelectedClientId(matchedClient?.id ?? '');
     setSelectedVehicleId(matchedVehicle?.id ?? '');
     setSelectedServiceId(matchedService?.id ?? '');
-  }, [booking, clients, mode, services, vehicles]);
+  }, [booking, clients, mode, reset, services, vehicles]);
 
-  const filteredVehicles = selectedClientId
-    ? vehicles.filter((vehicle) => vehicle.clientId === selectedClientId)
-    : [];
+  useEffect(() => {
+    if (!selectedClientId) {
+      return;
+    }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+    const alreadySelected = filteredVehicles.some(
+      (vehicle) => vehicle.id === selectedVehicleId,
+    );
 
-    if (mode === 'edit' && booking) {
-      onSave({
-        ...booking,
-        ...values,
+    if (alreadySelected) {
+      return;
+    }
+
+    if (filteredVehicles.length === 1) {
+      const [singleVehicle] = filteredVehicles;
+      setSelectedVehicleId(singleVehicle.id);
+      setValue('vehicle', singleVehicle.label, { shouldDirty: true });
+      setValue('licensePlate', singleVehicle.registration, {
+        shouldDirty: true,
       });
       return;
     }
 
-    onSave(values);
-  }
-
-  function updateField<K extends keyof BookingFormValues>(
-    field: K,
-    value: BookingFormValues[K],
-  ) {
-    setValues((current) => ({
-      ...current,
-      [field]: value,
-    }));
-  }
+    setSelectedVehicleId('');
+    setValue('vehicle', '', { shouldDirty: true });
+    setValue('licensePlate', '', { shouldDirty: true });
+  }, [filteredVehicles, selectedClientId, selectedVehicleId, setValue]);
 
   function handleClientChange(clientId: string) {
     setSelectedClientId(clientId);
     setSelectedVehicleId('');
 
     if (!clientId) {
-      setValues((current) => ({
-        ...current,
-        client: '',
-        phone: '',
-        vehicle: '',
-        licensePlate: '',
-      }));
+      setValue('client', '', { shouldDirty: true });
+      setValue('phone', '', { shouldDirty: true });
+      setValue('vehicle', '', { shouldDirty: true });
+      setValue('licensePlate', '', { shouldDirty: true });
       return;
     }
 
-    const selectedClient = clients.find((client) => client.id === clientId);
+    const nextClient = clients.find((client) => client.id === clientId);
 
-    if (!selectedClient) {
+    if (!nextClient) {
       return;
     }
 
-    setValues((current) => ({
-      ...current,
-      client: selectedClient.fullName,
-      phone: selectedClient.phone,
-      vehicle: '',
-      licensePlate: '',
-    }));
+    setValue('client', nextClient.fullName, { shouldDirty: true });
+    setValue('phone', nextClient.phone, { shouldDirty: true });
+    setValue('vehicle', '', { shouldDirty: true });
+    setValue('licensePlate', '', { shouldDirty: true });
   }
 
   function handleVehicleChange(vehicleId: string) {
     setSelectedVehicleId(vehicleId);
 
     if (!vehicleId) {
-      setValues((current) => ({
-        ...current,
-        vehicle: '',
-        licensePlate: '',
-      }));
+      setValue('vehicle', '', { shouldDirty: true });
+      setValue('licensePlate', '', { shouldDirty: true });
       return;
     }
 
-    const selectedVehicle = vehicles.find(
-      (vehicle) => vehicle.id === vehicleId,
-    );
+    const nextVehicle = vehicles.find((vehicle) => vehicle.id === vehicleId);
 
-    if (!selectedVehicle) {
+    if (!nextVehicle) {
       return;
     }
 
-    setValues((current) => ({
-      ...current,
-      vehicle: selectedVehicle.label,
-      licensePlate: selectedVehicle.registration,
-    }));
+    if (nextVehicle.clientId !== selectedClientId) {
+      const owner = clients.find(
+        (client) => client.id === nextVehicle.clientId,
+      );
+      if (owner) {
+        setSelectedClientId(owner.id);
+        setValue('client', owner.fullName, { shouldDirty: true });
+        setValue('phone', owner.phone, { shouldDirty: true });
+      }
+    }
+
+    setValue('vehicle', nextVehicle.label, { shouldDirty: true });
+    setValue('licensePlate', nextVehicle.registration, { shouldDirty: true });
   }
 
   function handleServiceChange(serviceId: string) {
     setSelectedServiceId(serviceId);
 
     if (!serviceId) {
-      setValues((current) => ({
-        ...current,
-        service: '',
-      }));
+      setValue('service', '', { shouldDirty: true });
       return;
     }
 
-    const selectedService = services.find(
-      (service) => service.id === serviceId,
-    );
+    const nextService = services.find((service) => service.id === serviceId);
 
-    if (!selectedService) {
+    if (!nextService) {
       return;
     }
 
-    setValues((current) => ({
-      ...current,
-      service: selectedService.name,
-      duration: formatDuration(selectedService.durationMinutes),
-      amount: formatPrice(selectedService.basePrice),
-    }));
+    setValue('service', nextService.name, { shouldDirty: true });
+    setValue('duration', formatDuration(nextService.durationMinutes), {
+      shouldDirty: true,
+    });
+    setValue('amount', formatPrice(nextService.basePrice), {
+      shouldDirty: true,
+    });
+  }
+
+  function submit(valuesToSave: BookingFormValues) {
+    if (mode === 'edit' && booking) {
+      onSave({
+        ...booking,
+        ...valuesToSave,
+      });
+      return;
+    }
+
+    onSave(valuesToSave);
   }
 
   return (
@@ -200,13 +295,10 @@ export function BookingModal({
                 {mode === 'create' ? 'Nowa wizyta' : 'Edycja wizyty'}
               </p>
               <Dialog.Title className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white">
-                {mode === 'create'
-                  ? 'Dodaj rezerwację'
-                  : 'Zaktualizuj rezerwację'}
+                {mode === 'create' ? copy.createTitle : copy.editTitle}
               </Dialog.Title>
-              <Dialog.Description className="mt-3 text-sm leading-7 text-stone-300">
-                Wybierz istniejącego klienta, pojazd i usługę z bazy Supabase, a
-                reszta pól uzupełni się szybciej.
+              <Dialog.Description className="mt-3 max-w-2xl text-sm leading-7 text-stone-300">
+                {copy.description}
               </Dialog.Description>
             </div>
 
@@ -215,170 +307,197 @@ export function BookingModal({
                 type="button"
                 className="rounded-full border border-white/10 bg-white/6 px-4 py-2 text-sm text-white transition hover:border-white/16 hover:bg-white/10"
               >
-                Zamknij
+                {copy.close}
               </button>
             </Dialog.Close>
           </div>
 
-          <form className="mt-8 grid gap-4" onSubmit={handleSubmit}>
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Klient z bazy">
-                <select
-                  value={selectedClientId}
-                  onChange={(event) => handleClientChange(event.target.value)}
-                  className={inputClassName}
-                >
-                  <option value="">Wybierz klienta</option>
-                  {clients.map((client) => (
-                    <option key={client.id} value={client.id}>
-                      {client.fullName} • {client.phone}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Telefon">
-                <input
-                  value={values.phone}
-                  onChange={(event) => updateField('phone', event.target.value)}
-                  required
-                  className={inputClassName}
-                />
-              </Field>
-              <Field label="Pojazd klienta">
-                <select
-                  value={selectedVehicleId}
-                  onChange={(event) => handleVehicleChange(event.target.value)}
-                  disabled={!selectedClientId}
-                  className={inputClassName}
-                >
-                  <option value="">
-                    {selectedClientId
-                      ? 'Wybierz pojazd'
-                      : 'Najpierw wybierz klienta'}
-                  </option>
-                  {filteredVehicles.map((vehicle) => (
-                    <option key={vehicle.id} value={vehicle.id}>
-                      {vehicle.label} • {vehicle.registration}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Rejestracja">
-                <input
-                  value={values.licensePlate}
-                  onChange={(event) =>
-                    updateField('licensePlate', event.target.value)
-                  }
-                  required
-                  className={inputClassName}
-                />
-              </Field>
-              <Field label="Usługa z katalogu">
-                <select
-                  value={selectedServiceId}
-                  onChange={(event) => handleServiceChange(event.target.value)}
-                  className={inputClassName}
-                >
-                  <option value="">Wybierz usługę</option>
-                  {services.map((service) => (
-                    <option key={service.id} value={service.id}>
-                      {service.name}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Czas trwania">
-                <input
-                  value={values.duration}
-                  onChange={(event) =>
-                    updateField('duration', event.target.value)
-                  }
-                  placeholder="np. 4 h"
-                  required
-                  className={inputClassName}
-                />
-              </Field>
-              <Field label="Klient">
-                <input
-                  value={values.client}
-                  onChange={(event) =>
-                    updateField('client', event.target.value)
-                  }
-                  required
-                  className={inputClassName}
-                />
-              </Field>
-              <Field label="Pojazd">
-                <input
-                  value={values.vehicle}
-                  onChange={(event) =>
-                    updateField('vehicle', event.target.value)
-                  }
-                  required
-                  className={inputClassName}
-                />
-              </Field>
-              <Field label="Data">
-                <input
-                  type="date"
-                  value={values.date}
-                  onChange={(event) => updateField('date', event.target.value)}
-                  required
-                  className={inputClassName}
-                />
-              </Field>
-              <Field label="Godzina">
-                <input
-                  type="time"
-                  value={values.time}
-                  onChange={(event) => updateField('time', event.target.value)}
-                  required
-                  className={inputClassName}
-                />
-              </Field>
-              <Field label="Kwota">
-                <input
-                  value={values.amount}
-                  onChange={(event) =>
-                    updateField('amount', event.target.value)
-                  }
-                  placeholder="np. 1 250 zł"
-                  required
-                  className={inputClassName}
-                />
-              </Field>
-              <Field label="Stanowisko">
-                <input
-                  value={values.bay}
-                  onChange={(event) => updateField('bay', event.target.value)}
-                  className={inputClassName}
-                />
-              </Field>
-              <Field label="Status">
-                <select
-                  value={values.status}
-                  onChange={(event) =>
-                    updateField('status', event.target.value as BookingStatus)
-                  }
-                  className={inputClassName}
-                >
-                  {bookingStatuses.map((status) => (
-                    <option key={status} value={status}>
-                      {status}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            </div>
+          <div className="mt-6 grid gap-3 rounded-3xl border border-white/10 bg-black/18 p-4 md:grid-cols-3">
+            <SelectionChip
+              label={copy.stepClient}
+              value={(selectedClient?.fullName ?? values.client) || '___'}
+              helper={copy.stepClientDescription}
+            />
+            <SelectionChip
+              label={copy.stepVehicle}
+              value={(selectedVehicle?.label ?? values.vehicle) || '___'}
+              helper={
+                selectedVehicle
+                  ? copy.autoSelected
+                  : copy.stepVehicleDescription
+              }
+            />
+            <SelectionChip
+              label={copy.stepService}
+              value={
+                (selectedService?.name ?? values.service) || copy.emptyService
+              }
+              helper={
+                selectedService
+                  ? copy.autoSelected
+                  : copy.stepServiceDescription
+              }
+            />
+          </div>
 
-            <Field label="Notatki">
-              <textarea
-                value={values.notes}
-                onChange={(event) => updateField('notes', event.target.value)}
-                rows={5}
-                className={`${inputClassName} resize-none`}
+          <form className="mt-8 grid gap-6" onSubmit={handleSubmit(submit)}>
+            <section className="grid gap-4 rounded-3xl border border-white/10 bg-white/4 p-5">
+              <SectionHeading
+                title={copy.stepClient}
+                description={copy.stepClientDescription}
               />
-            </Field>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label={copy.pickClient} error={errors.client?.message}>
+                  <select
+                    value={selectedClientId}
+                    onChange={(event) => handleClientChange(event.target.value)}
+                    className={inputClassName}
+                  >
+                    <option value="">{copy.pickClient}</option>
+                    {clients.map((client) => (
+                      <option key={client.id} value={client.id}>
+                        {client.fullName} • {client.phone}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label={copy.phone} error={errors.phone?.message}>
+                  <input {...register('phone')} className={inputClassName} />
+                </Field>
+                <Field label={copy.client} error={errors.client?.message}>
+                  <input {...register('client')} className={inputClassName} />
+                </Field>
+              </div>
+            </section>
+
+            <section className="grid gap-4 rounded-3xl border border-white/10 bg-white/4 p-5">
+              <SectionHeading
+                title={copy.stepVehicle}
+                description={copy.stepVehicleDescription}
+              />
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field
+                  label={copy.clientVehicle}
+                  error={errors.vehicle?.message}
+                >
+                  <select
+                    value={selectedVehicleId}
+                    onChange={(event) =>
+                      handleVehicleChange(event.target.value)
+                    }
+                    disabled={!selectedClientId}
+                    className={inputClassName}
+                  >
+                    <option value="">
+                      {!selectedClientId
+                        ? copy.pickClientFirst
+                        : filteredVehicles.length > 0
+                          ? copy.pickVehicle
+                          : copy.noVehicles}
+                    </option>
+                    {filteredVehicles.map((vehicle) => (
+                      <option key={vehicle.id} value={vehicle.id}>
+                        {vehicle.label} • {vehicle.registration}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label={copy.vehicle} error={errors.vehicle?.message}>
+                  <input {...register('vehicle')} className={inputClassName} />
+                </Field>
+                <Field
+                  label={copy.registration}
+                  error={errors.licensePlate?.message}
+                >
+                  <input
+                    {...register('licensePlate')}
+                    className={inputClassName}
+                  />
+                </Field>
+              </div>
+            </section>
+
+            <section className="grid gap-4 rounded-3xl border border-white/10 bg-white/4 p-5">
+              <SectionHeading
+                title={copy.stepService}
+                description={copy.stepServiceDescription}
+              />
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field
+                  label={copy.catalogService}
+                  error={errors.service?.message}
+                >
+                  <select
+                    value={selectedServiceId}
+                    onChange={(event) =>
+                      handleServiceChange(event.target.value)
+                    }
+                    className={inputClassName}
+                  >
+                    <option value="">{copy.pickService}</option>
+                    {services.map((service) => (
+                      <option key={service.id} value={service.id}>
+                        {service.name}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label={copy.duration} error={errors.duration?.message}>
+                  <input
+                    {...register('duration')}
+                    placeholder="np. 4 h"
+                    className={inputClassName}
+                  />
+                </Field>
+                <Field label={copy.service} error={errors.service?.message}>
+                  <input {...register('service')} className={inputClassName} />
+                </Field>
+                <Field label={copy.amount} error={errors.amount?.message}>
+                  <input
+                    {...register('amount')}
+                    placeholder={copy.amountPlaceholder}
+                    className={inputClassName}
+                  />
+                </Field>
+                <Field label={copy.date} error={errors.date?.message}>
+                  <input
+                    type="date"
+                    {...register('date')}
+                    className={inputClassName}
+                  />
+                </Field>
+                <Field label={copy.time} error={errors.time?.message}>
+                  <input
+                    type="time"
+                    {...register('time')}
+                    className={inputClassName}
+                  />
+                </Field>
+                <Field label={copy.bay} error={errors.bay?.message}>
+                  <input {...register('bay')} className={inputClassName} />
+                </Field>
+                <Field label={copy.status} error={errors.status?.message}>
+                  <select {...register('status')} className={inputClassName}>
+                    {bookingStatuses.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+            </section>
+
+            <section className="grid gap-4 rounded-3xl border border-white/10 bg-white/4 p-5">
+              <SectionHeading title={copy.notes} description={copy.autoHint} />
+              <Field label={copy.notes}>
+                <textarea
+                  {...register('notes')}
+                  rows={5}
+                  className={`${inputClassName} resize-none`}
+                />
+              </Field>
+            </section>
 
             <div className="mt-2 flex flex-wrap justify-end gap-3">
               <Dialog.Close asChild>
@@ -386,14 +505,14 @@ export function BookingModal({
                   type="button"
                   className="rounded-full border border-white/10 bg-white/6 px-5 py-3 text-sm text-white transition hover:border-white/16 hover:bg-white/10"
                 >
-                  Anuluj
+                  {copy.cancel}
                 </button>
               </Dialog.Close>
               <button
                 type="submit"
                 className="rounded-full bg-linear-to-br from-amber-200 to-amber-400 px-5 py-3 text-sm font-semibold text-stone-950 transition hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(214,158,46,0.25)]"
               >
-                {mode === 'create' ? 'Zapisz rezerwację' : 'Zapisz zmiany'}
+                {mode === 'create' ? copy.saveCreate : copy.saveEdit}
               </button>
             </div>
           </form>
@@ -406,16 +525,54 @@ export function BookingModal({
 type FieldProps = {
   label: string;
   children: ReactNode;
+  error?: string;
 };
 
-function Field({ label, children }: FieldProps) {
+type SectionHeadingProps = {
+  title: string;
+  description: string;
+};
+
+type SelectionChipProps = {
+  label: string;
+  value: string;
+  helper: string;
+};
+
+function Field({ label, children, error }: FieldProps) {
   return (
     <label className="block">
       <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-stone-500">
         {label}
       </span>
       {children}
+      {error ? (
+        <span className="mt-2 block text-sm text-rose-300">{error}</span>
+      ) : null}
     </label>
+  );
+}
+
+function SectionHeading({ title, description }: SectionHeadingProps) {
+  return (
+    <div className="flex flex-col gap-1">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">
+        {title}
+      </p>
+      <p className="text-sm leading-7 text-stone-400">{description}</p>
+    </div>
+  );
+}
+
+function SelectionChip({ label, value, helper }: SelectionChipProps) {
+  return (
+    <div className="rounded-2xl border border-white/8 bg-white/6 px-4 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">
+        {label}
+      </p>
+      <p className="mt-2 text-sm font-medium text-white">{value}</p>
+      <p className="mt-1 text-xs leading-6 text-stone-400">{helper}</p>
+    </div>
   );
 }
 

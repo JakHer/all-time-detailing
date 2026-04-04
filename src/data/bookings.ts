@@ -1,11 +1,4 @@
-﻿export type BookingStatus =
-  | 'Nowa'
-  | 'Potwierdzona'
-  | 'W realizacji'
-  | 'Gotowa do odbioru'
-  | 'Anulowana';
-
-export type Booking = {
+﻿export type Booking = {
   id: string;
   date: string;
   time: string;
@@ -21,13 +14,15 @@ export type Booking = {
   notes: string;
 };
 
-export const bookingStatuses: BookingStatus[] = [
+export const bookingStatuses = [
   'Nowa',
   'Potwierdzona',
   'W realizacji',
   'Gotowa do odbioru',
   'Anulowana',
-];
+] as const;
+
+export type BookingStatus = (typeof bookingStatuses)[number];
 
 export const initialBookings: Booking[] = [
   {
