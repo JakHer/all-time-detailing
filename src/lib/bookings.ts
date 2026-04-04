@@ -479,5 +479,5 @@ function formatPrice(price: number) {
   return `${new Intl.NumberFormat('pl-PL', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
-  }).format(price)} z\u0142`;
+  }).format(price)} zł`;
 }

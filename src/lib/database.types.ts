@@ -8,14 +8,6 @@ export type Json =
 
 export type Database = {
   public: {
-    Enums: {
-      booking_status:
-        | 'Nowa'
-        | 'Potwierdzona'
-        | 'W realizacji'
-        | 'Gotowa do odbioru'
-        | 'Anulowana';
-    };
     Tables: {
       bookings: {
         Row: {
@@ -44,7 +36,41 @@ export type Database = {
           bay?: string | null;
           notes?: string | null;
         };
-        Update: Partial<Database['public']['Tables']['bookings']['Insert']>;
+        Update: {
+          id?: string;
+          client_id?: string;
+          vehicle_id?: string;
+          service_id?: string;
+          scheduled_at?: string;
+          duration_minutes?: number;
+          price?: number;
+          status?: Database['public']['Enums']['booking_status'];
+          bay?: string | null;
+          notes?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'bookings_client_id_fkey';
+            columns: ['client_id'];
+            isOneToOne: false;
+            referencedRelation: 'clients';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'bookings_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
+            referencedRelation: 'vehicles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'bookings_service_id_fkey';
+            columns: ['service_id'];
+            isOneToOne: false;
+            referencedRelation: 'services';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       clients: {
         Row: {
@@ -63,7 +89,14 @@ export type Database = {
           email?: string | null;
           notes?: string | null;
         };
-        Update: Partial<Database['public']['Tables']['clients']['Insert']>;
+        Update: {
+          id?: string;
+          full_name?: string;
+          phone?: string;
+          email?: string | null;
+          notes?: string | null;
+        };
+        Relationships: [];
       };
       services: {
         Row: {
@@ -84,7 +117,15 @@ export type Database = {
           base_price?: number;
           is_active?: boolean;
         };
-        Update: Partial<Database['public']['Tables']['services']['Insert']>;
+        Update: {
+          id?: string;
+          name?: string;
+          description?: string | null;
+          duration_minutes?: number;
+          base_price?: number;
+          is_active?: boolean;
+        };
+        Relationships: [];
       };
       vehicles: {
         Row: {
@@ -109,8 +150,37 @@ export type Database = {
           color?: string | null;
           notes?: string | null;
         };
-        Update: Partial<Database['public']['Tables']['vehicles']['Insert']>;
+        Update: {
+          id?: string;
+          client_id?: string;
+          make?: string;
+          model?: string;
+          registration?: string;
+          production_year?: number | null;
+          color?: string | null;
+          notes?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'vehicles_client_id_fkey';
+            columns: ['client_id'];
+            isOneToOne: false;
+            referencedRelation: 'clients';
+            referencedColumns: ['id'];
+          },
+        ];
       };
     };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: {
+      booking_status:
+        | 'Nowa'
+        | 'Potwierdzona'
+        | 'W realizacji'
+        | 'Gotowa do odbioru'
+        | 'Anulowana';
+    };
+    CompositeTypes: Record<string, never>;
   };
 };
