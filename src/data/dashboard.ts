@@ -74,10 +74,11 @@ export const actionCards = [
 ];
 
 export const navigationItems = [
-  'Pulpit główny',
-  'Kalendarz rezerwacji',
-  'Klienci i pojazdy',
-  'Usługi i pakiety',
-  'Zdjęcia realizacji',
-  'Ustawienia',
+  { label: 'Pulpit główny', to: '/' },
+  { label: 'Kalendarz rezerwacji', to: '/rezerwacje' },
+  { label: 'Klienci i pojazdy', to: '/klienci' },
+  { label: 'Pojazdy', to: '/pojazdy' },
+  { label: 'Usługi i pakiety', to: '/uslugi' },
+  { label: 'Zdjęcia realizacji', to: '/galeria' },
+  { label: 'Ustawienia', to: '/ustawienia' },
 ];
