@@ -1,12 +1,12 @@
-﻿import type { Booking, BookingStatus } from "../../data/bookings";
+﻿import type { Booking, BookingStatus } from '../../data/bookings';
 
 const statusStyles: Record<BookingStatus, string> = {
-  Nowa: "border-sky-300/20 bg-sky-300/12 text-sky-100",
-  Potwierdzona: "border-amber-300/20 bg-amber-300/12 text-amber-100",
-  "W realizacji": "border-violet-300/20 bg-violet-300/12 text-violet-100",
-  "Gotowa do odbioru":
-    "border-emerald-300/20 bg-emerald-300/12 text-emerald-100",
-  Anulowana: "border-rose-300/20 bg-rose-300/12 text-rose-100",
+  Nowa: 'border-sky-300/20 bg-sky-300/12 text-sky-100',
+  Potwierdzona: 'border-amber-300/20 bg-amber-300/12 text-amber-100',
+  'W realizacji': 'border-violet-300/20 bg-violet-300/12 text-violet-100',
+  'Gotowa do odbioru':
+    'border-emerald-300/20 bg-emerald-300/12 text-emerald-100',
+  Anulowana: 'border-rose-300/20 bg-rose-300/12 text-rose-100',
 };
 
 type BookingListProps = {
@@ -51,8 +51,8 @@ export function BookingList({
                 onClick={() => onSelect(booking.id)}
                 className={`grid gap-4 rounded-[26px] border p-4 text-left transition md:grid-cols-[88px_minmax(0,1fr)_auto] md:items-center ${
                   isActive
-                    ? "border-amber-200/30 bg-amber-300/10 shadow-[0_10px_30px_rgba(214,158,46,0.12)]"
-                    : "border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/14 hover:bg-white/8"
+                    ? 'border-amber-200/30 bg-amber-300/10 shadow-[0_10px_30px_rgba(214,158,46,0.12)]'
+                    : 'border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/14 hover:bg-white/8'
                 }`}
               >
                 <div>

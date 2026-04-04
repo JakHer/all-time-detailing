@@ -1,4 +1,4 @@
-﻿import { liveQueue } from "../../data/dashboard";
+﻿import { liveQueue } from '../../data/dashboard';
 
 export function LiveQueueSection() {
   return (

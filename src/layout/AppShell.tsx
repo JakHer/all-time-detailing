@@ -1,6 +1,6 @@
-﻿import { Outlet } from "react-router-dom";
-import { Toaster } from "sonner";
-import { Sidebar } from "./Sidebar";
+﻿import { Outlet } from 'react-router-dom';
+import { Toaster } from 'sonner';
+import { Sidebar } from './Sidebar';
 
 export function AppShell() {
   return (
@@ -23,9 +23,9 @@ export function AppShell() {
         closeButton
         toastOptions={{
           style: {
-            background: "rgba(18, 19, 20, 0.92)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            color: "#f5f5f4",
+            background: 'rgba(18, 19, 20, 0.92)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            color: '#f5f5f4',
           },
         }}
       />

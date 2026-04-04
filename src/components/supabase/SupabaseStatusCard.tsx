@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
-import { isSupabaseConfigured, supabase } from "../../lib/supabase";
+import { useEffect, useState } from 'react';
+import { isSupabaseConfigured, supabase } from '../../lib/supabase';
 
-type ConnectionState = "checking" | "ready" | "misconfigured" | "error";
+type ConnectionState = 'checking' | 'ready' | 'misconfigured' | 'error';
 
 export function SupabaseStatusCard() {
   const [connectionState, setConnectionState] = useState<ConnectionState>(
-    isSupabaseConfigured ? "checking" : "misconfigured",
+    isSupabaseConfigured ? 'checking' : 'misconfigured',
   );
 
   useEffect(() => {
@@ -23,11 +23,11 @@ export function SupabaseStatusCard() {
       }
 
       if (error) {
-        setConnectionState("error");
+        setConnectionState('error');
         return;
       }
 
-      setConnectionState("ready");
+      setConnectionState('ready');
     }
 
     void checkConnection();
@@ -72,38 +72,38 @@ export function SupabaseStatusCard() {
 
 function getContent(connectionState: ConnectionState) {
   switch (connectionState) {
-    case "ready":
+    case 'ready':
       return {
-        label: "Klient Supabase został poprawnie zainicjalizowany.",
+        label: 'Klient Supabase został poprawnie zainicjalizowany.',
         description:
-          "Frontend jest już gotowy do pobierania i zapisywania danych. Następny krok to schema i przepięcie rezerwacji na prawdziwe tabele.",
-        badge: "Połączono",
-        tone: "border-emerald-300/20 bg-emerald-300/12 text-emerald-100",
+          'Frontend jest już gotowy do pobierania i zapisywania danych. Następny krok to schema i przepięcie rezerwacji na prawdziwe tabele.',
+        badge: 'Połączono',
+        tone: 'border-emerald-300/20 bg-emerald-300/12 text-emerald-100',
       };
-    case "error":
+    case 'error':
       return {
         label:
-          "Klient został skonfigurowany, ale odpowiedź z Supabase zwróciła błąd.",
+          'Klient został skonfigurowany, ale odpowiedź z Supabase zwróciła błąd.',
         description:
-          "Sprawdź klucz publishable i ustawienia projektu. Sam frontend jest już przygotowany pod integrację.",
-        badge: "Błąd",
-        tone: "border-rose-300/20 bg-rose-300/12 text-rose-100",
+          'Sprawdź klucz publishable i ustawienia projektu. Sam frontend jest już przygotowany pod integrację.',
+        badge: 'Błąd',
+        tone: 'border-rose-300/20 bg-rose-300/12 text-rose-100',
       };
-    case "misconfigured":
+    case 'misconfigured':
       return {
-        label: "Brakuje zmiennych środowiskowych dla Supabase.",
+        label: 'Brakuje zmiennych środowiskowych dla Supabase.',
         description:
-          "Uzupełnij .env, a aplikacja od razu przejdzie do kolejnego etapu integracji.",
-        badge: "Brak configu",
-        tone: "border-amber-300/20 bg-amber-300/12 text-amber-100",
+          'Uzupełnij .env, a aplikacja od razu przejdzie do kolejnego etapu integracji.',
+        badge: 'Brak configu',
+        tone: 'border-amber-300/20 bg-amber-300/12 text-amber-100',
       };
     default:
       return {
-        label: "Sprawdzam połączenie z projektem Supabase.",
+        label: 'Sprawdzam połączenie z projektem Supabase.',
         description:
-          "Po starcie aplikacja wykonuje lekki check klienta, żeby potwierdzić gotowość backendu.",
-        badge: "Sprawdzanie",
-        tone: "border-sky-300/20 bg-sky-300/12 text-sky-100",
+          'Po starcie aplikacja wykonuje lekki check klienta, żeby potwierdzić gotowość backendu.',
+        badge: 'Sprawdzanie',
+        tone: 'border-sky-300/20 bg-sky-300/12 text-sky-100',
       };
   }
 }

@@ -1,4 +1,4 @@
-﻿import { actionCards, featuredServices } from "../../data/dashboard";
+﻿import { actionCards, featuredServices } from '../../data/dashboard';
 
 export function HighlightsColumn() {
   return (

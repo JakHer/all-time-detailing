@@ -1,7 +1,7 @@
-import { DashboardHero } from "../components/dashboard/DashboardHero";
-import { HighlightsColumn } from "../components/dashboard/HighlightsColumn";
-import { LiveQueueSection } from "../components/dashboard/LiveQueueSection";
-import { SupabaseStatusCard } from "../components/supabase/SupabaseStatusCard";
+import { DashboardHero } from '../components/dashboard/DashboardHero';
+import { HighlightsColumn } from '../components/dashboard/HighlightsColumn';
+import { LiveQueueSection } from '../components/dashboard/LiveQueueSection';
+import { SupabaseStatusCard } from '../components/supabase/SupabaseStatusCard';
 
 export function DashboardPage() {
   return (
