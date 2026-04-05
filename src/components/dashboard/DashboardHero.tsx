@@ -1,6 +1,15 @@
-﻿import { quickStats } from '../../data/dashboard';
+import type { DashboardMetric } from '../../lib/dashboard';
+import { Skeleton } from '../ui/Skeleton';
 
-export function DashboardHero() {
+type DashboardHeroProps = {
+  metrics?: DashboardMetric[];
+  isLoading: boolean;
+};
+
+export function DashboardHero({ metrics, isLoading }: DashboardHeroProps) {
+  const activeBookings =
+    metrics?.find((m) => m.label === 'Auta dzisiaj')?.value || '0';
+
   return (
     <section className="relative overflow-hidden rounded-[36px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.11),rgba(255,255,255,0.03)_45%,rgba(214,158,46,0.12)_100%)] p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-8 xl:p-10">
       <div className="pointer-events-none absolute -right-30 -top-20 h-72 w-72 rounded-full bg-amber-300/12 blur-3xl" />
@@ -42,32 +51,40 @@ export function DashboardHero() {
               <p className="text-xs uppercase tracking-[0.18em] text-stone-400">
                 Na dziś
               </p>
-              <p className="mt-1 text-lg font-semibold text-white">
-                3 aktywne zlecenia premium
-              </p>
+              {isLoading ? (
+                <Skeleton className="mt-2 h-6 w-32" />
+              ) : (
+                <p className="mt-1 text-lg font-semibold text-white">
+                  {`${activeBookings} ${activeBookings === '1' ? 'aktywne zlecenie' : 'aktywne zlecenia'}`}
+                </p>
+              )}
             </div>
             <div className="rounded-full bg-emerald-400/14 px-3 py-1 text-xs font-semibold text-emerald-200">
-              Wszystko zgodnie z planem
+              Status czasu rzeczywistego
             </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-            {quickStats.map((stat) => (
-              <article
-                key={stat.label}
-                className="rounded-2xl border border-white/8 bg-white/6 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
-              >
-                <p className="text-xs uppercase tracking-[0.18em] text-stone-400">
-                  {stat.label}
-                </p>
-                <p className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white">
-                  {stat.value}
-                </p>
-                <p className="mt-2 text-sm leading-6 text-stone-300">
-                  {stat.detail}
-                </p>
-              </article>
-            ))}
+            {isLoading
+              ? Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-26 rounded-2xl" />
+                ))
+              : metrics?.map((stat) => (
+                  <article
+                    key={stat.label}
+                    className="rounded-2xl border border-white/8 bg-white/6 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                  >
+                    <p className="text-xs uppercase tracking-[0.18em] text-stone-400">
+                      {stat.label}
+                    </p>
+                    <p className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white">
+                      {stat.value}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-stone-300">
+                      {stat.detail}
+                    </p>
+                  </article>
+                ))}
           </div>
         </div>
       </div>

@@ -1,13 +1,5 @@
-﻿import type { Booking, BookingStatus } from '../../data/bookings';
-
-const statusStyles: Record<BookingStatus, string> = {
-  Nowa: 'border-sky-300/20 bg-sky-300/12 text-sky-100',
-  Potwierdzona: 'border-amber-300/20 bg-amber-300/12 text-amber-100',
-  'W realizacji': 'border-violet-300/20 bg-violet-300/12 text-violet-100',
-  'Gotowa do odbioru':
-    'border-emerald-300/20 bg-emerald-300/12 text-emerald-100',
-  Anulowana: 'border-rose-300/20 bg-rose-300/12 text-rose-100',
-};
+import type { Booking } from '../../data/bookings';
+import { StatusBadge } from '../ui/StatusBadge';
 
 type BookingDetailsProps = {
   booking: Booking | undefined;
@@ -50,11 +42,7 @@ export function BookingDetails({
         </div>
 
         <div className="flex flex-col items-start gap-3 md:items-end">
-          <span
-            className={`inline-flex w-fit rounded-full border px-3 py-1 text-xs font-semibold ${statusStyles[booking.status]}`}
-          >
-            {booking.status}
-          </span>
+          <StatusBadge status={booking.status} className="w-fit" />
           <div className="flex flex-wrap gap-2 md:justify-end">
             <button
               type="button"
@@ -90,6 +78,9 @@ export function BookingDetails({
           { label: 'Wartość', value: booking.amount },
           { label: 'Usługa', value: booking.service },
           { label: 'Rejestracja', value: booking.licensePlate },
+          ...(booking.vehicleDetails
+            ? [{ label: 'Specyfikacja auta', value: booking.vehicleDetails }]
+            : []),
         ].map((item) => (
           <div
             key={item.label}
@@ -104,6 +95,17 @@ export function BookingDetails({
           </div>
         ))}
       </div>
+
+      {booking.clientNotes && (
+        <div className="mt-6 rounded-3xl border border-white/8 bg-black/18 p-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-stone-500">
+            O kliencie
+          </p>
+          <p className="mt-3 text-sm leading-7 text-stone-300">
+            {booking.clientNotes}
+          </p>
+        </div>
+      )}
 
       <div className="mt-6 rounded-3xl border border-white/8 bg-black/18 p-4">
         <p className="text-xs uppercase tracking-[0.18em] text-stone-500">
