@@ -7,6 +7,7 @@ import { BookingModal } from '../components/bookings/BookingModal';
 import { BookingToolbar } from '../components/bookings/BookingToolbar';
 import { PageIntro } from '../components/PageIntro';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { Skeleton } from '../components/ui/Skeleton';
 import {
   bookingStatuses,
   type Booking,
@@ -50,6 +51,10 @@ type RestoreStatusVariables = {
   status: BookingStatus;
 };
 
+type MutationContext = {
+  previousBookings?: Booking[];
+};
+
 function reportBookingError(error: unknown) {
   if (import.meta.env.DEV) {
     window.dispatchEvent(new CustomEvent('booking-error', { detail: error }));
@@ -72,8 +77,8 @@ export function BookingsPage() {
   const normalizedQuery = deferredQuery.trim().toLowerCase();
 
   const bookingsQuery = useQuery({
-    queryKey: bookingsQueryKey,
-    queryFn: fetchBookings,
+    queryKey: [...bookingsQueryKey, normalizedQuery],
+    queryFn: () => fetchBookings(normalizedQuery),
   });
 
   const bookingFormOptionsQuery = useQuery({
@@ -90,9 +95,9 @@ export function BookingsPage() {
   useEffect(() => {
     if (bookingsQuery.error) {
       reportBookingError(bookingsQuery.error);
-      toast.error('Nie uda\u0142o si\u0119 pobra\u0107 danych rezerwacji', {
+      toast.error('Nie udało się pobrać danych rezerwacji', {
         description:
-          'Sprawd\u017a po\u0142\u0105czenie z Supabase i czy schema SQL zosta\u0142a uruchomiona poprawnie.',
+          'Sprawdź połączenie z Supabase i czy schema SQL została uruchomiona poprawnie.',
       });
     }
   }, [bookingsQuery.error]);
@@ -100,9 +105,9 @@ export function BookingsPage() {
   useEffect(() => {
     if (bookingFormOptionsQuery.error) {
       reportBookingError(bookingFormOptionsQuery.error);
-      toast.error('Nie uda\u0142o si\u0119 pobra\u0107 danych formularza', {
+      toast.error('Nie udało się pobrać danych formularza', {
         description:
-          'Lista klient\u00f3w, pojazd\u00f3w lub us\u0142ug nie mog\u0142a zosta\u0107 wczytana z Supabase.',
+          'Lista klientów, pojazdów lub usług nie mogła zostać wczytana z Supabase.',
       });
     }
   }, [bookingFormOptionsQuery.error]);
@@ -146,22 +151,21 @@ export function BookingsPage() {
 
       if (mode === 'edit') {
         toast.success('Wizyta zaktualizowana', {
-          description: `${booking.vehicle} zosta\u0142a zapisana z nowymi danymi.`,
+          description: `${booking.vehicle} została zapisana z nowymi danymi.`,
         });
         return;
       }
 
       setStatusFilter('Wszystkie');
       setQuery('');
-      toast.success('Dodano rezerwacj\u0119', {
-        description: `${booking.vehicle} zosta\u0142a dodana do planu dnia.`,
+      toast.success('Dodano rezerwację', {
+        description: `${booking.vehicle} została dodana do planu dnia.`,
       });
     },
     onError: (error) => {
       reportBookingError(error);
-      toast.error('Nie uda\u0142o si\u0119 zapisa\u0107 rezerwacji', {
-        description:
-          'Sprawd\u017a po\u0142\u0105czenie z Supabase i struktur\u0119 tabel.',
+      toast.error('Nie udało się zapisać rezerwacji', {
+        description: 'Sprawdź połączenie z Supabase i strukturę tabel.',
       });
     },
   });
@@ -169,25 +173,80 @@ export function BookingsPage() {
   const cancelBookingMutation = useMutation<
     Booking,
     Error,
-    BookingMutationVariables
+    BookingMutationVariables,
+    MutationContext
   >({
     mutationFn: ({ bookingId }) => updateBookingStatus(bookingId, 'Anulowana'),
-    onError: (error) => {
+    onMutate: async ({ bookingId }) => {
+      await queryClient.cancelQueries({
+        queryKey: [...bookingsQueryKey, normalizedQuery],
+      });
+      const previousBookings = queryClient.getQueryData<Booking[]>([
+        ...bookingsQueryKey,
+        normalizedQuery,
+      ]);
+
+      queryClient.setQueryData<Booking[]>(
+        [...bookingsQueryKey, normalizedQuery],
+        (old) =>
+          old?.map((b) =>
+            b.id === bookingId ? { ...b, status: 'Anulowana' as const } : b,
+          ),
+      );
+
+      return { previousBookings };
+    },
+    onError: (error, _variables, context) => {
+      if (context?.previousBookings) {
+        queryClient.setQueryData(
+          [...bookingsQueryKey, normalizedQuery],
+          context.previousBookings,
+        );
+      }
       reportBookingError(error);
-      toast.error('Nie uda\u0142o si\u0119 anulowa\u0107 wizyty');
+      toast.error('Nie udało się anulować wizyty');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: bookingsQueryKey });
     },
   });
 
   const restoreStatusMutation = useMutation<
     Booking,
     Error,
-    RestoreStatusVariables
+    RestoreStatusVariables,
+    MutationContext
   >({
     mutationFn: ({ bookingId, status }) =>
       updateBookingStatus(bookingId, status),
-    onError: (error) => {
+    onMutate: async ({ bookingId, status }) => {
+      await queryClient.cancelQueries({
+        queryKey: [...bookingsQueryKey, normalizedQuery],
+      });
+      const previousBookings = queryClient.getQueryData<Booking[]>([
+        ...bookingsQueryKey,
+        normalizedQuery,
+      ]);
+
+      queryClient.setQueryData<Booking[]>(
+        [...bookingsQueryKey, normalizedQuery],
+        (old) => old?.map((b) => (b.id === bookingId ? { ...b, status } : b)),
+      );
+
+      return { previousBookings };
+    },
+    onError: (error, _variables, context) => {
+      if (context?.previousBookings) {
+        queryClient.setQueryData(
+          [...bookingsQueryKey, normalizedQuery],
+          context.previousBookings,
+        );
+      }
       reportBookingError(error);
-      toast.error('Nie uda\u0142o si\u0119 cofn\u0105\u0107 anulowania');
+      toast.error('Nie udało się cofnąć anulowania');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: bookingsQueryKey });
     },
   });
 
@@ -199,29 +258,27 @@ export function BookingsPage() {
     mutationFn: ({ bookingId }) => deleteBooking(bookingId),
     onError: (error) => {
       reportBookingError(error);
-      toast.error('Nie uda\u0142o si\u0119 usun\u0105\u0107 wizyty');
+      toast.error('Nie udało się usunąć wizyty');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: bookingsQueryKey });
     },
   });
 
   const restoreBookingMutation = useMutation<Booking, Error, Booking>({
     mutationFn: (booking) => restoreBooking(booking),
+    onSuccess: (restoredBooking) => {
+      queryClient.invalidateQueries({ queryKey: bookingsQueryKey });
+      setSelectedBookingId(restoredBooking.id);
+    },
     onError: (error) => {
       reportBookingError(error);
-      toast.error('Nie uda\u0142o si\u0119 przywr\u00f3ci\u0107 wizyty');
+      toast.error('Nie udało się przywrócić wizyty');
     },
   });
 
   const filteredBookings = bookings.filter((booking) => {
-    const matchesStatus =
-      statusFilter === 'Wszystkie' || booking.status === statusFilter;
-    const matchesQuery =
-      normalizedQuery.length === 0 ||
-      booking.client.toLowerCase().includes(normalizedQuery) ||
-      booking.vehicle.toLowerCase().includes(normalizedQuery) ||
-      booking.service.toLowerCase().includes(normalizedQuery) ||
-      booking.licensePlate.toLowerCase().includes(normalizedQuery);
-
-    return matchesStatus && matchesQuery;
+    return statusFilter === 'Wszystkie' || booking.status === statusFilter;
   });
 
   const selectedBooking =
@@ -260,28 +317,17 @@ export function BookingsPage() {
     cancelBookingMutation.mutate(
       { bookingId: selectedBooking.id },
       {
-        onSuccess: async (updatedBooking) => {
-          await queryClient.invalidateQueries({ queryKey: bookingsQueryKey });
+        onSuccess: (updatedBooking) => {
           setSelectedBookingId(updatedBooking.id);
           toast.warning('Wizyta anulowana', {
-            description: `${updatedBooking.vehicle} zosta\u0142a oznaczona jako anulowana.`,
+            description: `${updatedBooking.vehicle} została oznaczona jako anulowana.`,
             action: {
               label: 'Cofnij',
               onClick: () => {
-                restoreStatusMutation.mutate(
-                  {
-                    bookingId: previousBooking.id,
-                    status: previousBooking.status,
-                  },
-                  {
-                    onSuccess: async (restoredBooking) => {
-                      await queryClient.invalidateQueries({
-                        queryKey: bookingsQueryKey,
-                      });
-                      setSelectedBookingId(restoredBooking.id);
-                    },
-                  },
-                );
+                restoreStatusMutation.mutate({
+                  bookingId: previousBooking.id,
+                  status: previousBooking.status,
+                });
               },
             },
           });
@@ -316,29 +362,16 @@ export function BookingsPage() {
     deleteBookingMutation.mutate(
       { bookingId: bookingToDelete.id },
       {
-        onSuccess: async () => {
-          await queryClient.invalidateQueries({ queryKey: bookingsQueryKey });
+        onSuccess: () => {
           setSelectedBookingId(nextSelectedBookingId);
           setModalMode(null);
           setIsDeleteConfirmOpen(false);
-          toast.error('Wizyta usuni\u0119ta', {
-            description: `${bookingToDelete.vehicle} zosta\u0142a usuni\u0119ta z harmonogramu.`,
+          toast.error('Wizyta usunięta', {
+            description: `${bookingToDelete.vehicle} została usunięta z harmonogramu.`,
             action: {
               label: 'Cofnij',
               onClick: () => {
-                restoreBookingMutation.mutate(bookingToDelete, {
-                  onSuccess: async (restoredBooking) => {
-                    await Promise.all([
-                      queryClient.invalidateQueries({
-                        queryKey: bookingsQueryKey,
-                      }),
-                      queryClient.invalidateQueries({
-                        queryKey: bookingFormOptionsQueryKey,
-                      }),
-                    ]);
-                    setSelectedBookingId(restoredBooking.id);
-                  },
-                });
+                restoreBookingMutation.mutate(bookingToDelete);
               },
             },
           });
@@ -390,25 +423,31 @@ export function BookingsPage() {
       />
 
       <section className="grid gap-4 2xl:grid-cols-[minmax(0,1.15fr)_minmax(380px,0.85fr)]">
-        <BookingList
-          bookings={filteredBookings}
-          selectedBookingId={selectedBooking?.id ?? null}
-          onSelect={setSelectedBookingId}
-        />
+        {isLoading && bookings.length === 0 ? (
+          <div className="grid gap-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-30 rounded-[26px]" />
+            ))}
+          </div>
+        ) : (
+          <BookingList
+            bookings={filteredBookings}
+            selectedBookingId={selectedBooking?.id ?? null}
+            onSelect={setSelectedBookingId}
+          />
+        )}
 
         <div className="grid gap-4">
           {isLoading ? (
-            <article className="rounded-4xl border border-white/10 bg-white/6 p-6 text-sm text-stone-300 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-7">
-              Ładuję rezerwacje z Supabase...
-            </article>
-          ) : null}
-
-          <BookingDetails
-            booking={selectedBooking ?? undefined}
-            onEditClick={openEditModal}
-            onCancelClick={handleCancelBooking}
-            onDeleteClick={openDeleteConfirm}
-          />
+            <Skeleton className="h-100 rounded-4xl" />
+          ) : (
+            <BookingDetails
+              booking={selectedBooking ?? undefined}
+              onEditClick={openEditModal}
+              onCancelClick={handleCancelBooking}
+              onDeleteClick={openDeleteConfirm}
+            />
+          )}
         </div>
       </section>
 

@@ -1,13 +1,5 @@
-﻿import type { Booking, BookingStatus } from '../../data/bookings';
-
-const statusStyles: Record<BookingStatus, string> = {
-  Nowa: 'border-sky-300/20 bg-sky-300/12 text-sky-100',
-  Potwierdzona: 'border-amber-300/20 bg-amber-300/12 text-amber-100',
-  'W realizacji': 'border-violet-300/20 bg-violet-300/12 text-violet-100',
-  'Gotowa do odbioru':
-    'border-emerald-300/20 bg-emerald-300/12 text-emerald-100',
-  Anulowana: 'border-rose-300/20 bg-rose-300/12 text-rose-100',
-};
+import type { Booking } from '../../data/bookings';
+import { StatusBadge } from '../ui/StatusBadge';
 
 type BookingListProps = {
   bookings: Booking[];
@@ -82,11 +74,7 @@ export function BookingList({
                 </div>
 
                 <div className="flex flex-col items-start gap-2 md:items-end">
-                  <span
-                    className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${statusStyles[booking.status]}`}
-                  >
-                    {booking.status}
-                  </span>
+                  <StatusBadge status={booking.status} />
                   <span className="text-sm text-stone-400">
                     {booking.amount}
                   </span>

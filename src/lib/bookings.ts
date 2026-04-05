@@ -28,19 +28,17 @@ export type BookingFormOptions = {
   services: ServiceOption[];
 };
 
-type BookingInsert = Omit<Booking, 'id'>;
+export type BookingInsert = Omit<Booking, 'id'>;
 
-type BookingRow = Database['public']['Tables']['bookings']['Row'] & {
+export type BookingRow = Database['public']['Tables']['bookings']['Row'] & {
   clients: Database['public']['Tables']['clients']['Row'];
   vehicles: Database['public']['Tables']['vehicles']['Row'];
   services: Database['public']['Tables']['services']['Row'];
 };
 
-export async function fetchBookings() {
-  const { data, error } = await supabase
-    .from('bookings')
-    .select(
-      `
+export async function fetchBookings(search?: string) {
+  let query = supabase.from('bookings').select(
+    `
       id,
       scheduled_at,
       duration_minutes,
@@ -52,8 +50,18 @@ export async function fetchBookings() {
       vehicles!inner(id, client_id, make, model, registration, production_year, color, notes, created_at, updated_at),
       services!inner(id, name, description, duration_minutes, base_price, is_active, created_at, updated_at)
     `,
-    )
-    .order('scheduled_at', { ascending: true });
+  );
+
+  if (search) {
+    const s = `%${search}%`;
+    query = query.or(
+      `notes.ilike.${s},bay.ilike.${s},clients.full_name.ilike.${s},clients.phone.ilike.${s},vehicles.make.ilike.${s},vehicles.model.ilike.${s},vehicles.registration.ilike.${s},services.name.ilike.${s}`,
+    );
+  }
+
+  const { data, error } = await query.order('scheduled_at', {
+    ascending: true,
+  });
 
   if (error) {
     throw error;
@@ -79,17 +87,9 @@ export async function fetchBookingFormOptions() {
       .order('name', { ascending: true }),
   ]);
 
-  if (clientsResult.error) {
-    throw clientsResult.error;
-  }
-
-  if (vehiclesResult.error) {
-    throw vehiclesResult.error;
-  }
-
-  if (servicesResult.error) {
-    throw servicesResult.error;
-  }
+  if (clientsResult.error) throw clientsResult.error;
+  if (vehiclesResult.error) throw vehiclesResult.error;
+  if (servicesResult.error) throw servicesResult.error;
 
   return {
     clients: (clientsResult.data ?? []).map(
@@ -152,10 +152,7 @@ export async function createBooking(input: BookingInsert) {
     )
     .single();
 
-  if (error) {
-    throw error;
-  }
-
+  if (error) throw error;
   return mapBookingRowToViewModel(data as BookingRow);
 }
 
@@ -191,10 +188,7 @@ export async function updateBooking(input: Booking) {
     )
     .single();
 
-  if (error) {
-    throw error;
-  }
-
+  if (error) throw error;
   return mapBookingRowToViewModel(data as BookingRow);
 }
 
@@ -222,10 +216,7 @@ export async function updateBookingStatus(
     )
     .single();
 
-  if (error) {
-    throw error;
-  }
-
+  if (error) throw error;
   return mapBookingRowToViewModel(data as BookingRow);
 }
 
@@ -235,9 +226,7 @@ export async function deleteBooking(bookingId: string) {
     .delete()
     .eq('id', bookingId);
 
-  if (error) {
-    throw error;
-  }
+  if (error) throw error;
 }
 
 export async function restoreBooking(input: Booking) {
@@ -272,24 +261,21 @@ export async function restoreBooking(input: Booking) {
     )
     .single();
 
-  if (error) {
-    throw error;
-  }
-
+  if (error) throw error;
   return mapBookingRowToViewModel(data as BookingRow);
 }
 
-async function upsertBookingRelations(input: BookingInsert | Booking) {
-  const clientId = await upsertClient(input.client, input.phone);
+async function upsertBookingRelations(booking: BookingInsert | Booking) {
+  const clientId = await upsertClient(booking.client, booking.phone);
   const vehicleId = await upsertVehicle(
     clientId,
-    input.vehicle,
-    input.licensePlate,
+    booking.vehicle,
+    booking.licensePlate,
   );
   const serviceId = await upsertService(
-    input.service,
-    input.duration,
-    input.amount,
+    booking.service,
+    booking.duration,
+    booking.amount,
   );
 
   return {
@@ -307,9 +293,7 @@ async function upsertClient(fullName: string, phone: string) {
     .eq('phone', phone)
     .maybeSingle();
 
-  if (selectError) {
-    throw selectError;
-  }
+  if (selectError) throw selectError;
 
   if (existingClient) {
     return existingClient.id;
@@ -321,10 +305,7 @@ async function upsertClient(fullName: string, phone: string) {
     .select('id')
     .single();
 
-  if (error) {
-    throw error;
-  }
-
+  if (error) throw error;
   return data.id;
 }
 
@@ -339,9 +320,7 @@ async function upsertVehicle(
     .eq('registration', registration)
     .maybeSingle();
 
-  if (selectError) {
-    throw selectError;
-  }
+  if (selectError) throw selectError;
 
   const { make, model } = splitVehicleLabel(vehicleLabel);
 
@@ -353,10 +332,7 @@ async function upsertVehicle(
       .select('id')
       .single();
 
-    if (error) {
-      throw error;
-    }
-
+    if (error) throw error;
     return data.id;
   }
 
@@ -366,10 +342,7 @@ async function upsertVehicle(
     .select('id')
     .single();
 
-  if (error) {
-    throw error;
-  }
-
+  if (error) throw error;
   return data.id;
 }
 
@@ -380,9 +353,7 @@ async function upsertService(name: string, duration: string, amount: string) {
     .eq('name', name)
     .maybeSingle();
 
-  if (selectError) {
-    throw selectError;
-  }
+  if (selectError) throw selectError;
 
   const durationMinutes = parseDurationToMinutes(duration);
   const basePrice = parsePriceToNumber(amount);
@@ -395,10 +366,7 @@ async function upsertService(name: string, duration: string, amount: string) {
       .select('id')
       .single();
 
-    if (error) {
-      throw error;
-    }
-
+    if (error) throw error;
     return data.id;
   }
 
@@ -408,15 +376,15 @@ async function upsertService(name: string, duration: string, amount: string) {
     .select('id')
     .single();
 
-  if (error) {
-    throw error;
-  }
-
+  if (error) throw error;
   return data.id;
 }
 
-function mapBookingRowToViewModel(row: BookingRow): Booking {
+export function mapBookingRowToViewModel(row: BookingRow): Booking {
   const scheduledAt = new Date(row.scheduled_at);
+  const vehicleDetails = [row.vehicles.color, row.vehicles.production_year]
+    .filter(Boolean)
+    .join(', ');
 
   return {
     id: row.id,
@@ -424,7 +392,9 @@ function mapBookingRowToViewModel(row: BookingRow): Booking {
     time: scheduledAt.toISOString().slice(11, 16),
     client: row.clients.full_name,
     phone: row.clients.phone,
+    clientNotes: row.clients.notes ?? '',
     vehicle: `${row.vehicles.make} ${row.vehicles.model}`.trim(),
+    vehicleDetails,
     licensePlate: row.vehicles.registration,
     service: row.services.name,
     duration: formatDuration(row.duration_minutes),
@@ -435,7 +405,7 @@ function mapBookingRowToViewModel(row: BookingRow): Booking {
   };
 }
 
-function splitVehicleLabel(vehicleLabel: string) {
+export function splitVehicleLabel(vehicleLabel: string) {
   const [make = '', ...modelParts] = vehicleLabel.trim().split(/\s+/);
 
   return {
@@ -444,11 +414,11 @@ function splitVehicleLabel(vehicleLabel: string) {
   };
 }
 
-function combineDateAndTime(date: string, time: string) {
+export function combineDateAndTime(date: string, time: string) {
   return `${date}T${time}:00`;
 }
 
-function parseDurationToMinutes(duration: string) {
+export function parseDurationToMinutes(duration: string) {
   const normalized = duration.replace(',', '.').trim();
   const numericValue = Number.parseFloat(normalized.replace(/[^\d.]/g, ''));
 
@@ -459,7 +429,7 @@ function parseDurationToMinutes(duration: string) {
   return Math.round(numericValue * 60);
 }
 
-function parsePriceToNumber(amount: string) {
+export function parsePriceToNumber(amount: string) {
   const normalized = amount.replace(',', '.').replace(/[^\d.]/g, '');
   const numericValue = Number.parseFloat(normalized);
 
@@ -470,12 +440,12 @@ function parsePriceToNumber(amount: string) {
   return numericValue;
 }
 
-function formatDuration(durationMinutes: number) {
+export function formatDuration(durationMinutes: number) {
   const hours = durationMinutes / 60;
   return Number.isInteger(hours) ? `${hours} h` : `${hours.toFixed(1)} h`;
 }
 
-function formatPrice(price: number) {
+export function formatPrice(price: number) {
   return `${new Intl.NumberFormat('pl-PL', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
