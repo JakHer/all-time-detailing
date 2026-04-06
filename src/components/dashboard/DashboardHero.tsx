@@ -6,6 +6,7 @@
   Users,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { ActionButton } from '../ui/ActionButton';
 
 const primaryAction = {
   title: 'Dodaj rezerwację',
@@ -37,7 +38,6 @@ const secondaryActions = [
 
 export function DashboardHero() {
   const navigate = useNavigate();
-  const PrimaryIcon = primaryAction.icon;
 
   return (
     <section className="rounded-4xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.04))] p-5 shadow-[0_24px_100px_rgba(0,0,0,0.28)] md:p-6">
@@ -56,15 +56,12 @@ export function DashboardHero() {
             </p>
           </div>
 
-          <button
-            type="button"
+          <ActionButton
+            icon={primaryAction.icon}
             onClick={() => navigate(primaryAction.to)}
-            className="group flex min-w-0 items-center gap-3 rounded-full bg-linear-to-br from-amber-200 to-amber-400 px-5 py-3.5 text-sm font-semibold text-stone-950 transition hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(214,158,46,0.25)]"
           >
-            <PrimaryIcon className="h-4.5 w-4.5" />
-            <span>{primaryAction.title}</span>
-            <ArrowRight className="h-4.5 w-4.5 transition group-hover:translate-x-0.5" />
-          </button>
+            {primaryAction.title}
+          </ActionButton>
         </div>
 
         <div className="grid gap-3 md:grid-cols-3">

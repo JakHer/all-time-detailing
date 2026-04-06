@@ -1,5 +1,6 @@
-﻿import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
+﻿import { CalendarPlus2, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import type { BookingStatus } from '../../data/bookings';
+import { ActionButton } from '../ui/ActionButton';
 
 type BookingToolbarProps = {
   query: string;
@@ -47,13 +48,9 @@ export function BookingToolbar({
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={onCreateClick}
-            className="rounded-full bg-linear-to-br from-amber-200 to-amber-400 px-5 py-3 text-sm font-semibold text-stone-950 transition hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(214,158,46,0.25)]"
-          >
+          <ActionButton icon={CalendarPlus2} onClick={onCreateClick}>
             Dodaj rezerwację
-          </button>
+          </ActionButton>
         </div>
 
         <div className="grid gap-3 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
