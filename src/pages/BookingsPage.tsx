@@ -1,5 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useDeferredValue, useEffect, useState } from 'react';
+﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { BookingDetails } from '../components/bookings/BookingDetails';
 import { BookingList } from '../components/bookings/BookingList';
@@ -23,6 +24,7 @@ import {
   updateBookingStatus,
   type BookingFormOptions,
 } from '../lib/bookings';
+import { formatDateForInput, getTodayDateString } from '../lib/dateUtils';
 
 const allStatuses: Array<BookingStatus | 'Wszystkie'> = [
   'Wszystkie',
@@ -63,6 +65,9 @@ function reportBookingError(error: unknown) {
 
 export function BookingsPage() {
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const today = getTodayDateString();
+  const [selectedDate, setSelectedDate] = useState(today);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
     null,
   );
@@ -93,6 +98,15 @@ export function BookingsPage() {
     bookingsQuery.isLoading || bookingFormOptionsQuery.isLoading;
 
   useEffect(() => {
+    if (searchParams.get('nowa') === '1' && bookingFormOptionsQuery.isSuccess) {
+      setModalMode('create');
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('nowa');
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [bookingFormOptionsQuery.isSuccess, searchParams, setSearchParams]);
+
+  useEffect(() => {
     if (bookingsQuery.error) {
       reportBookingError(bookingsQuery.error);
       toast.error('Nie udało się pobrać danych rezerwacji', {
@@ -112,15 +126,28 @@ export function BookingsPage() {
     }
   }, [bookingFormOptionsQuery.error]);
 
+  const filteredBookings = useMemo(() => {
+    return bookings.filter((booking) => {
+      const matchesDate = booking.date === selectedDate;
+      const matchesStatus =
+        statusFilter === 'Wszystkie' || booking.status === statusFilter;
+
+      return matchesDate && matchesStatus;
+    });
+  }, [bookings, selectedDate, statusFilter]);
+
   useEffect(() => {
     setSelectedBookingId((current) => {
-      if (current && bookings.some((booking) => booking.id === current)) {
+      if (
+        current &&
+        filteredBookings.some((booking) => booking.id === current)
+      ) {
         return current;
       }
 
-      return bookings[0]?.id ?? null;
+      return filteredBookings[0]?.id ?? null;
     });
-  }, [bookings]);
+  }, [filteredBookings]);
 
   const saveBookingMutation = useMutation<
     SaveBookingResult,
@@ -146,6 +173,7 @@ export function BookingsPage() {
         queryClient.invalidateQueries({ queryKey: bookingFormOptionsQueryKey }),
       ]);
 
+      setSelectedDate(booking.date);
       setSelectedBookingId(booking.id);
       setModalMode(null);
 
@@ -159,7 +187,7 @@ export function BookingsPage() {
       setStatusFilter('Wszystkie');
       setQuery('');
       toast.success('Dodano rezerwację', {
-        description: `${booking.vehicle} została dodana do planu dnia.`,
+        description: `${booking.vehicle} została dodana do harmonogramu.`,
       });
     },
     onError: (error) => {
@@ -189,8 +217,10 @@ export function BookingsPage() {
       queryClient.setQueryData<Booking[]>(
         [...bookingsQueryKey, normalizedQuery],
         (old) =>
-          old?.map((b) =>
-            b.id === bookingId ? { ...b, status: 'Anulowana' as const } : b,
+          old?.map((item) =>
+            item.id === bookingId
+              ? { ...item, status: 'Anulowana' as const }
+              : item,
           ),
       );
 
@@ -230,7 +260,10 @@ export function BookingsPage() {
 
       queryClient.setQueryData<Booking[]>(
         [...bookingsQueryKey, normalizedQuery],
-        (old) => old?.map((b) => (b.id === bookingId ? { ...b, status } : b)),
+        (old) =>
+          old?.map((item) =>
+            item.id === bookingId ? { ...item, status } : item,
+          ),
       );
 
       return { previousBookings };
@@ -269,6 +302,7 @@ export function BookingsPage() {
     mutationFn: (booking) => restoreBooking(booking),
     onSuccess: (restoredBooking) => {
       queryClient.invalidateQueries({ queryKey: bookingsQueryKey });
+      setSelectedDate(restoredBooking.date);
       setSelectedBookingId(restoredBooking.id);
     },
     onError: (error) => {
@@ -277,31 +311,28 @@ export function BookingsPage() {
     },
   });
 
-  const filteredBookings = bookings.filter((booking) => {
-    return statusFilter === 'Wszystkie' || booking.status === statusFilter;
-  });
-
   const selectedBooking =
     filteredBookings.find((booking) => booking.id === selectedBookingId) ??
-    bookings.find((booking) => booking.id === selectedBookingId) ??
     filteredBookings[0] ??
     null;
 
   const metrics = [
-    { label: 'Dzisiaj', value: `${bookings.length} wizyt` },
+    { label: 'Wybrany dzień', value: `${filteredBookings.length} wizyt` },
     {
       label: 'Potwierdzone',
-      value: `${bookings.filter((booking) => booking.status === 'Potwierdzona').length}`,
+      value: `${filteredBookings.filter((booking) => booking.status === 'Potwierdzona').length}`,
     },
     {
       label: 'W realizacji',
-      value: `${bookings.filter((booking) => booking.status === 'W realizacji').length}`,
+      value: `${filteredBookings.filter((booking) => booking.status === 'W realizacji').length}`,
     },
     {
       label: 'Do kontaktu',
-      value: `${bookings.filter((booking) => booking.status === 'Nowa').length}`,
+      value: `${filteredBookings.filter((booking) => booking.status === 'Nowa').length}`,
     },
   ];
+
+  const selectedDateLabel = formatSelectedDate(selectedDate, today);
 
   function handleSaveBooking(payload: Booking | NewBookingPayload) {
     saveBookingMutation.mutate(payload);
@@ -354,7 +385,7 @@ export function BookingsPage() {
     }
 
     const bookingToDelete = selectedBooking;
-    const remainingBookings = bookings.filter(
+    const remainingBookings = filteredBookings.filter(
       (booking) => booking.id !== bookingToDelete.id,
     );
     const nextSelectedBookingId = remainingBookings[0]?.id ?? null;
@@ -388,6 +419,22 @@ export function BookingsPage() {
     setQuery(value);
   }
 
+  function handleSelectedDateChange(value: string) {
+    if (!value) {
+      return;
+    }
+
+    setSelectedDate(value);
+  }
+
+  function shiftSelectedDate(days: number) {
+    setSelectedDate((current) => {
+      const nextDate = new Date(`${current}T12:00:00`);
+      nextDate.setDate(nextDate.getDate() + days);
+      return formatDateForInput(nextDate);
+    });
+  }
+
   function openCreateModal() {
     setModalMode('create');
   }
@@ -419,14 +466,20 @@ export function BookingsPage() {
         statusFilter={statusFilter}
         onStatusFilterChange={handleStatusFilterChange}
         statuses={allStatuses}
+        selectedDate={selectedDate}
+        selectedDateLabel={selectedDateLabel}
+        onSelectedDateChange={handleSelectedDateChange}
+        onPreviousDay={() => shiftSelectedDate(-1)}
+        onNextDay={() => shiftSelectedDate(1)}
+        onToday={() => setSelectedDate(today)}
         onCreateClick={openCreateModal}
       />
 
       <section className="grid gap-4 2xl:grid-cols-[minmax(0,1.15fr)_minmax(380px,0.85fr)]">
         {isLoading && bookings.length === 0 ? (
           <div className="grid gap-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-30 rounded-[26px]" />
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton key={index} className="h-30 rounded-[26px]" />
             ))}
           </div>
         ) : (
@@ -477,4 +530,25 @@ export function BookingsPage() {
       ) : null}
     </>
   );
+}
+
+function formatSelectedDate(value: string, today: string) {
+  const [year, month, day] = value.split('-').map(Number);
+
+  if (!year || !month || !day) {
+    return 'Nieprawidłowa data';
+  }
+
+  const formatted = new Intl.DateTimeFormat('pl-PL', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(year, month - 1, day));
+
+  if (value === today) {
+    return `Dziś • ${formatted}`;
+  }
+
+  return formatted;
 }

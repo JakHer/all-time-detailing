@@ -11,7 +11,7 @@ export function AppShell() {
       <div className="relative mx-auto flex min-h-screen w-full max-w-375 flex-col px-4 py-4 lg:px-6 lg:py-6">
         <div className="grid flex-1 gap-4 xl:grid-cols-[290px_minmax(0,1fr)]">
           <Sidebar />
-          <main className="grid gap-4">
+          <main className="grid min-w-0 gap-4 overflow-x-hidden">
             <Outlet />
           </main>
         </div>

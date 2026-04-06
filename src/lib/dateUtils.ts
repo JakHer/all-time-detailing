@@ -1,14 +1,17 @@
-/**
- * Centralized date management for the application.
- * Currently defaults to 2026-04-08 to match demo data.
+﻿/**
+ * Centralized date helpers for the application.
  */
 
-const DEMO_DATE = '2026-04-08';
-
 export function getTodayDateString(): string {
-  // In a real app, this would return new Date().toISOString().split('T')[0]
-  // but for the demo we use the fixed date.
-  return DEMO_DATE;
+  return formatDateForInput(new Date());
+}
+
+export function formatDateForInput(value: Date): string {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
 }
 
 export function formatShortDate(dateString: string): string {
@@ -17,8 +20,12 @@ export function formatShortDate(dateString: string): string {
 }
 
 export function getStartAndEndOfDay(dateString: string) {
+  const [year, month, day] = dateString.split('-').map(Number);
+  const start = new Date(year, month - 1, day, 0, 0, 0, 0);
+  const end = new Date(year, month - 1, day, 23, 59, 59, 999);
+
   return {
-    start: `${dateString}T00:00:00Z`,
-    end: `${dateString}T23:59:59Z`,
+    start: start.toISOString(),
+    end: end.toISOString(),
   };
 }

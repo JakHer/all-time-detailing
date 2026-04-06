@@ -1,3 +1,5 @@
+﻿import { ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { actionCards } from '../../data/dashboard';
 import type { FeaturedService } from '../../lib/dashboard';
 import { Skeleton } from '../ui/Skeleton';
@@ -11,6 +13,7 @@ export function HighlightsColumn({
   featuredServices,
   isLoading,
 }: HighlightsColumnProps) {
+  const navigate = useNavigate();
   const services = featuredServices ?? [];
 
   return (
@@ -55,20 +58,29 @@ export function HighlightsColumn({
           Szybkie sekcje
         </p>
         <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white">
-          Moduły, które możemy budować dalej
+          Moduły, które są już gotowe do użycia
         </h3>
 
         <div className="mt-6 grid gap-3">
           {actionCards.map((card) => (
-            <div
+            <button
               key={card.title}
-              className={`rounded-3xl border border-white/8 bg-linear-to-br ${card.tone} p-4`}
+              type="button"
+              onClick={() => navigate(card.to)}
+              className={`group rounded-3xl border border-white/8 bg-linear-to-br ${card.tone} p-4 text-left transition hover:-translate-y-0.5`}
             >
-              <h4 className="text-lg font-semibold text-white">{card.title}</h4>
-              <p className="mt-2 text-sm leading-7 text-stone-300">
-                {card.body}
-              </p>
-            </div>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h4 className="text-lg font-semibold text-white">
+                    {card.title}
+                  </h4>
+                  <p className="mt-2 text-sm leading-7 text-stone-300">
+                    {card.body}
+                  </p>
+                </div>
+                <ArrowRight className="mt-1 h-5 w-5 shrink-0 text-white/60 transition group-hover:translate-x-0.5 group-hover:text-white" />
+              </div>
+            </button>
           ))}
         </div>
       </article>

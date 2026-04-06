@@ -39,19 +39,6 @@ export function Sidebar() {
           ))}
         </nav>
       </div>
-
-      <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(214,158,46,0.16),rgba(255,255,255,0.05))] p-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">
-          Następny krok
-        </p>
-        <h2 className="mt-3 text-2xl leading-tight font-semibold text-white">
-          Frontend gotowy na podpięcie Supabase
-        </h2>
-        <p className="mt-3 text-sm leading-7 text-stone-300">
-          Logowanie, baza klientów, zdjęcia realizacji i statusy zleceń możemy
-          dołożyć bez zmiany kierunku UI.
-        </p>
-      </div>
     </aside>
   );
 }

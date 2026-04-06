@@ -388,8 +388,8 @@ export function mapBookingRowToViewModel(row: BookingRow): Booking {
 
   return {
     id: row.id,
-    date: scheduledAt.toISOString().slice(0, 10),
-    time: scheduledAt.toISOString().slice(11, 16),
+    date: formatLocalDate(scheduledAt),
+    time: formatLocalTime(scheduledAt),
     client: row.clients.full_name,
     phone: row.clients.phone,
     clientNotes: row.clients.notes ?? '',
@@ -415,7 +415,7 @@ export function splitVehicleLabel(vehicleLabel: string) {
 }
 
 export function combineDateAndTime(date: string, time: string) {
-  return `${date}T${time}:00`;
+  return new Date(`${date}T${time}:00`).toISOString();
 }
 
 export function parseDurationToMinutes(duration: string) {
@@ -450,4 +450,19 @@ export function formatPrice(price: number) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(price)} zł`;
+}
+
+function formatLocalDate(value: Date) {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatLocalTime(value: Date) {
+  const hours = String(value.getHours()).padStart(2, '0');
+  const minutes = String(value.getMinutes()).padStart(2, '0');
+
+  return `${hours}:${minutes}`;
 }
