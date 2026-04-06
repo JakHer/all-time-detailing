@@ -1,4 +1,6 @@
-﻿import { Plus, Search } from 'lucide-react';
+﻿import { CalendarPlus2, Plus, Search } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ActionButton } from '../ui/ActionButton';
 
 type VehicleToolbarProps = {
   query: string;
@@ -11,8 +13,10 @@ export function VehicleToolbar({
   onQueryChange,
   onCreateClick,
 }: VehicleToolbarProps) {
+  const navigate = useNavigate();
+
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="relative max-w-md flex-1">
         <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-500" />
         <input
@@ -24,14 +28,18 @@ export function VehicleToolbar({
         />
       </div>
 
-      <button
-        type="button"
-        onClick={onCreateClick}
-        className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-white px-6 text-sm font-semibold text-black transition-transform hover:scale-[1.02] active:scale-[0.98]"
-      >
-        <Plus className="h-4 w-4" />
-        Dodaj pojazd
-      </button>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <ActionButton
+          icon={CalendarPlus2}
+          onClick={() => navigate('/rezerwacje?nowa=1')}
+        >
+          Dodaj rezerwację
+        </ActionButton>
+
+        <ActionButton icon={Plus} variant="solid" onClick={onCreateClick}>
+          Dodaj pojazd
+        </ActionButton>
+      </div>
     </div>
   );
 }
