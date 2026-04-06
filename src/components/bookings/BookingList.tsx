@@ -1,4 +1,4 @@
-import type { Booking } from '../../data/bookings';
+﻿import type { Booking } from '../../data/bookings';
 import { StatusBadge } from '../ui/StatusBadge';
 
 type BookingListProps = {
@@ -13,7 +13,7 @@ export function BookingList({
   onSelect,
 }: BookingListProps) {
   return (
-    <article className="rounded-4xl border border-white/10 bg-white/6 p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-7">
+    <article className="min-h-130 rounded-4xl border border-white/10 bg-white/6 p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-7">
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">
@@ -28,9 +28,9 @@ export function BookingList({
 
       <div className="mt-6 grid gap-3">
         {bookings.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-white/10 bg-black/15 px-4 py-8 text-sm leading-7 text-stone-400">
-            Brak wizyt spełniających aktualne filtry. Spróbuj zmienić status
-            albo wyszukiwanie.
+          <div className="flex min-h-97.5 items-center justify-center rounded-3xl border border-dashed border-white/10 bg-black/15 px-4 py-8 text-center text-sm leading-7 text-stone-400">
+            Brak wizyt spełniających aktualne filtry. Spróbuj zmienić dzień,
+            status albo wyszukiwanie.
           </div>
         ) : (
           bookings.map((booking) => {

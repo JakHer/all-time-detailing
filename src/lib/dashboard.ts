@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+﻿import { supabase } from './supabase';
 import {
   mapBookingRowToViewModel,
   formatPrice,
@@ -70,7 +70,6 @@ export async function fetchDashboardData(): Promise<DashboardData> {
     mapBookingRowToViewModel,
   );
 
-  // Calculate metrics
   const totalCars = todayBookings.length;
   const activeCars = todayBookings.filter(
     (b) => b.status === 'W realizacji' || b.status === 'Potwierdzona',
@@ -85,7 +84,7 @@ export async function fetchDashboardData(): Promise<DashboardData> {
     {
       label: 'Auta dzisiaj',
       value: totalCars.toString().padStart(2, '0'),
-      detail: `${activeCars} już w planie/realizacji`,
+      detail: `${activeCars} już w planie lub realizacji`,
     },
     {
       label: 'Średni koszyk',

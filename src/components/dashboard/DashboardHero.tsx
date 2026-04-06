@@ -1,91 +1,97 @@
-import type { DashboardMetric } from '../../lib/dashboard';
-import { Skeleton } from '../ui/Skeleton';
+﻿import {
+  ArrowRight,
+  CalendarPlus2,
+  CarFront,
+  Sparkles,
+  Users,
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-type DashboardHeroProps = {
-  metrics?: DashboardMetric[];
-  isLoading: boolean;
+const primaryAction = {
+  title: 'Dodaj rezerwację',
+  body: 'Przejdź do kalendarza i od razu otwórz formularz nowej wizyty.',
+  icon: CalendarPlus2,
+  to: '/rezerwacje?nowa=1',
 };
 
-export function DashboardHero({ metrics, isLoading }: DashboardHeroProps) {
-  const activeBookings =
-    metrics?.find((m) => m.label === 'Auta dzisiaj')?.value || '0';
+const secondaryActions = [
+  {
+    title: 'Klienci',
+    body: 'Historia wizyt i relacje',
+    icon: Users,
+    to: '/klienci',
+  },
+  {
+    title: 'Usługi',
+    body: 'Pakiety i katalog sprzedażowy',
+    icon: Sparkles,
+    to: '/uslugi',
+  },
+  {
+    title: 'Pojazdy',
+    body: 'Auta przypisane do klientów',
+    icon: CarFront,
+    to: '/pojazdy',
+  },
+] as const;
+
+export function DashboardHero() {
+  const navigate = useNavigate();
+  const PrimaryIcon = primaryAction.icon;
 
   return (
-    <section className="relative overflow-hidden rounded-[36px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.11),rgba(255,255,255,0.03)_45%,rgba(214,158,46,0.12)_100%)] p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-8 xl:p-10">
-      <div className="pointer-events-none absolute -right-30 -top-20 h-72 w-72 rounded-full bg-amber-300/12 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-35 right-[8%] h-72 w-72 rounded-full bg-white/8 blur-3xl" />
-
-      <div className="relative grid gap-8 xl:grid-cols-[minmax(0,1.4fr)_360px] xl:items-end">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-200">
-            System dla detailingu
-          </p>
-          <h2 className="mt-4 max-w-[11ch] text-5xl leading-[0.92] font-semibold tracking-[-0.05em] text-white sm:text-6xl xl:text-7xl">
-            Mniej chaosu. Więcej kontroli nad każdym autem.
-          </h2>
-          <p className="mt-5 max-w-2xl text-base leading-8 text-stone-300">
-            Budujemy panel, który wygląda nowocześnie i jednocześnie porządkuje
-            dzień pracy studia: od przyjęcia auta, przez realizację usługi, aż
-            po odbiór i historię klienta.
-          </p>
-
-          <div className="mt-8 flex flex-wrap gap-3">
-            <button
-              type="button"
-              className="rounded-full bg-linear-to-br from-amber-200 to-amber-400 px-5 py-3.5 text-sm font-semibold text-stone-950 transition hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(214,158,46,0.25)]"
-            >
-              Dodaj rezerwację
-            </button>
-            <button
-              type="button"
-              className="rounded-full border border-white/12 bg-white/6 px-5 py-3.5 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:bg-white/10"
-            >
-              Zobacz klientów
-            </button>
+    <section className="rounded-4xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.04))] p-5 shadow-[0_24px_100px_rgba(0,0,0,0.28)] md:p-6">
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">
+              Szybkie akcje
+            </p>
+            <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-white md:text-3xl">
+              Najczęstsze skróty dla recepcji i zespołu
+            </h3>
+            <p className="mt-2 max-w-3xl text-sm leading-7 text-stone-300">
+              Najważniejsze wejścia do aplikacji są już aktywne, więc z pulpitu
+              można od razu przejść do pracy.
+            </p>
           </div>
+
+          <button
+            type="button"
+            onClick={() => navigate(primaryAction.to)}
+            className="group flex min-w-0 items-center gap-3 rounded-full bg-linear-to-br from-amber-200 to-amber-400 px-5 py-3.5 text-sm font-semibold text-stone-950 transition hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(214,158,46,0.25)]"
+          >
+            <PrimaryIcon className="h-4.5 w-4.5" />
+            <span>{primaryAction.title}</span>
+            <ArrowRight className="h-4.5 w-4.5 transition group-hover:translate-x-0.5" />
+          </button>
         </div>
 
-        <div className="grid gap-3 rounded-[30px] border border-white/10 bg-black/20 p-4 backdrop-blur-xl">
-          <div className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/6 px-4 py-3">
-            <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-stone-400">
-                Na dziś
-              </p>
-              {isLoading ? (
-                <Skeleton className="mt-2 h-6 w-32" />
-              ) : (
-                <p className="mt-1 text-lg font-semibold text-white">
-                  {`${activeBookings} ${activeBookings === '1' ? 'aktywne zlecenie' : 'aktywne zlecenia'}`}
-                </p>
-              )}
-            </div>
-            <div className="rounded-full bg-emerald-400/14 px-3 py-1 text-xs font-semibold text-emerald-200">
-              Status czasu rzeczywistego
-            </div>
-          </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          {secondaryActions.map((action) => {
+            const Icon = action.icon;
 
-          <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-            {isLoading
-              ? Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-26 rounded-2xl" />
-                ))
-              : metrics?.map((stat) => (
-                  <article
-                    key={stat.label}
-                    className="rounded-2xl border border-white/8 bg-white/6 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
-                  >
-                    <p className="text-xs uppercase tracking-[0.18em] text-stone-400">
-                      {stat.label}
-                    </p>
-                    <p className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white">
-                      {stat.value}
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-stone-300">
-                      {stat.detail}
-                    </p>
-                  </article>
-                ))}
-          </div>
+            return (
+              <button
+                key={action.title}
+                type="button"
+                onClick={() => navigate(action.to)}
+                className="group flex min-w-0 items-center justify-between gap-4 rounded-3xl border border-white/10 bg-white/6 px-4 py-4 text-left transition hover:border-white/16 hover:bg-white/10"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/8 text-white">
+                    <Icon className="h-4.5 w-4.5 opacity-90" />
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="font-semibold text-white">{action.title}</h4>
+                    <p className="mt-1 text-sm text-stone-400">{action.body}</p>
+                  </div>
+                </div>
+
+                <ArrowRight className="h-4.5 w-4.5 shrink-0 text-white/50 transition group-hover:translate-x-0.5 group-hover:text-white" />
+              </button>
+            );
+          })}
         </div>
       </div>
     </section>

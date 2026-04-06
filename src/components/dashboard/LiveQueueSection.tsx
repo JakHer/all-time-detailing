@@ -1,6 +1,6 @@
-import type { LiveJob } from '../../lib/dashboard';
-import { StatusBadge } from '../ui/StatusBadge';
+﻿import type { LiveJob } from '../../lib/dashboard';
 import { getTodayDateString, formatShortDate } from '../../lib/dateUtils';
+import { StatusBadge } from '../ui/StatusBadge';
 import { Skeleton } from '../ui/Skeleton';
 
 type LiveQueueSectionProps = {
@@ -8,9 +8,32 @@ type LiveQueueSectionProps = {
   isLoading: boolean;
 };
 
+function getJobsLabel(count: number) {
+  if (count === 1) return 'zlecenie dziś';
+  if (count >= 2 && count <= 4) return 'zlecenia dziś';
+  return 'zleceń dziś';
+}
+
 export function LiveQueueSection({ queue, isLoading }: LiveQueueSectionProps) {
   const jobs = queue ?? [];
   const todayDate = formatShortDate(getTodayDateString());
+  const readyCount = jobs.filter(
+    (job) => job.status === 'Gotowa do odbioru',
+  ).length;
+  const activeCount = jobs.filter(
+    (job) =>
+      job.status === 'Nowa' ||
+      job.status === 'Potwierdzona' ||
+      job.status === 'W realizacji',
+  ).length;
+  const cancelledCount = jobs.filter(
+    (job) => job.status === 'Anulowana',
+  ).length;
+  const statusLabelParts = [
+    activeCount > 0 ? `${activeCount} aktywne` : null,
+    readyCount > 0 ? `${readyCount} gotowe do odbioru` : null,
+    cancelledCount > 0 ? `${cancelledCount} anulowane` : null,
+  ].filter(Boolean) as string[];
 
   return (
     <article className="rounded-4xl border border-white/10 bg-white/6 p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-7">
@@ -28,11 +51,27 @@ export function LiveQueueSection({ queue, isLoading }: LiveQueueSectionProps) {
           </p>
         </div>
 
-        <div className="inline-flex w-fit rounded-full border border-amber-200/20 bg-amber-300/12 px-3 py-1 text-xs font-semibold text-amber-100">
+        <div className="flex flex-wrap items-center gap-2 md:justify-end">
           {isLoading ? (
-            <Skeleton className="h-4 w-24" />
+            <>
+              <Skeleton className="h-8 w-16 rounded-full" />
+              <Skeleton className="h-8 w-32 rounded-full" />
+              <Skeleton className="h-8 w-40 rounded-full" />
+            </>
           ) : (
-            `${todayDate} | ${jobs.length} ${jobs.length === 1 ? 'pozycja' : 'pozycje'} w planie`
+            <>
+              <div className="inline-flex w-fit whitespace-nowrap rounded-full border border-amber-200/20 bg-amber-300/12 px-3 py-1 text-xs font-semibold text-amber-100">
+                {todayDate}
+              </div>
+              <div className="inline-flex w-fit whitespace-nowrap rounded-full border border-white/12 bg-black/20 px-3 py-1 text-xs font-semibold text-white">
+                {jobs.length} {getJobsLabel(jobs.length)}
+              </div>
+              {statusLabelParts.length > 0 ? (
+                <div className="inline-flex w-fit whitespace-nowrap rounded-full border border-white/10 bg-white/6 px-3 py-1 text-xs font-medium text-stone-300">
+                  {statusLabelParts.join(' • ')}
+                </div>
+              ) : null}
+            </>
           )}
         </div>
       </div>
@@ -43,7 +82,7 @@ export function LiveQueueSection({ queue, isLoading }: LiveQueueSectionProps) {
             <Skeleton key={i} className="h-[110px] rounded-[26px]" />
           ))
         ) : jobs.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-white/10 bg-black/15 px-4 py-8 text-sm leading-7 text-stone-400 text-center">
+          <div className="rounded-3xl border border-dashed border-white/10 bg-black/15 px-4 py-8 text-center text-sm leading-7 text-stone-400">
             Brak zaplanowanych wizyt na dziś.
           </div>
         ) : (
