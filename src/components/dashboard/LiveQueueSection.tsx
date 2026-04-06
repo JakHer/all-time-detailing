@@ -79,7 +79,7 @@ export function LiveQueueSection({ queue, isLoading }: LiveQueueSectionProps) {
       <div className="mt-6 grid gap-3">
         {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-[110px] rounded-[26px]" />
+            <Skeleton key={i} className="h-27.5 rounded-[26px]" />
           ))
         ) : jobs.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-white/10 bg-black/15 px-4 py-8 text-center text-sm leading-7 text-stone-400">
