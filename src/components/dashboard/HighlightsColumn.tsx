@@ -29,7 +29,7 @@ export function HighlightsColumn({
         <div className="mt-6 grid gap-3">
           {isLoading ? (
             Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-[104px] rounded-3xl" />
+              <Skeleton key={i} className="h-26 rounded-3xl" />
             ))
           ) : services.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-white/10 bg-black/15 px-4 py-8 text-sm leading-7 text-stone-400">

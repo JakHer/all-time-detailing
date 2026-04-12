@@ -144,7 +144,7 @@ export function CustomersPage() {
       />
 
       <section
-        className="grid min-h-[720px] min-w-0 gap-6 overflow-hidden 2xl:grid-cols-[minmax(0,1fr)_minmax(0,480px)] 2xl:items-start"
+        className="grid min-h-180 min-w-0 gap-6 overflow-hidden 2xl:grid-cols-[minmax(0,1fr)_minmax(0,500px)] 2xl:items-start"
         style={{ overflowAnchor: 'none' }}
       >
         <div className="min-w-0 max-w-full overflow-hidden">
