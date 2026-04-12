@@ -475,22 +475,24 @@ export function BookingsPage() {
         onCreateClick={openCreateModal}
       />
 
-      <section className="grid gap-4 2xl:grid-cols-[minmax(0,1.15fr)_minmax(380px,0.85fr)]">
-        {isLoading && bookings.length === 0 ? (
-          <div className="grid gap-3">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton key={index} className="h-30 rounded-[26px]" />
-            ))}
-          </div>
-        ) : (
-          <BookingList
-            bookings={filteredBookings}
-            selectedBookingId={selectedBooking?.id ?? null}
-            onSelect={setSelectedBookingId}
-          />
-        )}
+      <section className="grid min-h-180 min-w-0 gap-6 overflow-hidden 2xl:grid-cols-[minmax(0,1fr)_minmax(0,500px)] 2xl:items-start">
+        <div className="min-w-0 max-w-full overflow-hidden">
+          {isLoading && bookings.length === 0 ? (
+            <div className="grid gap-3">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <Skeleton key={index} className="h-30 rounded-[26px]" />
+              ))}
+            </div>
+          ) : (
+            <BookingList
+              bookings={filteredBookings}
+              selectedBookingId={selectedBooking?.id ?? null}
+              onSelect={setSelectedBookingId}
+            />
+          )}
+        </div>
 
-        <div className="grid gap-4">
+        <div className="min-w-0 max-w-full overflow-hidden">
           {isLoading ? (
             <Skeleton className="h-100 rounded-4xl" />
           ) : (
