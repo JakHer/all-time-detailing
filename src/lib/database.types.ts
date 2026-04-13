@@ -127,6 +127,60 @@ export type Database = {
         };
         Relationships: [];
       };
+      gallery_images: {
+        Row: {
+          id: string;
+          booking_id: string | null;
+          vehicle_id: string | null;
+          storage_path: string;
+          image_url: string;
+          type: 'Before' | 'After' | 'WIP' | 'Finished' | null;
+          is_featured: boolean;
+          metadata: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          booking_id?: string | null;
+          vehicle_id?: string | null;
+          storage_path: string;
+          image_url: string;
+          type?: 'Before' | 'After' | 'WIP' | 'Finished' | null;
+          is_featured?: boolean;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          booking_id?: string | null;
+          vehicle_id?: string | null;
+          storage_path?: string;
+          image_url?: string;
+          type?: 'Before' | 'After' | 'WIP' | 'Finished' | null;
+          is_featured?: boolean;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'gallery_images_booking_id_fkey';
+            columns: ['booking_id'];
+            isOneToOne: false;
+            referencedRelation: 'bookings';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'gallery_images_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
+            referencedRelation: 'vehicles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       vehicles: {
         Row: {
           id: string;
@@ -136,6 +190,7 @@ export type Database = {
           registration: string;
           production_year: number | null;
           color: string | null;
+          featured_image_url: string | null;
           notes: string | null;
           created_at: string;
           updated_at: string;
@@ -148,6 +203,7 @@ export type Database = {
           registration: string;
           production_year?: number | null;
           color?: string | null;
+          featured_image_url?: string | null;
           notes?: string | null;
         };
         Update: {
@@ -158,6 +214,7 @@ export type Database = {
           registration?: string;
           production_year?: number | null;
           color?: string | null;
+          featured_image_url?: string | null;
           notes?: string | null;
         };
         Relationships: [

@@ -36,7 +36,7 @@ export const vehiclesKeys = {
 export async function getVehicles(): Promise<VehicleWithRelations[]> {
   const { data, error } = await supabase
     .from('vehicles')
-    .select('*, clients(*), bookings(*, clients(*), services(id, name))')
+    .select('id, client_id, make, model, registration, production_year, color, featured_image_url, notes, created_at, updated_at, clients(*), bookings(*, clients(*), services(id, name))')
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -112,7 +112,7 @@ export function useCreateVehicle() {
       const { data, error } = await supabase
         .from('vehicles')
         .insert(newVehicle)
-        .select('*, clients(*), bookings(*, clients(*), services(id, name))')
+        .select('id, client_id, make, model, registration, production_year, color, featured_image_url, notes, created_at, updated_at, clients(*), bookings(*, clients(*), services(id, name))')
         .single();
 
       if (error) {
@@ -138,7 +138,7 @@ export function useUpdateVehicle() {
         .from('vehicles')
         .update(updates)
         .eq('id', id)
-        .select('*, clients(*), bookings(*, clients(*), services(id, name))')
+        .select('id, client_id, make, model, registration, production_year, color, featured_image_url, notes, created_at, updated_at, clients(*), bookings(*, clients(*), services(id, name))')
         .single();
 
       if (error) {

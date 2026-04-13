@@ -388,6 +388,8 @@ export function mapBookingRowToViewModel(row: BookingRow): Booking {
 
   return {
     id: row.id,
+    clientId: row.clients.id,
+    vehicleId: row.vehicles.id,
     date: formatLocalDate(scheduledAt),
     time: formatLocalTime(scheduledAt),
     client: row.clients.full_name,
