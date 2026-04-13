@@ -43,9 +43,15 @@ type VehicleGallery = {
 
 export function GalleryGrid({ query }: { query: string }) {
   const { data: images = [], isLoading } = useGalleryImages();
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
-  const [selectedRealizationId, setSelectedRealizationId] = useState<string | null>(null);
-  const [selectedPreviewImageId, setSelectedPreviewImageId] = useState<string | null>(null);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(
+    null,
+  );
+  const [selectedRealizationId, setSelectedRealizationId] = useState<
+    string | null
+  >(null);
+  const [selectedPreviewImageId, setSelectedPreviewImageId] = useState<
+    string | null
+  >(null);
   const [previewZoom, setPreviewZoom] = useState(1);
   const updateMutation = useUpdateGalleryImage();
   const deleteMutation = useDeleteGalleryImage();
@@ -87,8 +93,8 @@ export function GalleryGrid({ query }: { query: string }) {
         realization = {
           id: realizationId,
           title: hasBooking
-            ? image.bookings?.services?.name ?? 'Usługa'
-            : 'Inne / Portfolio',
+            ? (image.bookings?.services?.name ?? 'Usługa')
+            : 'Portfolio',
           date: new Date(referenceDate).toLocaleDateString('pl-PL'),
           images: [],
           isIndependent: !hasBooking,
@@ -107,16 +113,21 @@ export function GalleryGrid({ query }: { query: string }) {
             left.images[0].bookings?.scheduled_at ?? left.images[0].created_at,
           ).getTime();
           const rightDate = new Date(
-            right.images[0].bookings?.scheduled_at ?? right.images[0].created_at,
+            right.images[0].bookings?.scheduled_at ??
+              right.images[0].created_at,
           ).getTime();
 
           return rightDate - leftDate;
         });
 
-        if (!vehicleGallery.featuredImageUrl && vehicleGallery.realizations.length > 0) {
+        if (
+          !vehicleGallery.featuredImageUrl &&
+          vehicleGallery.realizations.length > 0
+        ) {
           vehicleGallery.featuredImageUrl =
-            vehicleGallery.realizations[0].images.find((img) => img.type === 'After')?.image_url ??
-            vehicleGallery.realizations[0].images[0].image_url;
+            vehicleGallery.realizations[0].images.find(
+              (img) => img.type === 'After',
+            )?.image_url ?? vehicleGallery.realizations[0].images[0].image_url;
         }
 
         return vehicleGallery;
@@ -135,7 +146,9 @@ export function GalleryGrid({ query }: { query: string }) {
   }, [images, query]);
 
   const selectedVehicle = useMemo(
-    () => vehicleGalleries.find((vehicle) => vehicle.id === selectedVehicleId) ?? null,
+    () =>
+      vehicleGalleries.find((vehicle) => vehicle.id === selectedVehicleId) ??
+      null,
     [selectedVehicleId, vehicleGalleries],
   );
 
@@ -155,7 +168,9 @@ export function GalleryGrid({ query }: { query: string }) {
     const realizationImages = selectedRealization?.images ?? [];
 
     return {
-      beforeImages: realizationImages.filter((image) => image.type === 'Before'),
+      beforeImages: realizationImages.filter(
+        (image) => image.type === 'Before',
+      ),
       afterImages: realizationImages.filter((image) => image.type === 'After'),
       otherImages: realizationImages.filter(
         (image) => image.type !== 'Before' && image.type !== 'After',
@@ -177,14 +192,23 @@ export function GalleryGrid({ query }: { query: string }) {
       ...realizationBuckets.afterImages,
       ...realizationBuckets.otherImages,
     ];
-  }, [realizationBuckets.afterImages, realizationBuckets.beforeImages, realizationBuckets.otherImages, selectedRealization]);
+  }, [
+    realizationBuckets.afterImages,
+    realizationBuckets.beforeImages,
+    realizationBuckets.otherImages,
+    selectedRealization,
+  ]);
 
   const selectedPreviewImage = useMemo(() => {
     if (!selectedPreviewImageId) {
       return previewImages[0] ?? null;
     }
 
-    return previewImages.find((image) => image.id === selectedPreviewImageId) ?? previewImages[0] ?? null;
+    return (
+      previewImages.find((image) => image.id === selectedPreviewImageId) ??
+      previewImages[0] ??
+      null
+    );
   }, [previewImages, selectedPreviewImageId]);
 
   useEffect(() => {
@@ -201,7 +225,10 @@ export function GalleryGrid({ query }: { query: string }) {
     setPreviewZoom(1);
   }, [selectedRealization]);
 
-  async function handleToggleFeatured(imageId: string, currentFeatured: boolean) {
+  async function handleToggleFeatured(
+    imageId: string,
+    currentFeatured: boolean,
+  ) {
     try {
       await updateMutation.mutateAsync({
         id: imageId,
@@ -234,11 +261,15 @@ export function GalleryGrid({ query }: { query: string }) {
   }
 
   function handlePreviewZoomIn() {
-    setPreviewZoom((currentZoom) => Math.min(3, Number((currentZoom + 0.25).toFixed(2))));
+    setPreviewZoom((currentZoom) =>
+      Math.min(3, Number((currentZoom + 0.25).toFixed(2))),
+    );
   }
 
   function handlePreviewZoomOut() {
-    setPreviewZoom((currentZoom) => Math.max(1, Number((currentZoom - 0.25).toFixed(2))));
+    setPreviewZoom((currentZoom) =>
+      Math.max(1, Number((currentZoom - 0.25).toFixed(2))),
+    );
   }
 
   function resetPreviewZoom() {
@@ -301,11 +332,15 @@ export function GalleryGrid({ query }: { query: string }) {
                     <div className="mt-1 grid gap-1 text-sm text-stone-400">
                       <div className="flex min-w-0 items-start gap-1.5">
                         <Hash className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                        <span className="break-all uppercase">{vehicle.registration}</span>
+                        <span className="break-all uppercase">
+                          {vehicle.registration}
+                        </span>
                       </div>
                       <div className="flex min-w-0 items-start gap-1.5">
                         <User className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                        <span className="wrap-break-word">{vehicle.clientName}</span>
+                        <span className="wrap-break-word">
+                          {vehicle.clientName}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -333,95 +368,122 @@ export function GalleryGrid({ query }: { query: string }) {
 
       <div className="min-w-0 max-w-full">
         {!selectedVehicle ? (
-          <div className="flex h-full min-h-[500px] flex-col items-center justify-center rounded-4xl border border-dashed border-white/10 bg-black/10 py-24 text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-white/5 text-stone-500">
-              <ImageIcon className="h-8 w-8" />
+          <article className="min-h-180 w-full max-w-full overflow-hidden rounded-4xl border border-white/10 bg-white/6 p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-7">
+            <div className="flex min-h-147.5 items-center justify-center rounded-3xl border border-dashed border-white/10 bg-black/15 px-4 py-8 text-center text-sm leading-7 text-stone-400">
+              <div>
+                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-white/4">
+                  <ImageIcon className="h-8 w-8 opacity-20" />
+                </div>
+                <h3 className="mt-6 font-semibold text-white/40">
+                  Wybierz pojazd
+                </h3>
+                <p className="mt-2 max-w-sm text-sm leading-relaxed">
+                  Kliknij auto z listy po lewej, aby zobaczyć oś czasu
+                  realizacji, zdjęcia przed i po oraz wyróżnione ujęcia.
+                </p>
+              </div>
             </div>
-            <p className="px-6 text-lg font-medium text-white">
-              Wybierz pojazd, aby zobaczyć realizacje
-            </p>
-            <p className="mt-2 px-10 text-sm text-stone-400">
-              Historia wizualna auta pojawi się w tym panelu.
-            </p>
-          </div>
+          </article>
         ) : (
-          <div className="animate-in fade-in slide-in-from-right-4 space-y-6 duration-500">
-            <div className="rounded-4xl border border-white/10 bg-white/6 p-6 shadow-xl md:p-7">
-              <div className="mb-8 flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">
-                    Oś czasu pojazdu
-                  </p>
-                  <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-white">
-                    {selectedVehicle.make} {selectedVehicle.model}
-                  </h3>
-                  <p className="mt-2 text-sm text-stone-400">
-                    Właściciel:{' '}
-                    <span className="font-medium text-stone-300">
-                      {selectedVehicle.clientName}
-                    </span>
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 rounded-2xl bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-wider text-stone-400 ring-1 ring-white/10">
-                  <Clock className="h-3.5 w-3.5" />
-                  {selectedVehicle.realizations.length} realizacje
-                </div>
+          <article className="min-h-180 w-full max-w-full overflow-hidden rounded-4xl border border-white/10 bg-white/6 p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-7">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">
+                  Biblioteka pojazdu
+                </p>
+                <h3 className="mt-2 break-words text-3xl font-semibold tracking-[-0.04em] text-white">
+                  {selectedVehicle.make} {selectedVehicle.model}
+                </h3>
+                <p className="mt-2 break-all text-sm text-stone-400">
+                  {selectedVehicle.clientName} • {selectedVehicle.registration}
+                </p>
               </div>
 
-              <div className="grid gap-4">
+              <div className="flex shrink-0 flex-col items-start gap-3 md:items-end">
+                <div className="shrink-0 whitespace-nowrap rounded-full border border-white/10 bg-white/6 px-4 py-2 text-sm text-stone-300">
+                  {selectedVehicle.realizations.length} realizacje •{' '}
+                  {selectedVehicle.totalPhotos} zdjęć
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <InfoCard
+                icon={<Clock className="h-4.5 w-4.5" />}
+                label="Realizacje"
+                value={`${selectedVehicle.realizations.length}`}
+              />
+              <InfoCard
+                icon={<ImageIcon className="h-4.5 w-4.5" />}
+                label="Zdjęcia"
+                value={`${selectedVehicle.totalPhotos}`}
+              />
+            </div>
+
+            <section className="mt-6 rounded-3xl border border-white/8 bg-black/18 p-5">
+              <div className="flex items-center gap-2 font-semibold text-white">
+                <Clock className="h-4.5 w-4.5 opacity-40" />
+                <h3>Oś czasu realizacji</h3>
+              </div>
+              <div className="mt-4 grid gap-3">
                 {selectedVehicle.realizations.map((realization) => (
-                  <div
+                  <button
                     key={realization.id}
+                    type="button"
                     onClick={() => setSelectedRealizationId(realization.id)}
-                    className="group relative cursor-pointer overflow-hidden rounded-3xl border border-white/10 bg-white/4 transition-all hover:border-white/20 hover:bg-white/8"
+                    className={`group flex items-center justify-between gap-4 rounded-2xl border p-4 text-left transition ${
+                      selectedRealizationId === realization.id
+                        ? 'border-white/20 bg-white/10'
+                        : 'border-white/8 bg-white/6 hover:border-white/16 hover:bg-white/10'
+                    }`}
                   >
-                    <div className="flex gap-4 p-4">
-                      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-white/10">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-white/6">
                         <img
                           src={
-                            realization.images.find((image) => image.type === 'After')?.image_url ??
-                            realization.images[0].image_url
+                            realization.images.find(
+                              (image) => image.type === 'After',
+                            )?.image_url ?? realization.images[0].image_url
                           }
                           alt={realization.title}
                           loading="lazy"
                           decoding="async"
                           draggable={false}
-                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
                         />
                       </div>
-
-                      <div className="min-w-0 flex-1 py-1">
+                      <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <span
                             className={`text-[9px] font-extrabold uppercase tracking-widest ${
-                              realization.isIndependent ? 'text-blue-400' : 'text-amber-400'
+                              realization.isIndependent
+                                ? 'text-blue-400'
+                                : 'text-amber-400'
                             }`}
                           >
-                            {realization.isIndependent ? 'Projekt' : 'Realizacja'}
+                            {realization.isIndependent
+                              ? 'Projekt'
+                              : 'Realizacja'}
                           </span>
                           <span className="text-[10px] text-stone-500">
                             • {realization.date}
                           </span>
                         </div>
-                        <h4 className="mt-1 truncate font-bold text-white transition-colors group-hover:text-amber-200">
+                        <h4 className="mt-1 break-words font-semibold text-white">
                           {realization.title}
                         </h4>
-                        <p className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium text-stone-500">
-                          <ImageIcon className="h-3 w-3" /> {realization.images.length} zdjęć
+                        <p className="mt-1 text-xs text-stone-500">
+                          {realization.images.length} zdjęć w tej realizacji
                         </p>
                       </div>
-
-                      <div className="flex shrink-0 items-center pr-1">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-white transition-transform group-hover:translate-x-1">
-                          <ChevronRight className="h-4 w-4" />
-                        </div>
-                      </div>
                     </div>
-                  </div>
+
+                    <ChevronRight className="h-4.5 w-4.5 shrink-0 text-white/50 transition group-hover:translate-x-0.5 group-hover:text-white" />
+                  </button>
                 ))}
               </div>
-            </div>
-          </div>
+            </section>
+          </article>
         )}
       </div>
 
@@ -430,7 +492,7 @@ export function GalleryGrid({ query }: { query: string }) {
         onOpenChange={(open) => !open && setSelectedRealizationId(null)}
       >
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-50 bg-black/92 backdrop-blur-sm transition-all duration-150 animate-in fade-in" />
+          <Dialog.Overlay className="fixed inset-0 z-50 animate-in fade-in bg-black/92 backdrop-blur-sm transition-all duration-150" />
           <Dialog.Content className="fixed inset-0 z-50 flex flex-col overflow-y-auto p-4 outline-none sm:p-8">
             <div className="mx-auto w-full max-w-6xl">
               <div className="mb-8 flex items-start justify-between gap-6">
@@ -455,7 +517,8 @@ export function GalleryGrid({ query }: { query: string }) {
                     {selectedRealization?.title}
                   </h2>
                   <p className="mt-2 text-xl text-stone-400">
-                    {selectedVehicle?.make} {selectedVehicle?.model} ({selectedVehicle?.registration})
+                    {selectedVehicle?.make} {selectedVehicle?.model} (
+                    {selectedVehicle?.registration})
                   </p>
                 </div>
                 <Dialog.Close className="rounded-full bg-white/5 p-3 text-stone-400 transition-colors hover:bg-white/10 hover:text-white">
@@ -471,7 +534,8 @@ export function GalleryGrid({ query }: { query: string }) {
                         Podgląd zdjęcia
                       </p>
                       <p className="mt-2 text-sm text-stone-400">
-                        Klikaj miniatury niżej, aby płynnie przełączać zdjęcia bez przeładowywania całego modala.
+                        Klikaj miniatury niżej, aby płynnie przełączać zdjęcia
+                        bez przeładowywania całego modala.
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -509,7 +573,10 @@ export function GalleryGrid({ query }: { query: string }) {
                       decoding="async"
                       draggable={false}
                       className="max-h-[70vh] w-auto max-w-full select-none object-contain transition-transform duration-200 ease-out"
-                      style={{ transform: `scale(${previewZoom})`, transformOrigin: 'center center' }}
+                      style={{
+                        transform: `scale(${previewZoom})`,
+                        transformOrigin: 'center center',
+                      }}
                     />
                   </div>
                 </section>
@@ -554,7 +621,10 @@ export function GalleryGrid({ query }: { query: string }) {
                               isActive={selectedPreviewImage?.id === image.id}
                               onOpenPreview={() => handlePreviewOpen(image.id)}
                               onToggleFeatured={() =>
-                                handleToggleFeatured(image.id, image.is_featured)
+                                handleToggleFeatured(
+                                  image.id,
+                                  image.is_featured,
+                                )
                               }
                               onDelete={() =>
                                 handleDeleteImage(image.id, image.storage_path)
@@ -582,7 +652,10 @@ export function GalleryGrid({ query }: { query: string }) {
                               isActive={selectedPreviewImage?.id === image.id}
                               onOpenPreview={() => handlePreviewOpen(image.id)}
                               onToggleFeatured={() =>
-                                handleToggleFeatured(image.id, image.is_featured)
+                                handleToggleFeatured(
+                                  image.id,
+                                  image.is_featured,
+                                )
                               }
                               onDelete={() =>
                                 handleDeleteImage(image.id, image.storage_path)
@@ -611,7 +684,10 @@ export function GalleryGrid({ query }: { query: string }) {
                               isActive={selectedPreviewImage?.id === image.id}
                               onOpenPreview={() => handlePreviewOpen(image.id)}
                               onToggleFeatured={() =>
-                                handleToggleFeatured(image.id, image.is_featured)
+                                handleToggleFeatured(
+                                  image.id,
+                                  image.is_featured,
+                                )
                               }
                               onDelete={() =>
                                 handleDeleteImage(image.id, image.storage_path)
@@ -679,7 +755,9 @@ function ImageThumbnail({
           }`}
           title="Ustaw jako główne zdjęcie pojazdu"
         >
-          <Star className={`h-5 w-5 ${image.is_featured ? 'fill-current' : ''}`} />
+          <Star
+            className={`h-5 w-5 ${image.is_featured ? 'fill-current' : ''}`}
+          />
         </button>
         <button
           type="button"
@@ -700,5 +778,29 @@ function ImageThumbnail({
         </div>
       ) : null}
     </button>
+  );
+}
+
+type InfoCardProps = {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+};
+
+function InfoCard({ icon, label, value }: InfoCardProps) {
+  return (
+    <div className="flex min-w-0 items-center gap-3 rounded-[22px] border border-white/8 bg-white/6 px-4 py-4">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/4 text-white">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs uppercase tracking-[0.18em] text-stone-500">
+          {label}
+        </p>
+        <p className="mt-2 break-all text-sm leading-7 text-stone-100">
+          {value}
+        </p>
+      </div>
+    </div>
   );
 }

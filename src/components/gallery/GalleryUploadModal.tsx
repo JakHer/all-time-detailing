@@ -1,12 +1,12 @@
-import * as Dialog from '@radix-ui/react-dialog';
-import { Loader2, Upload, X, CheckCircle2 } from 'lucide-react';
-import { useEffect, useState, useMemo } from 'react';
+﻿import * as Dialog from '@radix-ui/react-dialog';
+import { useQuery } from '@tanstack/react-query';
+import { CheckCircle2, Loader2, Upload, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { fetchBookings, type Booking } from '../../lib/bookings';
 import { useUploadGalleryImage, type GalleryImage } from '../../lib/gallery';
 import { useVehicles } from '../../lib/vehicles';
-import { fetchBookings } from '../../lib/bookings';
 import { ActionButton } from '../ui/ActionButton';
-import { useQuery } from '@tanstack/react-query';
 
 type GalleryUploadModalProps = {
   isOpen: boolean;
@@ -15,6 +15,16 @@ type GalleryUploadModalProps = {
   initialVehicleId?: string | null;
   initialType?: GalleryImage['type'];
 };
+
+const galleryTypeOptions: Array<{
+  id: NonNullable<GalleryImage['type']>;
+  label: string;
+}> = [
+  { id: 'Before', label: 'Przed' },
+  { id: 'WIP', label: 'W trakcie' },
+  { id: 'After', label: 'Po' },
+  { id: 'Finished', label: 'Portfolio' },
+];
 
 export function GalleryUploadModal({
   isOpen,
@@ -30,41 +40,69 @@ export function GalleryUploadModal({
     initialType || 'Finished',
   );
   const [isUploading, setIsUploading] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const { data: vehicles = [] } = useVehicles();
   const uploadMutation = useUploadGalleryImage();
 
-  // Fetch bookings for the selected vehicle to allow grouping
+  const selectedVehicle = useMemo(
+    () =>
+      vehicles.find(
+        (vehicle) => vehicle.id === (vehicleId || initialVehicleId),
+      ) ?? null,
+    [initialVehicleId, vehicleId, vehicles],
+  );
+
   const { data: vehicleBookings = [] } = useQuery({
     queryKey: ['bookings', 'vehicle', vehicleId],
-    queryFn: () => fetchBookings(), // In a real app, we'd filter by vehicle_id on the server
-    enabled: !!vehicleId && !initialBookingId,
+    queryFn: () => fetchBookings(),
+    enabled: !!selectedVehicle && !initialBookingId,
   });
 
   const filteredVehicleBookings = useMemo(() => {
-    // This is a client-side filter for now since fetchBookings doesn't take vehicleId
-    // In a production app, we should add vehicleId filter to fetchBookings
-    return vehicleBookings.filter(b => (b as any).vehicleId === vehicleId);
-  }, [vehicleBookings, vehicleId]);
-
-  // Sync state with props when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setVehicleId(initialVehicleId || '');
-      setBookingId(initialBookingId || '');
-      if (initialType) {
-        setType(initialType);
-      } else if (!initialBookingId) {
-        setType('Finished');
-      }
-      setShowAdvanced(false);
-      setFile(null);
+    if (!selectedVehicle) {
+      return [] as Booking[];
     }
-  }, [isOpen, initialVehicleId, initialType, initialBookingId]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+    return vehicleBookings.filter(
+      (booking) => booking.licensePlate === selectedVehicle.registration,
+    );
+  }, [selectedVehicle, vehicleBookings]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    setVehicleId(initialVehicleId || '');
+    setBookingId(initialBookingId || '');
+
+    if (initialType) {
+      setType(initialType);
+    } else if (!initialBookingId) {
+      setType('Finished');
+    }
+
+    setFile(null);
+  }, [initialBookingId, initialType, initialVehicleId, isOpen]);
+
+  const previewUrl = useMemo(() => {
+    if (!file) {
+      return null;
+    }
+
+    return URL.createObjectURL(file);
+  }, [file]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
     if (!file) return;
 
     setIsUploading(true);
@@ -86,16 +124,11 @@ export function GalleryUploadModal({
     }
   }
 
-  const previewUrl = file ? URL.createObjectURL(file) : null;
-  const selectedVehicle = vehicles.find(
-    (v) => v.id === (vehicleId || initialVehicleId),
-  );
-
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm transition-all duration-300 animate-in fade-in" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 p-4 outline-none transition-all duration-300 animate-in zoom-in-95">
+        <Dialog.Overlay className="fixed inset-0 z-50 animate-in fade-in bg-black/80 backdrop-blur-sm transition-all duration-300" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 animate-in zoom-in-95 p-4 outline-none transition-all duration-300">
           <div className="rounded-4xl border border-white/10 bg-[#121314] p-6 shadow-2xl">
             <div className="mb-6 flex items-center justify-between">
               <div>
@@ -104,14 +137,14 @@ export function GalleryUploadModal({
                     ? 'Dokumentacja wizyty'
                     : 'Wgraj do realizacji'}
                 </Dialog.Title>
-                {selectedVehicle && (
+                {selectedVehicle ? (
                   <p className="mt-1 text-xs text-stone-400">
                     Pojazd:{' '}
                     <span className="text-amber-200/80">
                       {selectedVehicle.make} {selectedVehicle.model}
                     </span>
                   </p>
-                )}
+                ) : null}
               </div>
               <Dialog.Close className="rounded-full p-2 text-stone-400 transition-colors hover:bg-white/5 hover:text-white">
                 <X className="h-5 w-5" />
@@ -132,7 +165,7 @@ export function GalleryUploadModal({
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  onChange={(event) => setFile(event.target.files?.[0] || null)}
                 />
                 {previewUrl ? (
                   <div className="flex flex-col items-center p-4">
@@ -160,59 +193,60 @@ export function GalleryUploadModal({
                 )}
               </div>
 
-              {!initialBookingId && (
+              {!initialBookingId ? (
                 <div className="space-y-4">
-                  {!initialVehicleId && (
+                  {!initialVehicleId ? (
                     <div>
                       <label className="mb-2 block text-sm font-medium text-stone-400">
                         Pojazd
                       </label>
                       <select
                         value={vehicleId}
-                        onChange={(e) => {
-                          setVehicleId(e.target.value);
-                          setBookingId(''); // Reset booking when vehicle changes
+                        onChange={(event) => {
+                          setVehicleId(event.target.value);
+                          setBookingId('');
                         }}
                         className="h-12 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-white outline-none transition-all focus:border-amber-400/30"
                       >
                         <option value="">Wybierz pojazd</option>
-                        {vehicles.map((v) => (
-                          <option key={v.id} value={v.id}>
-                            {v.make} {v.model} ({v.registration})
+                        {vehicles.map((vehicle) => (
+                          <option key={vehicle.id} value={vehicle.id}>
+                            {vehicle.make} {vehicle.model} (
+                            {vehicle.registration})
                           </option>
                         ))}
                       </select>
                     </div>
-                  )}
+                  ) : null}
 
-                  {vehicleId && filteredVehicleBookings.length > 0 && (
+                  {vehicleId && filteredVehicleBookings.length > 0 ? (
                     <div className="animate-in fade-in slide-in-from-top-2">
                       <label className="mb-2 block text-sm font-medium text-stone-400">
                         Przypisz do konkretnej wizyty
                       </label>
                       <div className="grid gap-2">
-                        {filteredVehicleBookings.slice(0, 3).map((b) => (
+                        {filteredVehicleBookings.slice(0, 3).map((booking) => (
                           <button
-                            key={b.id}
+                            key={booking.id}
                             type="button"
-                            onClick={() => setBookingId(b.id)}
+                            onClick={() => setBookingId(booking.id)}
                             className={`flex items-center justify-between rounded-xl border p-3 text-left transition-all ${
-                              bookingId === b.id
+                              bookingId === booking.id
                                 ? 'border-amber-400/50 bg-amber-400/10'
                                 : 'border-white/5 bg-white/5 hover:bg-white/8'
                             }`}
                           >
                             <div className="min-w-0">
                               <p className="truncate text-xs font-semibold text-white">
-                                {b.service}
+                                {booking.service}
                               </p>
                               <p className="mt-0.5 text-[10px] text-stone-500">
-                                {b.date} • {b.status}
+                                {booking.date} • {booking.status}
                               </p>
                             </div>
-                            {bookingId === b.id && (
+                            {bookingId === booking.id ? (
                               <CheckCircle2 className="h-4 w-4 text-amber-400" />
-                            )}
+                            ) : null}
                           </button>
                         ))}
                         <button
@@ -224,13 +258,13 @@ export function GalleryUploadModal({
                               : 'border-white/5 bg-transparent text-stone-500'
                           }`}
                         >
-                          Ogólna realizacja (brak wizyty)
+                          Ogólna realizacja bez przypisanej wizyty
                         </button>
                       </div>
                     </div>
-                  )}
+                  ) : null}
                 </div>
-              )}
+              ) : null}
 
               <div className="space-y-4">
                 <label className="block">
@@ -238,23 +272,18 @@ export function GalleryUploadModal({
                     Rodzaj zdjęcia
                   </span>
                   <div className="flex flex-wrap gap-2">
-                    {[
-                      { id: 'Before', label: 'Przed' },
-                      { id: 'WIP', label: 'W trakcie' },
-                      { id: 'After', label: 'Po' },
-                      { id: 'Finished', label: 'Portfolio' },
-                    ].map((t) => (
+                    {galleryTypeOptions.map((option) => (
                       <button
-                        key={t.id}
+                        key={option.id}
                         type="button"
-                        onClick={() => setType(t.id as any)}
+                        onClick={() => setType(option.id)}
                         className={`rounded-full px-4 py-2 text-xs font-semibold transition-all ${
-                          type === t.id
+                          type === option.id
                             ? 'bg-amber-400 text-black'
                             : 'bg-white/5 text-stone-400 hover:bg-white/10'
                         }`}
                       >
-                        {t.label}
+                        {option.label}
                       </button>
                     ))}
                   </div>
@@ -271,7 +300,9 @@ export function GalleryUploadModal({
                 </button>
                 <ActionButton
                   type="submit"
-                  disabled={!file || isUploading || (!vehicleId && !initialVehicleId)}
+                  disabled={
+                    !file || isUploading || (!vehicleId && !initialVehicleId)
+                  }
                   className="flex-1"
                 >
                   {isUploading ? (

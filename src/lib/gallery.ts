@@ -1,10 +1,13 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Database } from './database.types';
 import { supabase } from './supabase';
 
-export type GalleryImage = Database['public']['Tables']['gallery_images']['Row'];
-export type NewGalleryImage = Database['public']['Tables']['gallery_images']['Insert'];
-export type UpdateGalleryImage = Database['public']['Tables']['gallery_images']['Update'];
+export type GalleryImage =
+  Database['public']['Tables']['gallery_images']['Row'];
+export type NewGalleryImage =
+  Database['public']['Tables']['gallery_images']['Insert'];
+export type UpdateGalleryImage =
+  Database['public']['Tables']['gallery_images']['Update'];
 
 export type GalleryImageWithRelations = GalleryImage & {
   vehicles: {
@@ -28,7 +31,7 @@ export type GalleryImageWithRelations = GalleryImage & {
 export const galleryKeys = {
   all: ['gallery'] as const,
   lists: () => [...galleryKeys.all, 'list'] as const,
-  list: (filters: any) => [...galleryKeys.lists(), { filters }] as const,
+  list: (filters: unknown) => [...galleryKeys.lists(), { filters }] as const,
   details: () => [...galleryKeys.all, 'detail'] as const,
   detail: (id: string) => [...galleryKeys.details(), id] as const,
 };
@@ -36,7 +39,8 @@ export const galleryKeys = {
 export async function getGalleryImages(): Promise<GalleryImageWithRelations[]> {
   const { data, error } = await supabase
     .from('gallery_images')
-    .select(`
+    .select(
+      `
       *,
       vehicles (
         id,
@@ -54,7 +58,8 @@ export async function getGalleryImages(): Promise<GalleryImageWithRelations[]> {
           name
         )
       )
-    `)
+    `,
+    )
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -70,7 +75,7 @@ export async function uploadGalleryImage(
     booking_id?: string | null;
     vehicle_id?: string | null;
     type: GalleryImage['type'];
-  }
+  },
 ): Promise<GalleryImage> {
   const fileExt = file.name.split('.').pop();
   const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -84,9 +89,9 @@ export async function uploadGalleryImage(
     throw uploadError;
   }
 
-  const { data: { publicUrl } } = supabase.storage
-    .from('gallery')
-    .getPublicUrl(filePath);
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from('gallery').getPublicUrl(filePath);
 
   const { data, error: dbError } = await supabase
     .from('gallery_images')
@@ -101,7 +106,6 @@ export async function uploadGalleryImage(
     .single();
 
   if (dbError) {
-    // Cleanup storage if DB insert fails
     await supabase.storage.from('gallery').remove([filePath]);
     throw dbError;
   }
@@ -109,7 +113,10 @@ export async function uploadGalleryImage(
   return data;
 }
 
-export async function deleteGalleryImage(id: string, storagePath: string): Promise<void> {
+export async function deleteGalleryImage(
+  id: string,
+  storagePath: string,
+): Promise<void> {
   const { error: storageError } = await supabase.storage
     .from('gallery')
     .remove([storagePath]);
@@ -139,8 +146,17 @@ export function useUploadGalleryImage() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ file, metadata }: { file: File; metadata: { booking_id?: string | null; vehicle_id?: string | null; type: GalleryImage['type'] } }) =>
-      uploadGalleryImage(file, metadata),
+    mutationFn: ({
+      file,
+      metadata,
+    }: {
+      file: File;
+      metadata: {
+        booking_id?: string | null;
+        vehicle_id?: string | null;
+        type: GalleryImage['type'];
+      };
+    }) => uploadGalleryImage(file, metadata),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: galleryKeys.all });
     },
@@ -163,8 +179,11 @@ export function useUpdateGalleryImage() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, is_featured, ...updates }: UpdateGalleryImage & { id: string }) => {
-      // 1. Get the current image to know its URL and vehicle_id
+    mutationFn: async ({
+      id,
+      is_featured,
+      ...updates
+    }: UpdateGalleryImage & { id: string }) => {
       const { data: currentImage, error: fetchError } = await supabase
         .from('gallery_images')
         .select('vehicle_id, image_url')
@@ -173,7 +192,6 @@ export function useUpdateGalleryImage() {
 
       if (fetchError) throw fetchError;
 
-      // 2. Perform the update
       const { data, error } = await supabase
         .from('gallery_images')
         .update({ is_featured, ...updates })
@@ -183,23 +201,18 @@ export function useUpdateGalleryImage() {
 
       if (error) throw error;
 
-      // 3. If is_featured is true, update the vehicle's featured_image_url
       if (is_featured && currentImage.vehicle_id) {
-        // First unset other featured images for this vehicle in DB (managed by DB ideally, but here for safety)
         await supabase
           .from('gallery_images')
           .update({ is_featured: false })
           .eq('vehicle_id', currentImage.vehicle_id)
           .neq('id', id);
 
-        // Update the vehicle record
         await supabase
           .from('vehicles')
           .update({ featured_image_url: currentImage.image_url })
           .eq('id', currentImage.vehicle_id);
       } else if (is_featured === false && currentImage.vehicle_id) {
-        // If we're UNSETTING a featured image, we might want to clear the vehicle's featured image
-        // but only if it's the same one.
         const { data: vehicle } = await supabase
           .from('vehicles')
           .select('featured_image_url')

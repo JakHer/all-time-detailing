@@ -33,7 +33,9 @@ export function BookingDetails({
   }
 
   const isCancelled = booking.status === 'Anulowana';
-  const bookingImages = allImages.filter((img) => img.booking_id === booking.id);
+  const bookingImages = allImages.filter(
+    (img) => img.booking_id === booking.id,
+  );
   const beforeImages = bookingImages.filter((img) => img.type === 'Before');
   const afterImages = bookingImages.filter((img) => img.type === 'After');
   const otherImages = bookingImages.filter(
