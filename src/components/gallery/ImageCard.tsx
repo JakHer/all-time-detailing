@@ -36,7 +36,9 @@ export function ImageCard({ image, onView }: ImageCardProps) {
         is_featured: !image.is_featured,
       });
       toast.success(
-        image.is_featured ? 'Zdjęcie usunięte z wyróżnionych' : 'Zdjęcie wyróżnione',
+        image.is_featured
+          ? 'Zdjęcie usunięte z wyróżnionych'
+          : 'Zdjęcie wyróżnione',
       );
     } catch {
       toast.error('Błąd podczas aktualizacji zdjęcia');
@@ -107,9 +109,13 @@ export function ImageCard({ image, onView }: ImageCardProps) {
                   ? 'bg-amber-400 text-black hover:bg-amber-300'
                   : 'bg-white/10 text-white hover:bg-white/20'
               }`}
-              title={image.is_featured ? 'Usuń wyróżnienie' : 'Wyróżnij zdjęcie'}
+              title={
+                image.is_featured ? 'Usuń wyróżnienie' : 'Wyróżnij zdjęcie'
+              }
             >
-              <Star className={`h-4 w-4 ${image.is_featured ? 'fill-current' : ''}`} />
+              <Star
+                className={`h-4 w-4 ${image.is_featured ? 'fill-current' : ''}`}
+              />
             </button>
             <button
               type="button"
