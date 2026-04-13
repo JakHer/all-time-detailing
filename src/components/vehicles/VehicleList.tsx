@@ -38,8 +38,18 @@ export function VehicleList({
           >
             <div className="flex min-w-0 items-start justify-between gap-4">
               <div className="flex min-w-0 items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/6 text-white transition-colors group-hover:bg-white/10">
-                  <CarFront className="h-5 w-5 opacity-40" />
+                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-2xl bg-white/6">
+                  {vehicle.featured_image_url ? (
+                    <img
+                      src={vehicle.featured_image_url}
+                      alt={`${vehicle.make} ${vehicle.model}`}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-white">
+                      <CarFront className="h-5 w-5 opacity-40" />
+                    </div>
+                  )}
                 </div>
                 <div className="min-w-0">
                   <h4 className="wrap-break-word font-semibold text-white">

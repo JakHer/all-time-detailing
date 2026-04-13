@@ -23,13 +23,13 @@ create table if not exists public.vehicles (
   client_id uuid not null references public.clients(id) on delete cascade,
   make text not null,
   model text not null,
-  registration text not null,
+  registration text not null unique,
   production_year integer,
   color text,
+  featured_image_url text,
   notes text,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (registration)
+  updated_at timestamptz not null default now()
 );
 
 create table if not exists public.services (
@@ -58,9 +58,24 @@ create table if not exists public.bookings (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.gallery_images (
+  id uuid primary key default gen_random_uuid(),
+  booking_id uuid references public.bookings(id) on delete set null,
+  vehicle_id uuid references public.vehicles(id) on delete cascade,
+  storage_path text not null,
+  image_url text not null,
+  type text check (type in ('Before', 'After', 'WIP', 'Finished')),
+  is_featured boolean default false,
+  metadata jsonb default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create index if not exists bookings_scheduled_at_idx on public.bookings (scheduled_at);
 create index if not exists bookings_status_idx on public.bookings (status);
 create index if not exists vehicles_client_id_idx on public.vehicles (client_id);
+create index if not exists gallery_images_booking_id_idx on public.gallery_images (booking_id);
+create index if not exists gallery_images_vehicle_id_idx on public.gallery_images (vehicle_id);
 
 create or replace function public.set_updated_at()
 returns trigger
@@ -92,10 +107,16 @@ before update on public.bookings
 for each row
 execute function public.set_updated_at();
 
+create or replace trigger gallery_images_set_updated_at
+before update on public.gallery_images
+for each row
+execute function public.set_updated_at();
+
 alter table public.clients enable row level security;
 alter table public.vehicles enable row level security;
 alter table public.services enable row level security;
 alter table public.bookings enable row level security;
+alter table public.gallery_images enable row level security;
 
 create policy "Allow public read access to clients"
 on public.clients
@@ -137,6 +158,17 @@ using (true);
 
 create policy "Allow public write access to bookings"
 on public.bookings
+for all
+using (true)
+with check (true);
+
+create policy "Allow public read access to gallery"
+on public.gallery_images
+for select
+using (true);
+
+create policy "Allow public write access to gallery"
+on public.gallery_images
 for all
 using (true)
 with check (true);
