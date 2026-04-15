@@ -25,4 +25,14 @@
   a {
     text-decoration: none;
   }
+
+  select {
+    color-scheme: dark;
+  }
+
+  option,
+  optgroup {
+    background-color: #121314;
+    color: #f5f5f4;
+  }
 }

@@ -7,6 +7,7 @@ import { fetchBookings, type Booking } from '../../lib/bookings';
 import { useUploadGalleryImage, type GalleryImage } from '../../lib/gallery';
 import { useVehicles } from '../../lib/vehicles';
 import { ActionButton } from '../ui/ActionButton';
+import { Select } from '../ui/Select';
 
 type GalleryUploadModalProps = {
   isOpen: boolean;
@@ -16,15 +17,31 @@ type GalleryUploadModalProps = {
   initialType?: GalleryImage['type'];
 };
 
-const galleryTypeOptions: Array<{
+type UploadMode = 'documentation' | 'portfolio';
+
+const documentationTypeOptions: Array<{
   id: NonNullable<GalleryImage['type']>;
   label: string;
 }> = [
   { id: 'Before', label: 'Przed' },
   { id: 'WIP', label: 'W trakcie' },
   { id: 'After', label: 'Po' },
-  { id: 'Finished', label: 'Portfolio' },
 ];
+
+function resolveUploadMode(
+  initialBookingId?: string | null,
+  initialType?: GalleryImage['type'],
+): UploadMode {
+  if (initialBookingId) {
+    return 'documentation';
+  }
+
+  if (initialType && initialType !== 'Finished') {
+    return 'documentation';
+  }
+
+  return 'portfolio';
+}
 
 export function GalleryUploadModal({
   isOpen,
@@ -36,6 +53,9 @@ export function GalleryUploadModal({
   const [file, setFile] = useState<File | null>(null);
   const [vehicleId, setVehicleId] = useState(initialVehicleId || '');
   const [bookingId, setBookingId] = useState(initialBookingId || '');
+  const [mode, setMode] = useState<UploadMode>(
+    resolveUploadMode(initialBookingId, initialType),
+  );
   const [type, setType] = useState<NonNullable<GalleryImage['type']>>(
     initialType || 'Finished',
   );
@@ -68,6 +88,9 @@ export function GalleryUploadModal({
     );
   }, [selectedVehicle, vehicleBookings]);
 
+  const resolvedVehicleId = vehicleId || initialVehicleId || '';
+  const isDocumentationMode = mode === 'documentation';
+
   useEffect(() => {
     if (!isOpen) {
       return;
@@ -75,6 +98,7 @@ export function GalleryUploadModal({
 
     setVehicleId(initialVehicleId || '');
     setBookingId(initialBookingId || '');
+    setMode(resolveUploadMode(initialBookingId, initialType));
 
     if (initialType) {
       setType(initialType);
@@ -110,9 +134,9 @@ export function GalleryUploadModal({
       await uploadMutation.mutateAsync({
         file,
         metadata: {
-          booking_id: bookingId || null,
-          vehicle_id: vehicleId || initialVehicleId || null,
-          type,
+          booking_id: isDocumentationMode && bookingId ? bookingId : null,
+          vehicle_id: resolvedVehicleId || null,
+          type: isDocumentationMode ? type : 'Finished',
         },
       });
       toast.success('Zdjęcie zostało przesłane');
@@ -135,7 +159,9 @@ export function GalleryUploadModal({
                 <Dialog.Title className="text-xl font-semibold text-white">
                   {initialBookingId
                     ? 'Dokumentacja wizyty'
-                    : 'Wgraj do realizacji'}
+                    : mode === 'portfolio'
+                      ? 'Dodaj do portfolio'
+                      : 'Dodaj do realizacji'}
                 </Dialog.Title>
                 {selectedVehicle ? (
                   <p className="mt-1 text-xs text-stone-400">
@@ -152,6 +178,49 @@ export function GalleryUploadModal({
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
+              {!initialBookingId ? (
+                <div className="space-y-3">
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-medium text-stone-400">
+                      Gdzie ma trafić zdjęcie?
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMode('documentation');
+                          setType((currentType) =>
+                            currentType === 'Finished' ? 'Before' : currentType,
+                          );
+                        }}
+                        className={`rounded-full px-4 py-2 text-xs font-semibold transition-all ${
+                          mode === 'documentation'
+                            ? 'bg-amber-400 text-black'
+                            : 'bg-white/5 text-stone-400 hover:bg-white/10'
+                        }`}
+                      >
+                        Do realizacji
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMode('portfolio');
+                          setBookingId('');
+                          setType('Finished');
+                        }}
+                        className={`rounded-full px-4 py-2 text-xs font-semibold transition-all ${
+                          mode === 'portfolio'
+                            ? 'bg-amber-400 text-black'
+                            : 'bg-white/5 text-stone-400 hover:bg-white/10'
+                        }`}
+                      >
+                        Do portfolio
+                      </button>
+                    </div>
+                  </label>
+                </div>
+              ) : null}
+
               <div
                 className={`relative flex h-48 cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed transition-all ${
                   file
@@ -193,14 +262,14 @@ export function GalleryUploadModal({
                 )}
               </div>
 
-              {!initialBookingId ? (
+              {!initialBookingId || isDocumentationMode ? (
                 <div className="space-y-4">
                   {!initialVehicleId ? (
                     <div>
                       <label className="mb-2 block text-sm font-medium text-stone-400">
                         Pojazd
                       </label>
-                      <select
+                      <Select
                         value={vehicleId}
                         onChange={(event) => {
                           setVehicleId(event.target.value);
@@ -215,11 +284,13 @@ export function GalleryUploadModal({
                             {vehicle.registration})
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </div>
                   ) : null}
 
-                  {vehicleId && filteredVehicleBookings.length > 0 ? (
+                  {isDocumentationMode &&
+                  resolvedVehicleId &&
+                  filteredVehicleBookings.length > 0 ? (
                     <div className="animate-in fade-in slide-in-from-top-2">
                       <label className="mb-2 block text-sm font-medium text-stone-400">
                         Przypisz do konkretnej wizyty
@@ -266,29 +337,31 @@ export function GalleryUploadModal({
                 </div>
               ) : null}
 
-              <div className="space-y-4">
-                <label className="block">
-                  <span className="mb-2 block text-sm font-medium text-stone-400">
-                    Rodzaj zdjęcia
-                  </span>
-                  <div className="flex flex-wrap gap-2">
-                    {galleryTypeOptions.map((option) => (
-                      <button
-                        key={option.id}
-                        type="button"
-                        onClick={() => setType(option.id)}
-                        className={`rounded-full px-4 py-2 text-xs font-semibold transition-all ${
-                          type === option.id
-                            ? 'bg-amber-400 text-black'
-                            : 'bg-white/5 text-stone-400 hover:bg-white/10'
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                </label>
-              </div>
+              {isDocumentationMode ? (
+                <div className="space-y-4">
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-medium text-stone-400">
+                      Rodzaj zdjęcia
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {documentationTypeOptions.map((option) => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          onClick={() => setType(option.id)}
+                          className={`rounded-full px-4 py-2 text-xs font-semibold transition-all ${
+                            type === option.id
+                              ? 'bg-amber-400 text-black'
+                              : 'bg-white/5 text-stone-400 hover:bg-white/10'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </label>
+                </div>
+              ) : null}
 
               <div className="mt-8 flex gap-3">
                 <button
@@ -300,9 +373,7 @@ export function GalleryUploadModal({
                 </button>
                 <ActionButton
                   type="submit"
-                  disabled={
-                    !file || isUploading || (!vehicleId && !initialVehicleId)
-                  }
+                  disabled={!file || isUploading || !resolvedVehicleId}
                   className="flex-1"
                 >
                   {isUploading ? (
@@ -311,7 +382,9 @@ export function GalleryUploadModal({
                       Przesyłanie...
                     </>
                   ) : (
-                    'Zapisz w realizacji'
+                    mode === 'portfolio'
+                      ? 'Zapisz w portfolio'
+                      : 'Zapisz w realizacji'
                   )}
                 </ActionButton>
               </div>

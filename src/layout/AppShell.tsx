@@ -1,6 +1,6 @@
-﻿import { Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { Toaster } from 'sonner';
-import { Sidebar } from './Sidebar';
+import { MobileSidebar, Sidebar } from './Sidebar';
 
 export function AppShell() {
   return (
@@ -9,7 +9,9 @@ export function AppShell() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),transparent)] opacity-50" />
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-375 flex-col px-4 py-4 lg:px-6 lg:py-6">
-        <div className="grid flex-1 gap-4 xl:grid-cols-[290px_minmax(0,1fr)]">
+        <MobileSidebar />
+
+        <div className="mt-4 grid flex-1 gap-4 xl:mt-0 xl:grid-cols-[290px_minmax(0,1fr)]">
           <Sidebar />
           <main className="grid min-w-0 gap-4 overflow-x-hidden">
             <Outlet />

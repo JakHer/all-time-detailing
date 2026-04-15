@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import type { ClientWithRelations } from '../../lib/clients';
 import type { NewVehicle, Vehicle } from '../../lib/vehicles';
+import { Select } from '../ui/Select';
 
 const vehicleSchema = z.object({
   client_id: z.string().min(1, 'Wybierz właściciela pojazdu.'),
@@ -145,7 +146,7 @@ export function VehicleModal({
 
               <div className="grid gap-4 md:grid-cols-2">
                 <Field label="Właściciel" error={errors.client_id?.message}>
-                  <select {...register('client_id')} className={inputClassName}>
+                  <Select {...register('client_id')} className={inputClassName}>
                     <option value="" className="bg-[#161719]">
                       Wybierz klienta
                     </option>
@@ -158,7 +159,7 @@ export function VehicleModal({
                         {client.full_name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </Field>
 
                 <Field

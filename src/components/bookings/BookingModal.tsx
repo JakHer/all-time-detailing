@@ -16,6 +16,7 @@ import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { Select } from '../ui/Select';
 import { bookingStatuses, type Booking } from '../../data/bookings';
 import {
   formatDuration,
@@ -396,7 +397,7 @@ export function BookingModal({
               />
               <div className="grid gap-4 md:grid-cols-2">
                 <Field label={copy.pickClient} error={errors.client?.message}>
-                  <select
+                  <Select
                     value={selectedClientId}
                     onChange={(event) => handleClientChange(event.target.value)}
                     className={inputClassName}
@@ -407,7 +408,7 @@ export function BookingModal({
                         {client.fullName} | {client.phone}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </Field>
                 <Field label={copy.phone} error={errors.phone?.message}>
                   <input {...register('phone')} className={inputClassName} />
@@ -428,7 +429,7 @@ export function BookingModal({
                   label={copy.clientVehicle}
                   error={errors.vehicle?.message}
                 >
-                  <select
+                  <Select
                     value={selectedVehicleId}
                     onChange={(event) =>
                       handleVehicleChange(event.target.value)
@@ -448,7 +449,7 @@ export function BookingModal({
                         {vehicle.label} | {vehicle.registration}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </Field>
                 <Field label={copy.vehicle} error={errors.vehicle?.message}>
                   <input {...register('vehicle')} className={inputClassName} />
@@ -475,7 +476,7 @@ export function BookingModal({
                   label={copy.catalogService}
                   error={errors.serviceId?.message}
                 >
-                  <select
+                  <Select
                     value={values.serviceId}
                     onChange={(event) =>
                       handleServiceChange(event.target.value)
@@ -488,7 +489,7 @@ export function BookingModal({
                         {service.name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </Field>
                 <Field
                   label={copy.schedule}
@@ -523,13 +524,13 @@ export function BookingModal({
                   <input {...register('bay')} className={inputClassName} />
                 </Field>
                 <Field label={copy.status} error={errors.status?.message}>
-                  <select {...register('status')} className={inputClassName}>
+                  <Select {...register('status')} className={inputClassName}>
                     {bookingStatuses.map((status) => (
                       <option key={status} value={status}>
                         {status}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </Field>
               </div>
             </section>
@@ -725,7 +726,7 @@ function BookingScheduleField({ value, onChange }: BookingScheduleFieldProps) {
       </div>
 
       <div className="relative">
-        <select
+        <Select
           value={timePart}
           onChange={(event) => updateTime(event.target.value)}
           className={inputClassName}
@@ -736,7 +737,7 @@ function BookingScheduleField({ value, onChange }: BookingScheduleFieldProps) {
               {timeOption}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
     </div>
   );
