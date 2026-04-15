@@ -1,9 +1,11 @@
-﻿import { ImagePlus, Search } from 'lucide-react';
+import { ImagePlus } from 'lucide-react';
 import { useState } from 'react';
 import { PageIntro } from '../components/PageIntro';
 import { GalleryGrid } from '../components/gallery/GalleryGrid';
 import { GalleryUploadModal } from '../components/gallery/GalleryUploadModal';
 import { ActionButton } from '../components/ui/ActionButton';
+import { SearchField } from '../components/ui/SearchField';
+import { ToolbarPanel } from '../components/ui/ToolbarPanel';
 import { useGalleryImages } from '../lib/gallery';
 
 export function GalleryPage() {
@@ -36,17 +38,14 @@ export function GalleryPage() {
         metrics={metrics}
       />
 
-      <section className="rounded-4xl border border-white/8 bg-white/4 p-4">
+      <ToolbarPanel>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-1 items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 focus-within:border-amber-200/30 focus-within:bg-black/30">
-            <Search className="h-4 w-4 text-stone-500" />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Szukaj po marce, modelu, kliencie lub rejestracji..."
-              className="w-full bg-transparent text-sm text-white outline-none placeholder:text-stone-500"
-            />
-          </div>
+          <SearchField
+            value={query}
+            onChange={setQuery}
+            placeholder="Szukaj po marce, modelu, kliencie lub rejestracji..."
+            className="sm:max-w-md"
+          />
           <ActionButton
             icon={ImagePlus}
             onClick={() => setIsUploadModalOpen(true)}
@@ -54,7 +53,7 @@ export function GalleryPage() {
             Dodaj zdjęcia
           </ActionButton>
         </div>
-      </section>
+      </ToolbarPanel>
 
       <section className="min-h-180">
         <GalleryGrid query={query} />

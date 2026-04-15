@@ -1,4 +1,4 @@
-﻿import type { ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
 type PageIntroProps = {
   eyebrow: string;
@@ -9,6 +9,18 @@ type PageIntroProps = {
     value: string;
   }>;
   action?: ReactNode;
+};
+
+type ParsedMetricValue = {
+  parts: Array<
+    | { type: 'text'; value: string }
+    | {
+        type: 'number';
+        numericValue: number;
+        decimals: number;
+      }
+  >;
+  hasNumericParts: boolean;
 };
 
 export function PageIntro({
@@ -46,7 +58,7 @@ export function PageIntro({
                     {metric.label}
                   </p>
                   <p className="mt-2 wrap-break-word text-2xl font-semibold tracking-[-0.04em] text-white">
-                    {metric.value}
+                    <AnimatedMetricValue value={metric.value} />
                   </p>
                 </article>
               ))}
@@ -56,4 +68,118 @@ export function PageIntro({
       </div>
     </section>
   );
+}
+
+function AnimatedMetricValue({ value }: { value: string }) {
+  const parsedValue = useMemo(() => parseMetricValue(value), [value]);
+  const [progress, setProgress] = useState(
+    parsedValue.hasNumericParts ? 0 : 1,
+  );
+
+  useEffect(() => {
+    if (!parsedValue.hasNumericParts) {
+      setProgress(1);
+      return;
+    }
+
+    if (
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      setProgress(1);
+      return;
+    }
+
+    setProgress(0);
+
+    const duration = 900;
+    const start = performance.now();
+    let frameId = 0;
+
+    function tick(now: number) {
+      const elapsed = now - start;
+      const nextProgress = Math.min(elapsed / duration, 1);
+      const easedProgress = 1 - Math.pow(1 - nextProgress, 3);
+
+      setProgress(easedProgress);
+
+      if (nextProgress < 1) {
+        frameId = window.requestAnimationFrame(tick);
+      }
+    }
+
+    frameId = window.requestAnimationFrame(tick);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [parsedValue]);
+
+  if (!parsedValue.hasNumericParts) {
+    return value;
+  }
+
+  return parsedValue.parts
+    .map((part) => {
+      if (part.type === 'text') {
+        return part.value;
+      }
+
+      return formatAnimatedNumber(part.numericValue * progress, part.decimals);
+    })
+    .join('');
+}
+
+function parseMetricValue(value: string): ParsedMetricValue {
+  const numberPattern = /\d(?:[\d\s,.]*\d)?|\d/g;
+  const parts: ParsedMetricValue['parts'] = [];
+  let currentIndex = 0;
+
+  for (const match of value.matchAll(numberPattern)) {
+    const raw = match[0];
+    const matchIndex = match.index ?? 0;
+
+    if (matchIndex > currentIndex) {
+      parts.push({
+        type: 'text',
+        value: value.slice(currentIndex, matchIndex),
+      });
+    }
+
+    const normalized = raw.replace(/\s/g, '').replace(',', '.');
+    const numericValue = Number.parseFloat(normalized);
+
+    if (Number.isNaN(numericValue)) {
+      parts.push({ type: 'text', value: raw });
+    } else {
+      const decimalPart = normalized.split('.')[1];
+
+      parts.push({
+        type: 'number',
+        numericValue,
+        decimals: decimalPart?.length ?? 0,
+      });
+    }
+
+    currentIndex = matchIndex + raw.length;
+  }
+
+  if (currentIndex < value.length) {
+    parts.push({
+      type: 'text',
+      value: value.slice(currentIndex),
+    });
+  }
+
+  return {
+    parts,
+    hasNumericParts: parts.some((part) => part.type === 'number'),
+  };
+}
+
+function formatAnimatedNumber(value: number, decimals: number) {
+  return new Intl.NumberFormat('pl-PL', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(value);
 }

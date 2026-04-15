@@ -1,6 +1,7 @@
-﻿import { CalendarPlus2, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { CalendarPlus2, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { BookingStatus } from '../../data/bookings';
 import { ActionButton } from '../ui/ActionButton';
+import { SearchField } from '../ui/SearchField';
 
 type BookingToolbarProps = {
   query: string;
@@ -107,15 +108,13 @@ export function BookingToolbar({
               <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">
                 Szukaj w wizytach
               </span>
-              <div className="mt-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 focus-within:border-amber-200/30 focus-within:bg-black/30">
-                <Search className="h-4 w-4 text-stone-500" />
-                <input
-                  value={query}
-                  onChange={(event) => onQueryChange(event.target.value)}
-                  placeholder="Np. BMW, Mazur, ceramika"
-                  className="w-full bg-transparent text-sm text-white outline-none placeholder:text-stone-500"
-                />
-              </div>
+              <SearchField
+                value={query}
+                onChange={onQueryChange}
+                placeholder="Np. BMW, Mazur, ceramika"
+                className="mt-2"
+                compact
+              />
             </label>
           </div>
         </div>
