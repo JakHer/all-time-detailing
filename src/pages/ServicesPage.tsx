@@ -128,8 +128,8 @@ export function ServicesPage() {
         onCreateClick={handleCreateClick}
       />
 
-      <section className="grid min-h-180 min-w-0 gap-6 overflow-hidden 2xl:grid-cols-[minmax(0,1fr)_minmax(0,500px)] 2xl:items-start">
-        <div className="min-w-0 max-w-full overflow-hidden">
+      <section className="grid min-h-180 min-w-0 gap-6 2xl:grid-cols-[minmax(0,1fr)_minmax(0,500px)] 2xl:items-start">
+        <div className="min-w-0 max-w-full">
           {isLoading ? (
             <div className="grid gap-3">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -145,7 +145,7 @@ export function ServicesPage() {
           )}
         </div>
 
-        <div className="min-w-0 max-w-full overflow-hidden">
+        <div className="min-w-0 max-w-full">
           <ServiceDetails
             service={selectedService}
             isLoading={isLoading && services.length === 0}

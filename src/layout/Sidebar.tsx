@@ -186,9 +186,7 @@ function SidebarContent({ onNavigate }: SidebarContentProps) {
 function getCurrentNavigationItem(pathname: string) {
   return (
     navigationItems.find((item) =>
-      item.to === '/'
-        ? pathname === '/'
-        : pathname.startsWith(item.to),
+      item.to === '/' ? pathname === '/' : pathname.startsWith(item.to),
     ) ?? navigationItems[0]
   );
 }

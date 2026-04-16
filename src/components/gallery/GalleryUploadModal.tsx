@@ -381,10 +381,10 @@ export function GalleryUploadModal({
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Przesyłanie...
                     </>
+                  ) : mode === 'portfolio' ? (
+                    'Zapisz w portfolio'
                   ) : (
-                    mode === 'portfolio'
-                      ? 'Zapisz w portfolio'
-                      : 'Zapisz w realizacji'
+                    'Zapisz w realizacji'
                   )}
                 </ActionButton>
               </div>

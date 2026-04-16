@@ -72,9 +72,7 @@ export function PageIntro({
 
 function AnimatedMetricValue({ value }: { value: string }) {
   const parsedValue = useMemo(() => parseMetricValue(value), [value]);
-  const [progress, setProgress] = useState(
-    parsedValue.hasNumericParts ? 0 : 1,
-  );
+  const [progress, setProgress] = useState(parsedValue.hasNumericParts ? 0 : 1);
 
   useEffect(() => {
     if (!parsedValue.hasNumericParts) {
