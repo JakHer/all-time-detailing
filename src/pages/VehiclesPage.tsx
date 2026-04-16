@@ -160,10 +160,10 @@ export function VehiclesPage() {
       />
 
       <section
-        className="grid min-h-180 min-w-0 gap-6 overflow-hidden 2xl:grid-cols-[minmax(0,1fr)_minmax(0,500px)] 2xl:items-start"
+        className="grid min-h-180 min-w-0 gap-6 2xl:grid-cols-[minmax(0,1fr)_minmax(0,500px)] 2xl:items-start"
         style={{ overflowAnchor: 'none' }}
       >
-        <div className="min-w-0 max-w-full overflow-hidden">
+        <div className="min-w-0 max-w-full">
           {isLoading ? (
             <div className="grid gap-3">
               {Array.from({ length: 5 }).map((_, index) => (
@@ -179,10 +179,7 @@ export function VehiclesPage() {
           )}
         </div>
 
-        <div
-          className="min-w-0 max-w-full overflow-hidden"
-          style={{ overflowAnchor: 'none' }}
-        >
+        <div className="min-w-0 max-w-full" style={{ overflowAnchor: 'none' }}>
           <VehicleDetails
             vehicle={selectedVehicle}
             isLoading={isLoading && vehicles.length === 0}
