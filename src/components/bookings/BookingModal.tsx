@@ -1,4 +1,4 @@
-﻿import { parseDate } from '@internationalized/date';
+import { parseDate } from '@internationalized/date';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button as AriaButton,
@@ -12,11 +12,24 @@ import {
   Heading,
 } from 'react-aria-components';
 import * as Dialog from '@radix-ui/react-dialog';
-import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  User,
+  Car,
+  Wrench,
+  Clock,
+  CreditCard,
+  Layout,
+  Info,
+  X,
+} from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Select } from '../ui/Select';
+import { Field, SectionTitle, inputClassName } from '../ui/FormElements';
 import { bookingStatuses, type Booking } from '../../data/bookings';
 import {
   formatDuration,
@@ -52,57 +65,6 @@ type BookingModalProps = {
   onSave: (booking: Booking | Omit<Booking, 'id'>) => void;
 };
 
-const copy = {
-  createTitle: 'Dodaj rezerwację',
-  editTitle: 'Zaktualizuj rezerwację',
-  description:
-    'Wybierz istniejącego klienta, pojazd i usługę z bazy Supabase, a formularz sam podpowie resztę danych wizyty.',
-  newVisit: 'Nowa wizyta',
-  editVisit: 'Edycja wizyty',
-  stepClient: '1. Klient',
-  stepClientDescription:
-    'Najpierw wybierz klienta z bazy. Jeśli ma przypisany tylko jeden samochód, podpowiemy go automatycznie.',
-  stepVehicle: '2. Pojazd',
-  stepVehicleDescription:
-    'Lista pojazdów zawęża się do aut przypisanych do wybranego klienta.',
-  stepService: '3. Usługa i termin',
-  stepServiceDescription:
-    'Usługa z katalogu podpowiada czas i kwotę, a termin ustawiasz w jednym polu z kalendarzem i godziną.',
-  pickClient: 'Wybierz klienta',
-  phone: 'Telefon',
-  clientVehicle: 'Pojazd klienta',
-  pickVehicle: 'Wybierz pojazd',
-  pickClientFirst: 'Najpierw wybierz klienta',
-  noVehicles: 'Ten klient nie ma jeszcze przypisanego pojazdu',
-  registration: 'Rejestracja',
-  catalogService: 'Usługa',
-  pickService: 'Wybierz usługę',
-  duration: 'Czas trwania',
-  client: 'Klient',
-  vehicle: 'Pojazd',
-  schedule: 'Termin wizyty',
-  amount: 'Kwota',
-  amountPlaceholder: 'np. 1 250 zł',
-  bay: 'Stanowisko',
-  status: 'Status',
-  notes: 'Notatki',
-  notesDescription:
-    'Tu możesz dopisać ustalenia z klientem, stan auta lub rzeczy do przypomnienia ekipie.',
-  close: 'Zamknij',
-  cancel: 'Anuluj',
-  saveCreate: 'Zapisz rezerwację',
-  saveEdit: 'Zapisz zmiany',
-  emptyService: 'Brak wybranej usługi z katalogu',
-  autoSelected: 'Podpowiedziano automatycznie',
-  noSelection: 'Brak wyboru',
-  openCalendar: 'Otwórz kalendarz',
-  chooseDate: 'Wybierz datę',
-  chooseTime: 'Godzina',
-};
-
-const inputClassName =
-  'w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none transition placeholder:text-stone-500 focus:border-amber-200/30 focus:bg-black/30 disabled:cursor-not-allowed disabled:opacity-60';
-
 export function BookingModal({
   mode,
   booking,
@@ -116,13 +78,8 @@ export function BookingModal({
   const [selectedVehicleId, setSelectedVehicleId] = useState('');
 
   const serviceOptions = useMemo(() => {
-    if (
-      !booking ||
-      services.some((service) => service.name === booking.service)
-    ) {
+    if (!booking || services.some((s) => s.name === booking.service))
       return services;
-    }
-
     return [
       ...services,
       {
@@ -150,23 +107,12 @@ export function BookingModal({
   });
 
   const values = watch();
-
   const filteredVehicles = useMemo(
     () =>
       selectedClientId
-        ? vehicles.filter((vehicle) => vehicle.clientId === selectedClientId)
+        ? vehicles.filter((v) => v.clientId === selectedClientId)
         : [],
     [selectedClientId, vehicles],
-  );
-
-  const selectedClient = clients.find(
-    (client) => client.id === selectedClientId,
-  );
-  const selectedVehicle = vehicles.find(
-    (vehicle) => vehicle.id === selectedVehicleId,
-  );
-  const selectedService = serviceOptions.find(
-    (service) => service.id === values.serviceId,
   );
 
   useEffect(() => {
@@ -176,395 +122,427 @@ export function BookingModal({
     reset(nextValues);
 
     const matchedVehicle = vehicles.find(
-      (vehicle) =>
-        vehicle.registration === booking?.licensePlate ||
-        vehicle.label === booking?.vehicle,
+      (v) =>
+        v.registration === booking?.licensePlate ||
+        v.label === booking?.vehicle,
     );
-    const inferredClientId = matchedVehicle?.clientId;
     const matchedClient =
-      clients.find((client) => client.id === inferredClientId) ??
+      clients.find((c) => c.id === matchedVehicle?.clientId) ??
       clients.find(
-        (client) =>
-          client.fullName === booking?.client &&
-          client.phone === booking?.phone,
+        (c) => c.fullName === booking?.client && c.phone === booking?.phone,
       );
 
     setSelectedClientId(matchedClient?.id ?? '');
     setSelectedVehicleId(matchedVehicle?.id ?? '');
   }, [booking, clients, reset, serviceOptions, vehicles]);
 
+  const lastAutoSelectedClientId = useRef('');
+
   useEffect(() => {
     if (!selectedClientId) {
+      lastAutoSelectedClientId.current = '';
       setSelectedVehicleId('');
       return;
     }
 
-    const alreadySelected = filteredVehicles.some(
-      (vehicle) => vehicle.id === selectedVehicleId,
-    );
-
-    if (alreadySelected) {
-      return;
+    // Auto-select only once when client changes
+    if (selectedClientId !== lastAutoSelectedClientId.current) {
+      if (filteredVehicles.length === 1) {
+        const [v] = filteredVehicles;
+        setSelectedVehicleId(v.id);
+        setValue('vehicle', v.label, { shouldDirty: true });
+        setValue('licensePlate', v.registration, { shouldDirty: true });
+      }
+      lastAutoSelectedClientId.current = selectedClientId;
     }
+  }, [filteredVehicles, selectedClientId, setValue]);
 
-    if (filteredVehicles.length === 1) {
-      const [singleVehicle] = filteredVehicles;
-      setSelectedVehicleId(singleVehicle.id);
-      setValue('vehicle', singleVehicle.label, { shouldDirty: true });
-      setValue('licensePlate', singleVehicle.registration, {
-        shouldDirty: true,
-      });
-      return;
-    }
+  const selectedClient = useMemo(
+    () => clients.find((c) => c.id === selectedClientId),
+    [clients, selectedClientId],
+  );
+  const selectedVehicle = useMemo(
+    () => vehicles.find((v) => v.id === selectedVehicleId),
+    [vehicles, selectedVehicleId],
+  );
 
-    setSelectedVehicleId('');
-    setValue('vehicle', '', { shouldDirty: true });
-    setValue('licensePlate', '', { shouldDirty: true });
-  }, [filteredVehicles, selectedClientId, selectedVehicleId, setValue]);
-
-  function handleClientChange(clientId: string) {
+  const handleClientChange = (clientId: string) => {
     setSelectedClientId(clientId);
     setSelectedVehicleId('');
-
     if (!clientId) {
       setValue('client', '', { shouldDirty: true });
       setValue('phone', '', { shouldDirty: true });
-      setValue('vehicle', '', { shouldDirty: true });
-      setValue('licensePlate', '', { shouldDirty: true });
       return;
     }
-
-    const nextClient = clients.find((client) => client.id === clientId);
-    if (!nextClient) {
-      return;
+    const client = clients.find((c) => c.id === clientId);
+    if (client) {
+      setValue('client', client.fullName, { shouldDirty: true });
+      setValue('phone', client.phone, { shouldDirty: true });
     }
+  };
 
-    setValue('client', nextClient.fullName, { shouldDirty: true });
-    setValue('phone', nextClient.phone, { shouldDirty: true });
-    setValue('vehicle', '', { shouldDirty: true });
-    setValue('licensePlate', '', { shouldDirty: true });
-  }
-
-  function handleVehicleChange(vehicleId: string) {
+  const handleVehicleChange = (vehicleId: string) => {
     setSelectedVehicleId(vehicleId);
-
-    if (!vehicleId) {
+    if (!vehicleId || vehicleId === 'new') {
       setValue('vehicle', '', { shouldDirty: true });
       setValue('licensePlate', '', { shouldDirty: true });
       return;
     }
-
-    const nextVehicle = vehicles.find((vehicle) => vehicle.id === vehicleId);
-    if (!nextVehicle) {
-      return;
+    const v = vehicles.find((v) => v.id === vehicleId);
+    if (v) {
+      setValue('vehicle', v.label, { shouldDirty: true });
+      setValue('licensePlate', v.registration, { shouldDirty: true });
     }
+  };
 
-    if (nextVehicle.clientId !== selectedClientId) {
-      const owner = clients.find(
-        (client) => client.id === nextVehicle.clientId,
-      );
-      if (owner) {
-        setSelectedClientId(owner.id);
-        setValue('client', owner.fullName, { shouldDirty: true });
-        setValue('phone', owner.phone, { shouldDirty: true });
-      }
-    }
-
-    setValue('vehicle', nextVehicle.label, { shouldDirty: true });
-    setValue('licensePlate', nextVehicle.registration, { shouldDirty: true });
-  }
-
-  function handleServiceChange(serviceId: string) {
-    const nextService = serviceOptions.find(
-      (service) => service.id === serviceId,
-    );
+  const handleServiceChange = (serviceId: string) => {
+    const s = serviceOptions.find((s) => s.id === serviceId);
     setValue('serviceId', serviceId, {
-      shouldDirty: true,
       shouldValidate: true,
-    });
-
-    if (!nextService) {
-      return;
-    }
-
-    setValue('duration', formatDuration(nextService.durationMinutes), {
       shouldDirty: true,
     });
-    setValue('amount', formatPrice(nextService.basePrice), {
-      shouldDirty: true,
-    });
-  }
-
-  function submit(valuesToSave: BookingFormValues) {
-    const chosenService = serviceOptions.find(
-      (service) => service.id === valuesToSave.serviceId,
-    );
-
-    if (!chosenService) {
-      return;
+    if (s) {
+      setValue('duration', formatDuration(s.durationMinutes), {
+        shouldDirty: true,
+      });
+      setValue('amount', formatPrice(s.basePrice), { shouldDirty: true });
     }
+  };
 
-    const [date, timeWithSeconds = '09:00'] =
-      valuesToSave.scheduledAt.split('T');
-    const time = timeWithSeconds.slice(0, 5);
+  const onSubmit = (data: BookingFormValues) => {
+    const service = serviceOptions.find((s) => s.id === data.serviceId);
+    if (!service) return;
 
+    const [date, timePart = '09:00'] = data.scheduledAt.split('T');
     const payload = {
-      client: valuesToSave.client,
-      phone: valuesToSave.phone,
-      vehicle: valuesToSave.vehicle,
-      licensePlate: valuesToSave.licensePlate,
+      ...data,
       date,
-      time,
-      service: chosenService.name,
-      duration: valuesToSave.duration,
-      amount: valuesToSave.amount,
-      bay: valuesToSave.bay,
-      status: valuesToSave.status,
-      notes: valuesToSave.notes,
+      time: timePart.slice(0, 5),
+      service: service.name,
     } satisfies Omit<Booking, 'id'>;
 
-    if (mode === 'edit' && booking) {
-      onSave({ ...booking, ...payload });
-      return;
-    }
-
-    onSave(payload);
-  }
+    onSave(mode === 'edit' && booking ? { ...booking, ...payload } : payload);
+  };
 
   return (
-    <Dialog.Root open onOpenChange={(isOpen) => !isOpen && onClose()}>
+    <Dialog.Root open onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100%-2rem)] max-w-4xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-4xl border border-white/10 bg-[#121314] p-6 shadow-[0_40px_140px_rgba(0,0,0,0.55)] md:p-8">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">
-                {mode === 'create' ? copy.newVisit : copy.editVisit}
-              </p>
-              <Dialog.Title className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white">
-                {mode === 'create' ? copy.createTitle : copy.editTitle}
-              </Dialog.Title>
-              <Dialog.Description className="mt-3 max-w-2xl text-sm leading-7 text-stone-300">
-                {copy.description}
-              </Dialog.Description>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl animate-in fade-in duration-300" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[96vh] w-[calc(100%-1rem)] max-w-5xl -translate-x-1/2 -translate-y-1/2 flex-col rounded-[32px] border border-white/10 bg-[#0d0e10] shadow-[0_40px_120px_rgba(0,0,0,0.7)] animate-in zoom-in-95 duration-300 lg:max-h-[92vh] lg:w-[calc(100%-4rem)] lg:rounded-[40px]">
+          <header className="flex shrink-0 items-center justify-between border-b border-white/5 bg-white/2 px-6 py-5 md:px-8">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400/10 text-amber-400">
+                <CalendarDays className="h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold tracking-tight text-white">
+                  {mode === 'create' ? 'Nowa rezerwacja' : 'Edycja wizyty'}
+                </h2>
+                <p className="text-xs font-medium text-stone-500 uppercase tracking-widest mt-0.5">
+                  {mode === 'create'
+                    ? 'Dodawanie do kalendarza'
+                    : 'Aktualizacja danych'}
+                </p>
+              </div>
             </div>
-
-            <Dialog.Close asChild>
-              <button
-                type="button"
-                className="rounded-full border border-white/10 bg-white/6 px-4 py-2 text-sm text-white transition hover:border-white/16 hover:bg-white/10"
-              >
-                {copy.close}
-              </button>
+            <Dialog.Close className="rounded-xl border border-white/10 bg-white/5 p-2.5 text-stone-400 transition hover:bg-white/10 hover:text-white">
+              <X className="h-5 w-5" />
             </Dialog.Close>
-          </div>
+          </header>
 
-          <div className="mt-6 grid gap-3 rounded-3xl border border-white/10 bg-black/18 p-4 md:grid-cols-3">
-            <SelectionChip
-              label={copy.stepClient}
-              value={
-                (selectedClient?.fullName ?? values.client) || copy.noSelection
-              }
-              helper={copy.stepClientDescription}
-            />
-            <SelectionChip
-              label={copy.stepVehicle}
-              value={
-                (selectedVehicle?.label ?? values.vehicle) || copy.noSelection
-              }
-              helper={
-                selectedVehicle
-                  ? copy.autoSelected
-                  : copy.stepVehicleDescription
-              }
-            />
-            <SelectionChip
-              label={copy.stepService}
-              value={selectedService?.name ?? copy.emptyService}
-              helper={
-                selectedService
-                  ? copy.autoSelected
-                  : copy.stepServiceDescription
-              }
-            />
-          </div>
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="flex flex-1 flex-col overflow-hidden"
+          >
+            <div className="flex-1 overflow-y-auto overscroll-contain p-6 md:p-8">
+              <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
+                <div className="space-y-8">
+                  <section className="space-y-5">
+                    <SectionTitle icon={User} title="Klient i Pojazd" />
 
-          <form className="mt-8 grid gap-6" onSubmit={handleSubmit(submit)}>
-            <section className="grid gap-4 rounded-3xl border border-white/10 bg-white/4 p-5">
-              <SectionHeading
-                title={copy.stepClient}
-                description={copy.stepClientDescription}
-              />
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label={copy.pickClient} error={errors.client?.message}>
-                  <Select
-                    value={selectedClientId}
-                    onChange={(event) => handleClientChange(event.target.value)}
-                    className={inputClassName}
-                  >
-                    <option value="">{copy.pickClient}</option>
-                    {clients.map((client) => (
-                      <option key={client.id} value={client.id}>
-                        {client.fullName} | {client.phone}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field label={copy.phone} error={errors.phone?.message}>
-                  <input {...register('phone')} className={inputClassName} />
-                </Field>
-                <Field label={copy.client} error={errors.client?.message}>
-                  <input {...register('client')} className={inputClassName} />
-                </Field>
-              </div>
-            </section>
+                    <div className="grid gap-4">
+                      {/* Client Selection */}
+                      {!selectedClientId || selectedClientId === 'new' ? (
+                        <div className="grid gap-4 animate-in fade-in duration-300">
+                          <Field label="Wybierz klienta z bazy">
+                            <Select
+                              value={selectedClientId}
+                              onChange={(e) =>
+                                handleClientChange(e.target.value)
+                              }
+                              className={inputClassName}
+                            >
+                              <option value="">Wybierz...</option>
+                              <option value="new">
+                                + Dodaj nowego klienta
+                              </option>
+                              {clients.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.fullName} | {c.phone}
+                                </option>
+                              ))}
+                            </Select>
+                          </Field>
 
-            <section className="grid gap-4 rounded-3xl border border-white/10 bg-white/4 p-5">
-              <SectionHeading
-                title={copy.stepVehicle}
-                description={copy.stepVehicleDescription}
-              />
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field
-                  label={copy.clientVehicle}
-                  error={errors.vehicle?.message}
-                >
-                  <Select
-                    value={selectedVehicleId}
-                    onChange={(event) =>
-                      handleVehicleChange(event.target.value)
-                    }
-                    disabled={!selectedClientId}
-                    className={inputClassName}
-                  >
-                    <option value="">
-                      {!selectedClientId
-                        ? copy.pickClientFirst
-                        : filteredVehicles.length > 0
-                          ? copy.pickVehicle
-                          : copy.noVehicles}
-                    </option>
-                    {filteredVehicles.map((vehicle) => (
-                      <option key={vehicle.id} value={vehicle.id}>
-                        {vehicle.label} | {vehicle.registration}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field label={copy.vehicle} error={errors.vehicle?.message}>
-                  <input {...register('vehicle')} className={inputClassName} />
-                </Field>
-                <Field
-                  label={copy.registration}
-                  error={errors.licensePlate?.message}
-                >
-                  <input
-                    {...register('licensePlate')}
-                    className={inputClassName}
-                  />
-                </Field>
-              </div>
-            </section>
+                          {selectedClientId === 'new' && (
+                            <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-300">
+                              <Field
+                                label="Imię i nazwisko"
+                                error={errors.client?.message}
+                              >
+                                <input
+                                  {...register('client')}
+                                  placeholder="np. Jan Kowalski"
+                                  className={inputClassName}
+                                />
+                              </Field>
+                              <Field
+                                label="Telefon"
+                                error={errors.phone?.message}
+                              >
+                                <input
+                                  {...register('phone')}
+                                  placeholder="000 000 000"
+                                  className={inputClassName}
+                                />
+                              </Field>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between rounded-2xl border border-amber-200/10 bg-amber-400/5 p-4 animate-in zoom-in-95 duration-300">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-400/10 text-amber-400">
+                              <User className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-white">
+                                {selectedClient?.fullName}
+                              </p>
+                              <p className="text-xs text-stone-500">
+                                {selectedClient?.phone}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleClientChange('')}
+                            className="text-[10px] font-bold uppercase tracking-widest text-amber-200/60 hover:text-amber-200"
+                          >
+                            Zmień
+                          </button>
+                        </div>
+                      )}
 
-            <section className="grid gap-4 rounded-3xl border border-white/10 bg-white/4 p-5">
-              <SectionHeading
-                title={copy.stepService}
-                description={copy.stepServiceDescription}
-              />
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field
-                  label={copy.catalogService}
-                  error={errors.serviceId?.message}
-                >
-                  <Select
-                    value={values.serviceId}
-                    onChange={(event) =>
-                      handleServiceChange(event.target.value)
-                    }
-                    className={inputClassName}
-                  >
-                    <option value="">{copy.pickService}</option>
-                    {serviceOptions.map((service) => (
-                      <option key={service.id} value={service.id}>
-                        {service.name}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field
-                  label={copy.schedule}
-                  error={errors.scheduledAt?.message}
-                >
-                  <Controller
-                    control={control}
-                    name="scheduledAt"
-                    render={({ field }) => (
-                      <BookingScheduleField
-                        value={field.value}
-                        onChange={field.onChange}
+                      <div className="h-px bg-white/5 my-2" />
+
+                      {/* Vehicle Selection */}
+                      {!selectedVehicleId || selectedVehicleId === 'new' ? (
+                        <div className="grid gap-4 animate-in fade-in duration-300">
+                          <Field label="Pojazd klienta">
+                            <Select
+                              value={selectedVehicleId}
+                              onChange={(e) =>
+                                handleVehicleChange(e.target.value)
+                              }
+                              disabled={!selectedClientId}
+                              className={inputClassName}
+                            >
+                              <option value="">
+                                {selectedClientId
+                                  ? 'Wybierz z listy...'
+                                  : 'Najpierw wybierz klienta'}
+                              </option>
+                              {selectedClientId && (
+                                <option value="new">+ Dodaj nowy pojazd</option>
+                              )}
+                              {filteredVehicles.map((v) => (
+                                <option key={v.id} value={v.id}>
+                                  {v.label} | {v.registration}
+                                </option>
+                              ))}
+                            </Select>
+                          </Field>
+
+                          {(selectedVehicleId === 'new' ||
+                            selectedClientId === 'new') && (
+                            <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-300">
+                              <Field
+                                label="Marka i model"
+                                error={errors.vehicle?.message}
+                              >
+                                <input
+                                  {...register('vehicle')}
+                                  placeholder="np. Audi A6"
+                                  className={inputClassName}
+                                />
+                              </Field>
+                              <Field
+                                label="Rejestracja"
+                                error={errors.licensePlate?.message}
+                              >
+                                <input
+                                  {...register('licensePlate')}
+                                  placeholder="KR 12345"
+                                  className={inputClassName}
+                                />
+                              </Field>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between rounded-2xl border border-white/5 bg-white/2 p-4 animate-in zoom-in-95 duration-300">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-stone-400">
+                              <Car className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-white">
+                                {selectedVehicle?.label}
+                              </p>
+                              <p className="text-[10px] font-mono text-stone-500 uppercase">
+                                {selectedVehicle?.registration}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              filteredVehicles.length > 1
+                                ? handleVehicleChange('')
+                                : handleVehicleChange('new')
+                            }
+                            className="text-[10px] font-bold uppercase tracking-widest text-stone-500 hover:text-white"
+                          >
+                            {filteredVehicles.length > 1
+                              ? 'Zmień'
+                              : 'Dodaj pojazd'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </section>
+                  <section className="space-y-5">
+                    <SectionTitle icon={Wrench} title="Usługa" />
+                    <Field
+                      label="Usługa z katalogu"
+                      error={errors.serviceId?.message}
+                    >
+                      <Select
+                        value={values.serviceId}
+                        onChange={(e) => handleServiceChange(e.target.value)}
+                        className={inputClassName}
+                      >
+                        <option value="">Wybierz usługę...</option>
+                        {serviceOptions.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </Select>
+                    </Field>
+                  </section>
+                </div>
+
+                <div className="space-y-8 mt-8 md:mt-0 border-t border-white/5 pt-8 md:border-t-0 md:pt-0">
+                  <section className="space-y-5">
+                    <SectionTitle icon={Clock} title="Termin i Logistyka" />
+                    <div className="grid gap-4">
+                      <Field
+                        label="Data i godzina"
+                        error={errors.scheduledAt?.message}
+                      >
+                        <Controller
+                          control={control}
+                          name="scheduledAt"
+                          render={({ field }) => (
+                            <BookingScheduleField
+                              value={field.value}
+                              onChange={field.onChange}
+                            />
+                          )}
+                        />
+                      </Field>
+                      <div className="grid grid-cols-2 gap-4">
+                        <Field
+                          label="Czas trwania"
+                          error={errors.duration?.message}
+                        >
+                          <div className="relative">
+                            <input
+                              {...register('duration')}
+                              placeholder="2 h"
+                              className={`${inputClassName} pl-10`}
+                            />
+                            <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-500" />
+                          </div>
+                        </Field>
+                        <Field label="Kwota" error={errors.amount?.message}>
+                          <div className="relative">
+                            <input
+                              {...register('amount')}
+                              placeholder="500 zł"
+                              className={`${inputClassName} pl-10`}
+                            />
+                            <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-500" />
+                          </div>
+                        </Field>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <Field label="Stanowisko" error={errors.bay?.message}>
+                          <div className="relative">
+                            <input
+                              {...register('bay')}
+                              className={`${inputClassName} pl-10`}
+                            />
+                            <Layout className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-500" />
+                          </div>
+                        </Field>
+                        <Field label="Status" error={errors.status?.message}>
+                          <Select
+                            {...register('status')}
+                            className={inputClassName}
+                          >
+                            {bookingStatuses.map((s) => (
+                              <option key={s} value={s}>
+                                {s}
+                              </option>
+                            ))}
+                          </Select>
+                        </Field>
+                      </div>
+                    </div>
+                  </section>
+                  <section className="space-y-5">
+                    <SectionTitle icon={Info} title="Dodatkowe informacje" />
+                    <Field label="Notatki do rezerwacji">
+                      <textarea
+                        {...register('notes')}
+                        rows={4}
+                        placeholder="Wpisz ustalenia..."
+                        className={`${inputClassName} resize-none`}
                       />
-                    )}
-                  />
-                </Field>
-                <Field label={copy.duration} error={errors.duration?.message}>
-                  <input
-                    {...register('duration')}
-                    placeholder="np. 4 h"
-                    className={inputClassName}
-                  />
-                </Field>
-                <Field label={copy.amount} error={errors.amount?.message}>
-                  <input
-                    {...register('amount')}
-                    placeholder={copy.amountPlaceholder}
-                    className={inputClassName}
-                  />
-                </Field>
-                <Field label={copy.bay} error={errors.bay?.message}>
-                  <input {...register('bay')} className={inputClassName} />
-                </Field>
-                <Field label={copy.status} error={errors.status?.message}>
-                  <Select {...register('status')} className={inputClassName}>
-                    {bookingStatuses.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
+                    </Field>
+                  </section>
+                </div>
               </div>
-            </section>
-
-            <section className="grid gap-4 rounded-3xl border border-white/10 bg-white/4 p-5">
-              <SectionHeading
-                title={copy.notes}
-                description={copy.notesDescription}
-              />
-              <Field label={copy.notes}>
-                <textarea
-                  {...register('notes')}
-                  rows={5}
-                  className={`${inputClassName} resize-none`}
-                />
-              </Field>
-            </section>
-
-            <div className="mt-2 flex flex-wrap justify-end gap-3">
+            </div>
+            <footer className="flex shrink-0 items-center justify-end gap-3 border-t border-white/5 bg-white/2 px-6 py-5 md:px-8">
               <Dialog.Close asChild>
                 <button
                   type="button"
-                  className="rounded-full border border-white/10 bg-white/6 px-5 py-3 text-sm text-white transition hover:border-white/16 hover:bg-white/10"
+                  className="rounded-2xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-medium text-white transition hover:bg-white/10"
                 >
-                  {copy.cancel}
+                  Anuluj
                 </button>
               </Dialog.Close>
               <button
                 type="submit"
-                className="rounded-full bg-linear-to-br from-amber-200 to-amber-400 px-5 py-3 text-sm font-semibold text-stone-950 transition hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(214,158,46,0.25)]"
+                className="rounded-2xl bg-amber-400 px-8 py-3 text-sm font-bold text-black shadow-[0_10px_20px_rgba(251,191,36,0.2)] transition hover:-translate-y-0.5 hover:bg-amber-300"
               >
-                {mode === 'create' ? copy.saveCreate : copy.saveEdit}
+                {mode === 'create' ? 'Zatwierdź rezerwację' : 'Zapisz zmiany'}
               </button>
-            </div>
+            </footer>
           </form>
         </Dialog.Content>
       </Dialog.Portal>
@@ -572,119 +550,64 @@ export function BookingModal({
   );
 }
 
-type BookingScheduleFieldProps = {
+function BookingScheduleField({
+  value,
+  onChange,
+}: {
   value: string;
-  onChange: (value: string) => void;
-};
-
-function BookingScheduleField({ value, onChange }: BookingScheduleFieldProps) {
+  onChange: (v: string) => void;
+}) {
   const [datePart = createTodayDate(), timePart = '09:00'] = value.split('T');
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const calendarContainerRef = useRef<HTMLDivElement | null>(null);
-  const previousDateRef = useRef(datePart);
-  const suppressNextToggleRef = useRef(false);
-
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!isCalendarOpen) {
-      return;
-    }
-
-    function handlePointerDown(event: PointerEvent) {
-      const target = event.target;
-
-      if (
-        target instanceof Node &&
-        !calendarContainerRef.current?.contains(target)
-      ) {
-        setIsCalendarOpen(false);
-      }
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setIsCalendarOpen(false);
-      }
-    }
-
-    window.addEventListener('pointerdown', handlePointerDown);
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      window.removeEventListener('pointerdown', handlePointerDown);
-      window.removeEventListener('keydown', handleKeyDown);
+    if (!isOpen) return;
+    const h = (e: MouseEvent) => {
+      if (!containerRef.current?.contains(e.target as Node)) setIsOpen(false);
     };
-  }, [isCalendarOpen]);
-
-  useEffect(() => {
-    if (previousDateRef.current !== datePart) {
-      previousDateRef.current = datePart;
-      setIsCalendarOpen(false);
-      return;
-    }
-
-    previousDateRef.current = datePart;
-  }, [datePart]);
-
-  function updateDate(nextDate: string) {
-    suppressNextToggleRef.current = true;
-    onChange(`${nextDate}T${timePart}`);
-  }
-
-  function updateTime(nextTime: string) {
-    onChange(`${datePart}T${nextTime}`);
-  }
-
+    window.addEventListener('mousedown', h);
+    return () => window.removeEventListener('mousedown', h);
+  }, [isOpen]);
   return (
-    <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_148px]">
-      <div ref={calendarContainerRef} className="relative">
+    <div className="grid grid-cols-[1fr_120px] gap-2">
+      <div ref={containerRef} className="relative">
         <button
           type="button"
-          onClick={() => {
-            if (suppressNextToggleRef.current) {
-              suppressNextToggleRef.current = false;
-              return;
-            }
-
-            setIsCalendarOpen((open) => !open);
-          }}
-          className={`${inputClassName} flex items-center justify-between gap-3 text-left`}
-          aria-label={copy.openCalendar}
-          aria-expanded={isCalendarOpen}
+          onClick={() => setIsOpen(!isOpen)}
+          className={`${inputClassName} flex items-center justify-between text-left`}
         >
-          <span>{formatDateLabel(datePart)}</span>
-          <CalendarDays className="h-4 w-4 shrink-0 text-stone-400" />
+          <span className="truncate">{formatDateLabel(datePart)}</span>
+          <CalendarDays className="h-4 w-4 shrink-0 text-stone-500" />
         </button>
-
-        {isCalendarOpen ? (
-          <div className="absolute left-0 top-[calc(100%+0.75rem)] z-60">
-            <AriaDialog className="rounded-3xl border border-white/10 bg-[#121314] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.5)]">
+        {isOpen && (
+          <div className="absolute left-0 top-full z-60 mt-2 animate-in fade-in slide-in-from-top-2 duration-200">
+            <AriaDialog className="rounded-3xl border border-white/10 bg-[#161719] p-4 shadow-2xl outline-none">
               <Calendar
                 value={parseDate(datePart)}
-                onChange={(nextValue) =>
-                  nextValue ? updateDate(nextValue.toString()) : undefined
-                }
-                className="w-[320px] max-w-[calc(100vw-3rem)]"
+                onChange={(d) => {
+                  onChange(`${d.toString()}T${timePart}`);
+                  setIsOpen(false);
+                }}
               >
-                <header className="flex items-center justify-between gap-3">
+                <header className="flex items-center justify-between gap-4 mb-4">
                   <AriaButton
                     slot="previous"
-                    className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/6 text-stone-200 transition hover:border-white/16 hover:bg-white/10"
+                    className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white transition"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </AriaButton>
-                  <Heading className="text-sm font-semibold uppercase tracking-[0.18em] text-stone-200" />
+                  <Heading className="text-xs font-bold uppercase tracking-widest text-white" />
                   <AriaButton
                     slot="next"
-                    className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/6 text-stone-200 transition hover:border-white/16 hover:bg-white/10"
+                    className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white transition"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </AriaButton>
                 </header>
-
-                <CalendarGrid className="mt-4 w-full border-separate border-spacing-1">
+                <CalendarGrid className="w-full border-separate border-spacing-1">
                   <CalendarGridHeader>
                     {(day) => (
-                      <CalendarHeaderCell className="pb-2 text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">
+                      <CalendarHeaderCell className="pb-2 text-[10px] font-bold text-stone-600 uppercase">
                         {day}
                       </CalendarHeaderCell>
                     )}
@@ -693,27 +616,8 @@ function BookingScheduleField({ value, onChange }: BookingScheduleFieldProps) {
                     {(date) => (
                       <CalendarCell
                         date={date}
-                        className={({
-                          isDisabled,
-                          isOutsideMonth,
-                          isSelected,
-                          isToday,
-                        }) =>
-                          [
-                            'flex h-10 w-10 items-center justify-center rounded-full text-sm outline-none transition',
-                            isOutsideMonth
-                              ? 'text-stone-600'
-                              : 'text-stone-200',
-                            isDisabled
-                              ? 'cursor-not-allowed opacity-40'
-                              : 'cursor-pointer',
-                            isSelected
-                              ? 'bg-amber-300 text-stone-950'
-                              : 'hover:bg-white/10',
-                            isToday && !isSelected
-                              ? 'border border-amber-200/40'
-                              : '',
-                          ].join(' ')
+                        className={({ isSelected, isToday, isOutsideMonth }) =>
+                          `flex h-9 w-9 items-center justify-center rounded-xl text-xs transition cursor-pointer outline-none ${isOutsideMonth ? 'text-stone-800' : 'text-stone-300'} ${isSelected ? 'bg-amber-400 !text-black font-bold' : 'hover:bg-white/10'} ${isToday && !isSelected ? 'ring-1 ring-amber-400/50' : ''}`
                         }
                       />
                     )}
@@ -722,178 +626,83 @@ function BookingScheduleField({ value, onChange }: BookingScheduleFieldProps) {
               </Calendar>
             </AriaDialog>
           </div>
-        ) : null}
+        )}
       </div>
-
-      <div className="relative">
-        <Select
-          value={timePart}
-          onChange={(event) => updateTime(event.target.value)}
-          className={inputClassName}
-          aria-label={copy.chooseTime}
-        >
-          {timeOptions.map((timeOption) => (
-            <option key={timeOption} value={timeOption}>
-              {timeOption}
-            </option>
-          ))}
-        </Select>
-      </div>
-    </div>
-  );
-}
-
-type FieldProps = {
-  label: string;
-  children: ReactNode;
-  error?: string;
-};
-
-type SectionHeadingProps = {
-  title: string;
-  description: string;
-};
-
-type SelectionChipProps = {
-  label: string;
-  value: string;
-  helper: string;
-};
-
-function Field({ label, children, error }: FieldProps) {
-  return (
-    <label className="block">
-      <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-stone-500">
-        {label}
-      </span>
-      {children}
-      {error ? (
-        <span className="mt-2 block text-sm text-rose-300">{error}</span>
-      ) : null}
-    </label>
-  );
-}
-
-function SectionHeading({ title, description }: SectionHeadingProps) {
-  return (
-    <div className="flex flex-col gap-1">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">
-        {title}
-      </p>
-      <p className="text-sm leading-7 text-stone-400">{description}</p>
-    </div>
-  );
-}
-
-function SelectionChip({ label, value, helper }: SelectionChipProps) {
-  return (
-    <div className="rounded-2xl border border-white/8 bg-white/6 px-4 py-3">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">
-        {label}
-      </p>
-      <p className="mt-2 text-sm font-medium text-white">{value}</p>
-      <p className="mt-1 text-xs leading-6 text-stone-400">{helper}</p>
+      <Select
+        value={timePart}
+        onChange={(e) => onChange(`${datePart}T${e.target.value}`)}
+        className={inputClassName}
+      >
+        {timeOptions.map((t) => (
+          <option key={t} value={t}>
+            {t}
+          </option>
+        ))}
+      </Select>
     </div>
   );
 }
 
 function createEmptyFormValues(): BookingFormValues {
+  const n = new Date();
+  n.setMinutes(Math.ceil(n.getMinutes() / 15) * 15, 0, 0);
   return {
     client: '',
     phone: '',
     vehicle: '',
     licensePlate: '',
-    scheduledAt: createInitialScheduledAt(),
+    scheduledAt: `${createDateString(n)}T${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`,
     serviceId: '',
-    duration: '',
-    amount: '',
+    duration: '2 h',
+    amount: '0 zł',
     bay: 'Stanowisko 1',
     status: 'Nowa',
     notes: '',
   };
 }
-
-function mapBookingToValues(
-  booking: Booking,
-  services: ServiceOption[],
-): BookingFormValues {
-  const matchingService = services.find(
-    (service) => service.name === booking.service,
-  );
-
+function mapBookingToValues(b: Booking, s: ServiceOption[]): BookingFormValues {
   return {
-    client: booking.client,
-    phone: booking.phone,
-    vehicle: booking.vehicle,
-    licensePlate: booking.licensePlate,
-    scheduledAt: `${booking.date}T${booking.time}`,
-    serviceId: matchingService?.id ?? '',
-    duration: booking.duration,
-    amount: booking.amount,
-    bay: booking.bay,
-    status: booking.status,
-    notes: booking.notes,
+    client: b.client,
+    phone: b.phone,
+    vehicle: b.vehicle,
+    licensePlate: b.licensePlate,
+    scheduledAt: `${b.date}T${b.time}`,
+    serviceId: s.find((x) => x.name === b.service)?.id ?? '',
+    duration: b.duration,
+    amount: b.amount,
+    bay: b.bay,
+    status: b.status,
+    notes: b.notes,
   };
 }
-
-function createInitialScheduledAt() {
-  const value = new Date();
-  value.setMinutes(Math.ceil(value.getMinutes() / 15) * 15, 0, 0);
-
-  return `${createDateString(value)}T${String(value.getHours()).padStart(2, '0')}:${String(value.getMinutes()).padStart(2, '0')}`;
+function createDateString(d: Date) {
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, '0'),
+    String(d.getDate()).padStart(2, '0'),
+  ].join('-');
 }
-
 function createTodayDate() {
   return createDateString(new Date());
 }
-
-function formatDateLabel(value: string) {
-  const [year, month, day] = value.split('-').map(Number);
-
-  if (!year || !month || !day) {
-    return copy.chooseDate;
-  }
-
+function formatDateLabel(v: string) {
+  const [y, m, d] = v.split('-').map(Number);
   return new Intl.DateTimeFormat('pl-PL', {
     day: '2-digit',
     month: 'long',
     year: 'numeric',
-  }).format(new Date(year, month - 1, day));
+  }).format(new Date(y, m - 1, d));
 }
-
-function createDateString(value: Date) {
-  return [
-    value.getFullYear(),
-    String(value.getMonth() + 1).padStart(2, '0'),
-    String(value.getDate()).padStart(2, '0'),
-  ].join('-');
+function parseDurationMinutes(d: string) {
+  const n = Number.parseFloat(d.replace(/[^\d.]/g, ''));
+  return Number.isNaN(n) ? 60 : Math.round(n * 60);
 }
-
-function parseDurationMinutes(duration: string) {
-  const normalized = duration.replace(',', '.').trim();
-  const numericValue = Number.parseFloat(normalized.replace(/[^\d.]/g, ''));
-
-  if (Number.isNaN(numericValue) || numericValue <= 0) {
-    return 60;
-  }
-
-  return Math.round(numericValue * 60);
+function parseAmountValue(a: string) {
+  const n = Number.parseFloat(a.replace(/[^\d.]/g, ''));
+  return Number.isNaN(n) ? 0 : n;
 }
-
-function parseAmountValue(amount: string) {
-  const normalized = amount.replace(',', '.').replace(/[^\d.]/g, '');
-  const numericValue = Number.parseFloat(normalized);
-
-  if (Number.isNaN(numericValue) || numericValue < 0) {
-    return 0;
-  }
-
-  return numericValue;
-}
-
-const timeOptions = Array.from({ length: 24 * 4 }, (_, index) => {
-  const hours = String(Math.floor(index / 4)).padStart(2, '0');
-  const minutes = String((index % 4) * 15).padStart(2, '0');
-
-  return `${hours}:${minutes}`;
+const timeOptions = Array.from({ length: 24 * 4 }, (_, i) => {
+  const h = String(Math.floor(i / 4)).padStart(2, '0');
+  const m = String((i % 4) * 15).padStart(2, '0');
+  return `${h}:${m}`;
 });

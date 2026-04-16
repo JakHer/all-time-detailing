@@ -1,12 +1,13 @@
-﻿import * as Dialog from '@radix-ui/react-dialog';
+import * as Dialog from '@radix-ui/react-dialog';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { X } from 'lucide-react';
+import { X, Car, Info, MessageSquare } from 'lucide-react';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import type { ClientWithRelations } from '../../lib/clients';
 import type { NewVehicle, Vehicle } from '../../lib/vehicles';
 import { Select } from '../ui/Select';
+import { Field, SectionTitle, inputClassName } from '../ui/FormElements';
 
 const vehicleSchema = z.object({
   client_id: z.string().min(1, 'Wybierz właściciela pojazdu.'),
@@ -38,9 +39,6 @@ type VehicleModalProps = {
   title: string;
 };
 
-const inputClassName =
-  'w-full rounded-2xl border border-white/8 bg-white/4 px-4 py-3 text-sm text-white placeholder:text-stone-600 transition-all focus:border-white/20 focus:outline-none focus:ring-4 focus:ring-white/2';
-
 export function VehicleModal({
   isOpen,
   onClose,
@@ -68,10 +66,7 @@ export function VehicleModal({
   });
 
   useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
+    if (!isOpen) return;
     if (initialData) {
       reset({
         client_id: initialData.client_id,
@@ -84,43 +79,42 @@ export function VehicleModal({
         color: initialData.color || '',
         notes: initialData.notes || '',
       });
-      return;
+    } else {
+      reset({
+        client_id: clients[0]?.id ?? '',
+        make: '',
+        model: '',
+        registration: '',
+        production_year: '',
+        color: '',
+        notes: '',
+      });
     }
-
-    reset({
-      client_id: clients[0]?.id ?? '',
-      make: '',
-      model: '',
-      registration: '',
-      production_year: '',
-      color: '',
-      notes: '',
-    });
   }, [clients, initialData, isOpen, reset]);
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 rounded-4xl border border-white/10 bg-[#161719] p-6 shadow-2xl md:p-8">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">
-                Pojazdy
-              </p>
-              <Dialog.Title className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white">
-                {title}
-              </Dialog.Title>
-              <Dialog.Description className="mt-3 max-w-xl text-sm leading-7 text-stone-400">
-                Uzupełnij dane auta i przypisz właściciela, aby pojazd był
-                gotowy do wykorzystania w rezerwacjach i historii usług.
-              </Dialog.Description>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl animate-in fade-in duration-300" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[96vh] w-[calc(100%-1rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 flex-col rounded-[32px] border border-white/10 bg-[#0d0e10] shadow-[0_40px_120px_rgba(0,0,0,0.7)] animate-in zoom-in-95 duration-300 md:max-h-[92vh] md:w-[calc(100%-2rem)] md:rounded-[40px]">
+          <header className="flex shrink-0 items-center justify-between border-b border-white/5 bg-white/2 px-6 py-5 md:px-8">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400/10 text-amber-400">
+                <Car className="h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold tracking-tight text-white">
+                  {title}
+                </h2>
+                <p className="text-xs font-medium text-stone-500 uppercase tracking-widest mt-0.5">
+                  Zarządzanie parkiem maszyn
+                </p>
+              </div>
             </div>
-
-            <Dialog.Close className="rounded-2xl border border-white/10 bg-white/6 p-2.5 text-stone-400 transition hover:border-white/16 hover:bg-white/10 hover:text-white">
+            <Dialog.Close className="rounded-xl border border-white/10 bg-white/5 p-2.5 text-stone-400 transition hover:bg-white/10 hover:text-white">
               <X className="h-5 w-5" />
             </Dialog.Close>
-          </div>
+          </header>
 
           <form
             onSubmit={handleSubmit(async (values) => {
@@ -136,109 +130,101 @@ export function VehicleModal({
                 notes: values.notes?.trim() || null,
               });
             })}
-            className="mt-8 grid gap-6"
+            className="flex flex-1 flex-col overflow-hidden"
           >
-            <section className="grid gap-4 rounded-3xl border border-white/10 bg-white/4 p-5">
-              <SectionHeading
-                title="Podstawowe dane"
-                description="Te pola budują kartotekę auta i pozwolą szybko filtrować pojazdy w recepcji."
-              />
+            <div className="flex-1 overflow-y-auto overscroll-contain p-6 md:p-8 space-y-8">
+              <section className="space-y-5">
+                <SectionTitle icon={Info} title="Podstawowe dane" />
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Właściciel" error={errors.client_id?.message}>
-                  <Select {...register('client_id')} className={inputClassName}>
-                    <option value="" className="bg-[#161719]">
-                      Wybierz klienta
-                    </option>
-                    {clients.map((client) => (
-                      <option
-                        key={client.id}
-                        value={client.id}
-                        className="bg-[#161719]"
+                <div className="grid gap-4">
+                  <Field label="Właściciel" error={errors.client_id?.message}>
+                    <Select
+                      {...register('client_id')}
+                      className={inputClassName}
+                    >
+                      <option value="">Wybierz klienta</option>
+                      {clients.map((client) => (
+                        <option key={client.id} value={client.id}>
+                          {client.full_name}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field
+                      label="Numer rejestracyjny"
+                      error={errors.registration?.message}
+                    >
+                      <input
+                        {...register('registration')}
+                        placeholder="np. WI 1234A"
+                        className={inputClassName}
+                      />
+                    </Field>
+                    <Field label="Marka" error={errors.make?.message}>
+                      <input
+                        {...register('make')}
+                        placeholder="np. BMW"
+                        className={inputClassName}
+                      />
+                    </Field>
+                    <Field label="Model" error={errors.model?.message}>
+                      <input
+                        {...register('model')}
+                        placeholder="np. 530d Touring"
+                        className={inputClassName}
+                      />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-4">
+                      <Field
+                        label="Rok produkcji"
+                        error={errors.production_year?.message}
                       >
-                        {client.full_name}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
+                        <input
+                          {...register('production_year')}
+                          placeholder="2022"
+                          inputMode="numeric"
+                          className={inputClassName}
+                        />
+                      </Field>
+                      <Field label="Kolor" error={errors.color?.message}>
+                        <input
+                          {...register('color')}
+                          placeholder="np. Czarny"
+                          className={inputClassName}
+                        />
+                      </Field>
+                    </div>
+                  </div>
+                </div>
+              </section>
 
-                <Field
-                  label="Numer rejestracyjny"
-                  error={errors.registration?.message}
-                >
-                  <input
-                    {...register('registration')}
-                    placeholder="np. WI 1234A"
-                    className={inputClassName}
+              <section className="space-y-5">
+                <SectionTitle icon={MessageSquare} title="Notatki" />
+                <Field label="Notatki o pojeździe">
+                  <textarea
+                    {...register('notes')}
+                    rows={5}
+                    placeholder="Uwagi o lakierze, historii detailingu..."
+                    className={`${inputClassName} resize-none`}
                   />
                 </Field>
+              </section>
+            </div>
 
-                <Field label="Marka" error={errors.make?.message}>
-                  <input
-                    {...register('make')}
-                    placeholder="np. BMW"
-                    className={inputClassName}
-                  />
-                </Field>
-
-                <Field label="Model" error={errors.model?.message}>
-                  <input
-                    {...register('model')}
-                    placeholder="np. 530d Touring"
-                    className={inputClassName}
-                  />
-                </Field>
-
-                <Field
-                  label="Rok produkcji"
-                  error={errors.production_year?.message}
-                >
-                  <input
-                    {...register('production_year')}
-                    placeholder="np. 2022"
-                    inputMode="numeric"
-                    className={inputClassName}
-                  />
-                </Field>
-
-                <Field label="Kolor" error={errors.color?.message}>
-                  <input
-                    {...register('color')}
-                    placeholder="np. Czarny metalik"
-                    className={inputClassName}
-                  />
-                </Field>
-              </div>
-            </section>
-
-            <section className="grid gap-4 rounded-3xl border border-white/10 bg-white/4 p-5">
-              <SectionHeading
-                title="Notatki"
-                description="Miejsce na uwagi o lakierze, wnętrzu, uszkodzeniach lub historii detailingu."
-              />
-
-              <Field label="Notatki o pojeździe">
-                <textarea
-                  {...register('notes')}
-                  rows={5}
-                  placeholder="Auto po korekcie w 2024, rysa na tylnym zderzaku, klient prosi o ostrożność przy felgach..."
-                  className={`${inputClassName} resize-none`}
-                />
-              </Field>
-            </section>
-
-            <div className="flex flex-wrap justify-end gap-3">
+            <footer className="flex shrink-0 items-center justify-end gap-3 border-t border-white/5 bg-white/2 px-6 py-5 md:px-8">
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-full border border-white/10 bg-white/6 px-5 py-3 text-sm font-medium text-white transition hover:border-white/16 hover:bg-white/10"
+                className="rounded-2xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-medium text-white transition hover:bg-white/10"
               >
                 Anuluj
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition hover:scale-[1.01] disabled:opacity-50 disabled:hover:scale-100"
+                className="rounded-2xl bg-amber-400 px-8 py-3 text-sm font-bold text-black shadow-[0_10px_20px_rgba(251,191,36,0.2)] transition hover:-translate-y-0.5 hover:bg-amber-300 disabled:opacity-50 disabled:hover:translate-y-0"
               >
                 {isSubmitting
                   ? 'Zapisywanie...'
@@ -246,49 +232,10 @@ export function VehicleModal({
                     ? 'Zapisz zmiany'
                     : 'Dodaj pojazd'}
               </button>
-            </div>
+            </footer>
           </form>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
-  );
-}
-
-function Field({
-  label,
-  children,
-  error,
-}: {
-  label: string;
-  children: React.ReactNode;
-  error?: string;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-        {label}
-      </span>
-      {children}
-      {error ? (
-        <span className="mt-2 block text-sm text-rose-300">{error}</span>
-      ) : null}
-    </label>
-  );
-}
-
-function SectionHeading({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">
-        {title}
-      </p>
-      <p className="text-sm leading-7 text-stone-400">{description}</p>
-    </div>
   );
 }

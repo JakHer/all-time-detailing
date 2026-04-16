@@ -1,10 +1,11 @@
-﻿import * as Dialog from '@radix-ui/react-dialog';
+import * as Dialog from '@radix-ui/react-dialog';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { X } from 'lucide-react';
+import { X, User, Info, MessageSquare } from 'lucide-react';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import type { Client, NewClient } from '../../lib/clients';
+import { Field, SectionTitle, inputClassName } from '../ui/FormElements';
 
 const customerSchema = z.object({
   full_name: z.string().min(2, 'Imię i nazwisko jest wymagane (min. 2 znaki).'),
@@ -26,9 +27,6 @@ type CustomerModalProps = {
   initialData?: Client | null;
   title: string;
 };
-
-const inputClassName =
-  'w-full rounded-2xl border border-white/8 bg-white/4 px-4 py-3 text-sm text-white placeholder:text-stone-600 transition-all focus:border-white/20 focus:outline-none focus:ring-4 focus:ring-white/2';
 
 export function CustomerModal({
   isOpen,
@@ -53,10 +51,7 @@ export function CustomerModal({
   });
 
   useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
+    if (!isOpen) return;
     if (initialData) {
       reset({
         full_name: initialData.full_name,
@@ -64,106 +59,98 @@ export function CustomerModal({
         email: initialData.email || '',
         notes: initialData.notes || '',
       });
-      return;
+    } else {
+      reset({ full_name: '', phone: '', email: '', notes: '' });
     }
-
-    reset({
-      full_name: '',
-      phone: '',
-      email: '',
-      notes: '',
-    });
   }, [initialData, isOpen, reset]);
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-4xl border border-white/10 bg-[#161719] p-6 shadow-2xl md:p-8">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">
-                Klienci
-              </p>
-              <Dialog.Title className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white">
-                {title}
-              </Dialog.Title>
-              <Dialog.Description className="mt-3 max-w-xl text-sm leading-7 text-stone-400">
-                Uzupełnij podstawowe dane kontaktowe i notatki, żeby recepcja
-                miała pełny obraz relacji z klientem.
-              </Dialog.Description>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl animate-in fade-in duration-300" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[96vh] w-[calc(100%-1rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 flex-col rounded-[32px] border border-white/10 bg-[#0d0e10] shadow-[0_40px_120px_rgba(0,0,0,0.7)] animate-in zoom-in-95 duration-300 md:max-h-[92vh] md:w-[calc(100%-2rem)] md:rounded-[40px]">
+          <header className="flex shrink-0 items-center justify-between border-b border-white/5 bg-white/2 px-6 py-5 md:px-8">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400/10 text-amber-400">
+                <User className="h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold tracking-tight text-white">
+                  {title}
+                </h2>
+                <p className="text-xs font-medium text-stone-500 uppercase tracking-widest mt-0.5">
+                  Zarządzanie bazą klientów
+                </p>
+              </div>
             </div>
-
-            <Dialog.Close className="rounded-2xl border border-white/10 bg-white/6 p-2.5 text-stone-400 transition hover:border-white/16 hover:bg-white/10 hover:text-white">
+            <Dialog.Close className="rounded-xl border border-white/10 bg-white/5 p-2.5 text-stone-400 transition hover:bg-white/10 hover:text-white">
               <X className="h-5 w-5" />
             </Dialog.Close>
-          </div>
+          </header>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="mt-8 grid gap-6">
-            <section className="grid gap-4 rounded-3xl border border-white/10 bg-white/4 p-5">
-              <SectionHeading
-                title="Dane kontaktowe"
-                description="Te pola wykorzystamy później w rezerwacjach, przypisanych pojazdach i historii wizyt."
-              />
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="flex flex-1 flex-col overflow-hidden"
+          >
+            <div className="flex-1 overflow-y-auto overscroll-contain p-6 md:p-8 space-y-8">
+              <section className="space-y-5">
+                <SectionTitle icon={Info} title="Dane kontaktowe" />
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field
-                  label="Imię i nazwisko"
-                  error={errors.full_name?.message}
-                >
-                  <input
-                    {...register('full_name')}
-                    placeholder="np. Jan Kowalski"
-                    className={inputClassName}
+                <div className="grid gap-4">
+                  <Field
+                    label="Imię i nazwisko"
+                    error={errors.full_name?.message}
+                  >
+                    <input
+                      {...register('full_name')}
+                      placeholder="np. Jan Kowalski"
+                      className={inputClassName}
+                    />
+                  </Field>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field label="Telefon" error={errors.phone?.message}>
+                      <input
+                        {...register('phone')}
+                        placeholder="+48 000 000 000"
+                        className={inputClassName}
+                      />
+                    </Field>
+                    <Field label="E-mail" error={errors.email?.message}>
+                      <input
+                        {...register('email')}
+                        placeholder="jan@przyklad.pl"
+                        className={inputClassName}
+                      />
+                    </Field>
+                  </div>
+                </div>
+              </section>
+
+              <section className="space-y-5">
+                <SectionTitle icon={MessageSquare} title="Notatki" />
+                <Field label="Notatki o kliencie">
+                  <textarea
+                    {...register('notes')}
+                    rows={5}
+                    placeholder="Preferencje klienta, historia komunikacji..."
+                    className={`${inputClassName} resize-none`}
                   />
                 </Field>
+              </section>
+            </div>
 
-                <Field label="Telefon" error={errors.phone?.message}>
-                  <input
-                    {...register('phone')}
-                    placeholder="+48 000 000 000"
-                    className={inputClassName}
-                  />
-                </Field>
-
-                <Field label="E-mail" error={errors.email?.message}>
-                  <input
-                    {...register('email')}
-                    placeholder="jan@przyklad.pl"
-                    className={inputClassName}
-                  />
-                </Field>
-              </div>
-            </section>
-
-            <section className="grid gap-4 rounded-3xl border border-white/10 bg-white/4 p-5">
-              <SectionHeading
-                title="Notatki"
-                description="Tu możesz zapisać preferencje klienta, historię komunikacji albo rzeczy ważne dla zespołu."
-              />
-
-              <Field label="Notatki o kliencie">
-                <textarea
-                  {...register('notes')}
-                  rows={5}
-                  placeholder="Preferuje odbiór po 18:00, zostawia auto zastępcze..."
-                  className={`${inputClassName} resize-none`}
-                />
-              </Field>
-            </section>
-
-            <div className="flex flex-wrap justify-end gap-3">
+            <footer className="flex shrink-0 items-center justify-end gap-3 border-t border-white/5 bg-white/2 px-6 py-5 md:px-8">
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-full border border-white/10 bg-white/6 px-5 py-3 text-sm font-medium text-white transition hover:border-white/16 hover:bg-white/10"
+                className="rounded-2xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-medium text-white transition hover:bg-white/10"
               >
                 Anuluj
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition hover:scale-[1.01] disabled:opacity-50 disabled:hover:scale-100"
+                className="rounded-2xl bg-amber-400 px-8 py-3 text-sm font-bold text-black shadow-[0_10px_20px_rgba(251,191,36,0.2)] transition hover:-translate-y-0.5 hover:bg-amber-300 disabled:opacity-50 disabled:hover:translate-y-0"
               >
                 {isSubmitting
                   ? 'Zapisywanie...'
@@ -171,46 +158,10 @@ export function CustomerModal({
                     ? 'Zapisz zmiany'
                     : 'Dodaj klienta'}
               </button>
-            </div>
+            </footer>
           </form>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
-  );
-}
-
-type FieldProps = {
-  label: string;
-  children: React.ReactNode;
-  error?: string;
-};
-
-type SectionHeadingProps = {
-  title: string;
-  description: string;
-};
-
-function Field({ label, children, error }: FieldProps) {
-  return (
-    <label className="block">
-      <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-        {label}
-      </span>
-      {children}
-      {error ? (
-        <span className="mt-2 block text-sm text-rose-300">{error}</span>
-      ) : null}
-    </label>
-  );
-}
-
-function SectionHeading({ title, description }: SectionHeadingProps) {
-  return (
-    <div className="flex flex-col gap-1">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">
-        {title}
-      </p>
-      <p className="text-sm leading-7 text-stone-400">{description}</p>
-    </div>
   );
 }
