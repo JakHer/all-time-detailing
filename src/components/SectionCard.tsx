@@ -6,17 +6,19 @@
 
 export function SectionCard({ title, description, items }: SectionCardProps) {
   return (
-    <article className="rounded-4xl border border-white/10 bg-white/6 p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-7">
-      <h3 className="text-3xl font-semibold tracking-[-0.04em] text-white">
+    <article className="rounded-3xl border border-white/10 bg-white/6 p-4 shadow-lg sm:rounded-4xl sm:p-6 md:p-7">
+      <h3 className="text-2xl font-semibold tracking-[-0.04em] text-white sm:text-3xl">
         {title}
       </h3>
-      <p className="mt-3 text-sm leading-7 text-stone-300">{description}</p>
+      <p className="mt-3 text-sm leading-6 text-stone-300 sm:leading-7">
+        {description}
+      </p>
 
       <div className="mt-6 grid gap-3">
         {items.map((item) => (
           <div
             key={item}
-            className="rounded-[22px] border border-white/8 bg-white/6 px-4 py-4 text-sm leading-7 text-stone-200"
+            className="rounded-[22px] border border-white/8 bg-white/6 px-4 py-4 text-sm leading-6 text-stone-200 sm:leading-7"
           >
             {item}
           </div>

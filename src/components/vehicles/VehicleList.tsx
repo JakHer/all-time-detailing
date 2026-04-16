@@ -1,4 +1,3 @@
-﻿import { CarFront, ChevronRight, Hash, User } from 'lucide-react';
 import type { VehicleWithRelations } from '../../lib/vehicles';
 
 type VehicleListProps = {
@@ -12,89 +11,114 @@ export function VehicleList({
   selectedVehicleId,
   onSelect,
 }: VehicleListProps) {
-  if (vehicles.length === 0) {
-    return (
-      <div className="w-full max-w-full rounded-3xl border border-dashed border-white/10 bg-black/15 px-4 py-12 text-center text-sm leading-7 text-stone-400">
-        Nie znaleziono pojazdów pasujących do wyszukiwania.
-      </div>
-    );
-  }
-
   return (
-    <div className="grid w-full min-w-0 gap-3">
-      {vehicles.map((vehicle) => {
-        const bookingCount = vehicle.bookings?.length ?? 0;
+    <article className="w-full max-w-full self-start overflow-hidden rounded-3xl border border-white/10 bg-white/6 p-4 shadow-[0_30px_120px_rgba(0,0,0,0.35)] sm:rounded-4xl sm:px-4 sm:py-3.5 xl:px-5 xl:py-4">
+      <div className="hidden items-end justify-between gap-3 sm:flex">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-200">
+            Lista pojazdow
+          </p>
+          <h3 className="mt-0.5 text-[1.35rem] font-semibold tracking-[-0.04em] text-white">
+            Baza aut
+          </h3>
+        </div>
+        <div className="text-xs text-stone-400">{vehicles.length} pozycji</div>
+      </div>
 
-        return (
-          <button
-            key={vehicle.id}
-            type="button"
-            onClick={() => onSelect(vehicle.id)}
-            className={`group flex w-full min-w-0 max-w-full flex-col gap-4 overflow-hidden rounded-[26px] border p-5 text-left transition-all ${
-              selectedVehicleId === vehicle.id
-                ? 'border-white/20 bg-white/8 shadow-lg ring-1 ring-white/10'
-                : 'border-white/8 bg-white/4 hover:border-white/16 hover:bg-white/6'
-            }`}
-          >
-            <div className="flex min-w-0 items-start justify-between gap-4">
-              <div className="flex min-w-0 items-start gap-4">
-                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-2xl bg-white/6">
-                  {vehicle.featured_image_url ? (
-                    <img
-                      src={vehicle.featured_image_url}
-                      alt={`${vehicle.make} ${vehicle.model}`}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-white">
-                      <CarFront className="h-5 w-5 opacity-40" />
-                    </div>
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <h4 className="wrap-break-word font-semibold text-white">
-                    {vehicle.make} {vehicle.model}
-                  </h4>
-                  <div className="mt-1 grid gap-1 text-sm text-stone-400">
-                    <div className="flex min-w-0 items-start gap-1.5">
-                      <Hash className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                      <span className="break-all uppercase">
-                        {vehicle.registration}
-                      </span>
-                    </div>
-                    <div className="flex min-w-0 items-start gap-1.5">
-                      <User className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                      <span className="wrap-break-word">
-                        {vehicle.clients.full_name}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+      <div className="mb-3 flex items-center justify-between sm:hidden">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">
+          Lista pojazdow
+        </p>
+        <div className="text-xs text-stone-400">{vehicles.length} pozycji</div>
+      </div>
 
-              <div className="flex shrink-0 items-center gap-2">
-                <div className="rounded-full border border-white/8 bg-white/4 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400">
-                  {bookingCount}{' '}
-                  {bookingCount === 1
-                    ? 'wizyta'
-                    : bookingCount < 5
-                      ? 'wizyty'
-                      : 'wizyt'}
-                </div>
-                <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-xl border border-white/8 bg-white/4 transition-all ${
-                    selectedVehicleId === vehicle.id
-                      ? 'opacity-100'
-                      : 'opacity-0 group-hover:opacity-100'
+      <div className="grid gap-2.5 sm:mt-3">
+        {vehicles.length === 0 ? (
+          <div className="flex min-h-72 items-center justify-center rounded-3xl border border-dashed border-white/10 bg-black/15 px-4 py-8 text-center text-sm leading-7 text-stone-400 sm:min-h-97.5">
+            Nie znaleziono pojazdow pasujacych do wyszukiwania.
+          </div>
+        ) : (
+          vehicles.map((vehicle) => {
+            const isActive = selectedVehicleId === vehicle.id;
+            const bookingCount = vehicle.bookings?.length ?? 0;
+
+            return (
+              <div key={vehicle.id}>
+                <button
+                  type="button"
+                  onClick={() => onSelect(vehicle.id)}
+                  className={`grid w-full min-w-0 grid-cols-[4.75rem_minmax(0,1fr)_0.75rem] items-center gap-3 rounded-[20px] border px-3 py-3 text-left transition sm:hidden ${
+                    isActive
+                      ? 'border-amber-200/30 bg-amber-300/10 shadow-[0_10px_30px_rgba(214,158,46,0.12)]'
+                      : 'border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/14 hover:bg-white/8'
                   }`}
                 >
-                  <ChevronRight className="h-5 w-5 text-white" />
-                </div>
+                  <div className="min-w-0 truncate text-sm font-semibold uppercase tracking-[-0.03em] text-white">
+                    {vehicle.registration}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-white">
+                      {vehicle.make} {vehicle.model}{' '}
+                      <span className="text-stone-500">|</span>{' '}
+                      <span className="text-stone-400">
+                        {vehicle.clients.full_name}
+                      </span>
+                    </p>
+                  </div>
+                  <div
+                    className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                      isActive ? 'bg-amber-300' : 'bg-stone-500'
+                    }`}
+                    aria-hidden="true"
+                  />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onSelect(vehicle.id)}
+                  className={`hidden w-full min-w-0 max-w-full grid-cols-[minmax(0,4.5rem)_minmax(0,1fr)_auto] items-center gap-3 rounded-[18px] border px-3 py-2.5 text-left transition sm:grid ${
+                    isActive
+                      ? 'border-amber-200/30 bg-amber-300/10 shadow-[0_10px_30px_rgba(214,158,46,0.12)]'
+                      : 'border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/14 hover:bg-white/8'
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-white">
+                      {vehicle.registration}
+                    </div>
+                    <div className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      auto
+                    </div>
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-white">
+                      {vehicle.make} {vehicle.model}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs text-stone-400">
+                      {vehicle.clients.full_name}
+                    </p>
+                  </div>
+
+                  <div className="min-w-0 text-right">
+                    <p className="truncate text-xs text-stone-300">
+                      {bookingCount}{' '}
+                      {bookingCount === 1
+                        ? 'wizyta'
+                        : bookingCount < 5
+                          ? 'wizyty'
+                          : 'wizyt'}
+                    </p>
+                    <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      historia
+                    </p>
+                  </div>
+                </button>
               </div>
-            </div>
-          </button>
-        );
-      })}
-    </div>
+            );
+          })
+        )}
+      </div>
+    </article>
   );
 }

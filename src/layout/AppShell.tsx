@@ -1,23 +1,26 @@
 import { Outlet } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { MobileSidebar, Sidebar } from './Sidebar';
+import { GlobalBookingModal } from '../components/bookings/GlobalBookingModal';
 
 export function AppShell() {
   return (
-    <div className="min-h-screen bg-[#0b0c0d] text-stone-100">
+    <div className="min-h-screen overflow-x-hidden bg-[#0b0c0d] text-stone-100">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(214,158,46,0.24),transparent_24%),radial-gradient(circle_at_85%_15%,rgba(255,255,255,0.09),transparent_18%),linear-gradient(135deg,#16120f_0%,#0d0f10_58%,#090909_100%)]" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),transparent)] opacity-50" />
 
-      <div className="relative mx-auto flex min-h-screen w-full max-w-375 flex-col px-4 py-4 lg:px-6 lg:py-6">
+      <div className="relative mx-auto flex min-h-screen w-full max-w-375 min-w-0 flex-col px-4 py-4 lg:px-6 lg:py-6">
         <MobileSidebar />
 
         <div className="mt-4 grid flex-1 gap-4 xl:mt-0 xl:grid-cols-[290px_minmax(0,1fr)]">
           <Sidebar />
-          <main className="grid min-w-0 gap-4 overflow-x-hidden">
+          <main className="grid min-w-0 gap-4 overflow-x-hidden pb-24 sm:pb-32 xl:pb-0">
             <Outlet />
           </main>
         </div>
       </div>
+
+      <GlobalBookingModal />
 
       <Toaster
         position="top-right"

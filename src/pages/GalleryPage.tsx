@@ -4,6 +4,7 @@ import { PageIntro } from '../components/PageIntro';
 import { GalleryGrid } from '../components/gallery/GalleryGrid';
 import { GalleryUploadModal } from '../components/gallery/GalleryUploadModal';
 import { ActionButton } from '../components/ui/ActionButton';
+import { MobilePageHeader } from '../components/ui/MobilePageHeader';
 import { SearchField } from '../components/ui/SearchField';
 import { ToolbarPanel } from '../components/ui/ToolbarPanel';
 import { useGalleryImages } from '../lib/gallery';
@@ -18,8 +19,8 @@ export function GalleryPage() {
   const afterCount = images.filter((img) => img.type === 'After').length;
 
   const metrics = [
-    { label: 'Wszystkie zdjęcia', value: String(images.length) },
-    { label: 'Wyróżnione', value: String(featuredCount) },
+    { label: 'Wszystkie zdjecia', value: String(images.length) },
+    { label: 'Wyroznione', value: String(featuredCount) },
     { label: 'Przed / Po', value: `${beforeCount} / ${afterCount}` },
     {
       label: 'Realizacje',
@@ -31,26 +32,35 @@ export function GalleryPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4 overflow-x-hidden">
-      <PageIntro
+      <div className="hidden sm:block">
+        <PageIntro
+          eyebrow="Galeria"
+          title="Zdjecia realizacji i dokumentacja jakosci"
+          description="Zarzadzaj wizualnym portfolio studia, dokumentuj stan aut przed i po uslugach oraz buduj zaufanie klientow."
+          metrics={metrics}
+        />
+      </div>
+
+      <MobilePageHeader
         eyebrow="Galeria"
-        title="Zdjęcia realizacji i dokumentacja jakości"
-        description="Zarządzaj wizualnym portfolio studia, dokumentuj stan aut przed i po usługach oraz buduj zaufanie klientów."
-        metrics={metrics}
+        title="Zdjecia realizacji"
+        chips={[`${images.length} zdjec`, `${featuredCount} wyroznione`]}
       />
 
-      <ToolbarPanel>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <ToolbarPanel className="p-3 sm:p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <SearchField
             value={query}
             onChange={setQuery}
-            placeholder="Szukaj po marce, modelu, kliencie lub rejestracji..."
-            className="sm:max-w-md"
+            placeholder="Szukaj po marce, modelu..."
+            className="w-full sm:max-w-md"
           />
           <ActionButton
             icon={ImagePlus}
             onClick={() => setIsUploadModalOpen(true)}
+            className="w-full sm:w-auto"
           >
-            Dodaj zdjęcia
+            Dodaj zdjecia
           </ActionButton>
         </div>
       </ToolbarPanel>

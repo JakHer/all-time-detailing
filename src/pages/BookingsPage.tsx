@@ -1,6 +1,8 @@
-﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as Dialog from '@radix-ui/react-dialog';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { X } from 'lucide-react';
 import { toast } from 'sonner';
 import { BookingDetails } from '../components/bookings/BookingDetails';
 import { BookingList } from '../components/bookings/BookingList';
@@ -8,6 +10,7 @@ import { BookingModal } from '../components/bookings/BookingModal';
 import { BookingToolbar } from '../components/bookings/BookingToolbar';
 import { PageIntro } from '../components/PageIntro';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { MobilePageHeader } from '../components/ui/MobilePageHeader';
 import { Skeleton } from '../components/ui/Skeleton';
 import {
   bookingStatuses,
@@ -77,6 +80,7 @@ export function BookingsPage() {
   const [query, setQuery] = useState('');
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isMobileDetailsOpen, setIsMobileDetailsOpen] = useState(false);
 
   const deferredQuery = useDeferredValue(query);
   const normalizedQuery = deferredQuery.trim().toLowerCase();
@@ -109,9 +113,9 @@ export function BookingsPage() {
   useEffect(() => {
     if (bookingsQuery.error) {
       reportBookingError(bookingsQuery.error);
-      toast.error('Nie udało się pobrać danych rezerwacji', {
+      toast.error('Nie udalo sie pobrac danych rezerwacji', {
         description:
-          'Sprawdź połączenie z Supabase i czy schema SQL została uruchomiona poprawnie.',
+          'Sprawdz polaczenie z Supabase i czy schema SQL zostala uruchomiona poprawnie.',
       });
     }
   }, [bookingsQuery.error]);
@@ -119,9 +123,9 @@ export function BookingsPage() {
   useEffect(() => {
     if (bookingFormOptionsQuery.error) {
       reportBookingError(bookingFormOptionsQuery.error);
-      toast.error('Nie udało się pobrać danych formularza', {
+      toast.error('Nie udalo sie pobrac danych formularza', {
         description:
-          'Lista klientów, pojazdów lub usług nie mogła zostać wczytana z Supabase.',
+          'Lista klientow, pojazdow lub uslug nie mogla zostac wczytana z Supabase.',
       });
     }
   }, [bookingFormOptionsQuery.error]);
@@ -179,21 +183,21 @@ export function BookingsPage() {
 
       if (mode === 'edit') {
         toast.success('Wizyta zaktualizowana', {
-          description: `${booking.vehicle} została zapisana z nowymi danymi.`,
+          description: `${booking.vehicle} zostala zapisana z nowymi danymi.`,
         });
         return;
       }
 
       setStatusFilter('Wszystkie');
       setQuery('');
-      toast.success('Dodano rezerwację', {
-        description: `${booking.vehicle} została dodana do harmonogramu.`,
+      toast.success('Dodano rezerwacje', {
+        description: `${booking.vehicle} zostala dodana do harmonogramu.`,
       });
     },
     onError: (error) => {
       reportBookingError(error);
-      toast.error('Nie udało się zapisać rezerwacji', {
-        description: 'Sprawdź połączenie z Supabase i strukturę tabel.',
+      toast.error('Nie udalo sie zapisac rezerwacji', {
+        description: 'Sprawdz polaczenie z Supabase i strukture tabel.',
       });
     },
   });
@@ -234,7 +238,7 @@ export function BookingsPage() {
         );
       }
       reportBookingError(error);
-      toast.error('Nie udało się anulować wizyty');
+      toast.error('Nie udalo sie anulowac wizyty');
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: bookingsQueryKey });
@@ -276,7 +280,7 @@ export function BookingsPage() {
         );
       }
       reportBookingError(error);
-      toast.error('Nie udało się cofnąć anulowania');
+      toast.error('Nie udalo sie cofnac anulowania');
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: bookingsQueryKey });
@@ -291,7 +295,7 @@ export function BookingsPage() {
     mutationFn: ({ bookingId }) => deleteBooking(bookingId),
     onError: (error) => {
       reportBookingError(error);
-      toast.error('Nie udało się usunąć wizyty');
+      toast.error('Nie udalo sie usunac wizyty');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: bookingsQueryKey });
@@ -307,7 +311,7 @@ export function BookingsPage() {
     },
     onError: (error) => {
       reportBookingError(error);
-      toast.error('Nie udało się przywrócić wizyty');
+      toast.error('Nie udalo sie przywrocic wizyty');
     },
   });
 
@@ -317,7 +321,7 @@ export function BookingsPage() {
     null;
 
   const metrics = [
-    { label: 'Wybrany dzień', value: `${filteredBookings.length} wizyt` },
+    { label: 'Wybrany dzien', value: `${filteredBookings.length} wizyt` },
     {
       label: 'Potwierdzone',
       value: `${filteredBookings.filter((booking) => booking.status === 'Potwierdzona').length}`,
@@ -351,7 +355,7 @@ export function BookingsPage() {
         onSuccess: (updatedBooking) => {
           setSelectedBookingId(updatedBooking.id);
           toast.warning('Wizyta anulowana', {
-            description: `${updatedBooking.vehicle} została oznaczona jako anulowana.`,
+            description: `${updatedBooking.vehicle} zostala oznaczona jako anulowana.`,
             action: {
               label: 'Cofnij',
               onClick: () => {
@@ -397,8 +401,9 @@ export function BookingsPage() {
           setSelectedBookingId(nextSelectedBookingId);
           setModalMode(null);
           setIsDeleteConfirmOpen(false);
-          toast.error('Wizyta usunięta', {
-            description: `${bookingToDelete.vehicle} została usunięta z harmonogramu.`,
+          setIsMobileDetailsOpen(false);
+          toast.error('Wizyta usunieta', {
+            description: `${bookingToDelete.vehicle} zostala usunieta z harmonogramu.`,
             action: {
               label: 'Cofnij',
               onClick: () => {
@@ -444,6 +449,7 @@ export function BookingsPage() {
       return;
     }
 
+    setIsMobileDetailsOpen(false);
     setModalMode('edit');
   }
 
@@ -451,13 +457,33 @@ export function BookingsPage() {
     setModalMode(null);
   }
 
+  function handleSelectBooking(bookingId: string) {
+    setSelectedBookingId(bookingId);
+    setIsMobileDetailsOpen(true);
+  }
+
   return (
     <>
-      <PageIntro
+      <div className="hidden sm:block">
+        <PageIntro
+          eyebrow="Rezerwacje"
+          title="Kalendarz, ktory naprawde porzadkuje dzien studia"
+          description="To jest pierwszy dzialajacy modul recepcji: filtrujesz wizyty, przegladasz szczegoly i dodajesz nowe rezerwacje bez wychodzenia z jednego widoku."
+          metrics={metrics}
+        />
+      </div>
+
+      <MobilePageHeader
         eyebrow="Rezerwacje"
-        title="Kalendarz, który naprawdę porządkuje dzień studia"
-        description="To jest pierwszy działający moduł recepcji: filtrujesz wizyty, przeglądasz szczegóły i dodajesz nowe rezerwacje bez wychodzenia z jednego widoku."
-        metrics={metrics}
+        title="Plan dnia"
+        chips={[
+          `${filteredBookings.length} wizyt`,
+          `${
+            filteredBookings.filter(
+              (booking) => booking.status === 'W realizacji',
+            ).length
+          } w realizacji`,
+        ]}
       />
 
       <BookingToolbar
@@ -487,12 +513,12 @@ export function BookingsPage() {
             <BookingList
               bookings={filteredBookings}
               selectedBookingId={selectedBooking?.id ?? null}
-              onSelect={setSelectedBookingId}
+              onSelect={handleSelectBooking}
             />
           )}
         </div>
 
-        <div className="min-w-0 max-w-full">
+        <div className="hidden min-w-0 max-w-full 2xl:block">
           {isLoading ? (
             <Skeleton className="h-100 rounded-4xl" />
           ) : (
@@ -505,6 +531,46 @@ export function BookingsPage() {
           )}
         </div>
       </section>
+
+      <Dialog.Root
+        open={isMobileDetailsOpen && !!selectedBooking}
+        onOpenChange={setIsMobileDetailsOpen}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-60 bg-black/70 backdrop-blur-sm 2xl:hidden" />
+          <Dialog.Content className="fixed inset-0 z-70 flex h-dvh flex-col overflow-hidden bg-[#121314] outline-none 2xl:hidden">
+            <div className="flex items-center justify-between gap-3 border-b border-white/8 px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))]">
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-200">
+                  Szczegoly wizyty
+                </p>
+                <p className="mt-1 truncate text-sm text-stone-400">
+                  {selectedBooking?.vehicle ?? 'Wybrana rezerwacja'}
+                </p>
+              </div>
+              <Dialog.Close asChild>
+                <button
+                  type="button"
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/6 text-stone-100 transition hover:border-white/16 hover:bg-white/10"
+                  aria-label="Zamknij szczegoly wizyty"
+                >
+                  <X className="h-4.5 w-4.5" />
+                </button>
+              </Dialog.Close>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+              <BookingDetails
+                booking={selectedBooking ?? undefined}
+                onEditClick={openEditModal}
+                onCancelClick={handleCancelBooking}
+                onDeleteClick={openDeleteConfirm}
+                variant="sheet"
+              />
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       {modalMode ? (
         <BookingModal
@@ -522,9 +588,9 @@ export function BookingsPage() {
 
       {isDeleteConfirmOpen && selectedBooking ? (
         <ConfirmDialog
-          title="Usunąć tę wizytę?"
-          description={`Ta akcja usunie z harmonogramu wizytę dla ${selectedBooking.vehicle}. Nadal będzie można ją cofnąć z toastu przez krótki moment.`}
-          confirmLabel="Usuń wizytę"
+          title="Usunac te wizyte?"
+          description={`Ta akcja usunie z harmonogramu wizyte dla ${selectedBooking.vehicle}. Nadal bedzie mozna ja cofnac z toastu przez krotki moment.`}
+          confirmLabel="Usun wizyte"
           tone="danger"
           onCancel={closeDeleteConfirm}
           onConfirm={handleDeleteBooking}
@@ -538,7 +604,7 @@ function formatSelectedDate(value: string, today: string) {
   const [year, month, day] = value.split('-').map(Number);
 
   if (!year || !month || !day) {
-    return 'Nieprawidłowa data';
+    return 'Nieprawidlowa data';
   }
 
   const formatted = new Intl.DateTimeFormat('pl-PL', {
@@ -549,7 +615,7 @@ function formatSelectedDate(value: string, today: string) {
   }).format(new Date(year, month - 1, day));
 
   if (value === today) {
-    return `Dziś • ${formatted}`;
+    return `Dzis | ${formatted}`;
   }
 
   return formatted;

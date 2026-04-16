@@ -1,4 +1,3 @@
-import { ChevronRight, Clock, Tag } from 'lucide-react';
 import type { Service } from '../../lib/services';
 
 type ServiceListProps = {
@@ -12,69 +11,113 @@ export function ServiceList({
   selectedServiceId,
   onSelect,
 }: ServiceListProps) {
-  if (services.length === 0) {
-    return (
-      <div className="w-full max-w-full rounded-3xl border border-dashed border-white/10 bg-black/15 px-4 py-12 text-center text-sm leading-7 text-stone-400">
-        Nie znaleziono usług w katalogu.
-      </div>
-    );
-  }
-
   return (
-    <div className="grid w-full min-w-0 gap-3">
-      {services.map((service) => (
-        <button
-          key={service.id}
-          onClick={() => onSelect(service.id)}
-          className={`group flex w-full min-w-0 max-w-full flex-col gap-4 overflow-hidden rounded-[26px] border p-5 text-left transition-all ${
-            selectedServiceId === service.id
-              ? 'border-white/20 bg-white/8 shadow-lg ring-1 ring-white/10'
-              : 'border-white/8 bg-white/4 hover:border-white/16 hover:bg-white/6'
-          }`}
-        >
-          <div className="flex min-w-0 items-start justify-between gap-4">
-            <div className="flex min-w-0 items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/6 text-white transition-colors group-hover:bg-white/10">
-                <Tag className="h-5 w-5 opacity-40" />
-              </div>
-              <div className="min-w-0">
-                <h4 className="wrap-break-word font-semibold text-white transition-colors group-hover:text-white">
-                  {service.name}
-                </h4>
-                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-stone-400">
-                  <div className="flex min-w-0 items-center gap-1.5">
-                    <Clock className="h-3.5 w-3.5 shrink-0" />
-                    <span>{service.duration_minutes} min</span>
-                  </div>
-                  <div className="font-medium text-amber-200/80">
-                    {new Intl.NumberFormat('pl-PL', {
-                      style: 'currency',
-                      currency: 'PLN',
-                    }).format(service.base_price)}
-                  </div>
-                </div>
-              </div>
-            </div>
+    <article className="w-full max-w-full self-start overflow-hidden rounded-3xl border border-white/10 bg-white/6 p-4 shadow-[0_30px_120px_rgba(0,0,0,0.35)] sm:rounded-4xl sm:px-4 sm:py-3.5 xl:px-5 xl:py-4">
+      <div className="hidden items-end justify-between gap-3 sm:flex">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-200">
+            Lista uslug
+          </p>
+          <h3 className="mt-0.5 text-[1.35rem] font-semibold tracking-[-0.04em] text-white">
+            Katalog oferty
+          </h3>
+        </div>
+        <div className="text-xs text-stone-400">{services.length} pozycji</div>
+      </div>
 
-            <div className="flex shrink-0 items-center gap-2">
-              {!service.is_active && (
-                <span className="rounded-full bg-white/4 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-stone-500">
-                  Nieaktywna
-                </span>
-              )}
-              <div
-                className={`flex h-10 w-10 items-center justify-center rounded-xl border border-white/8 bg-white/4 transition-all ${
-                  selectedServiceId === service.id
-                    ? 'opacity-100'
-                    : 'opacity-0 group-hover:opacity-100'
-                }`}
-              >
-                <ChevronRight className="h-5 w-5 text-white" />
-              </div>
-            </div>
+      <div className="mb-3 flex items-center justify-between sm:hidden">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">
+          Lista uslug
+        </p>
+        <div className="text-xs text-stone-400">{services.length} pozycji</div>
+      </div>
+
+      <div className="grid gap-2.5 sm:mt-3">
+        {services.length === 0 ? (
+          <div className="flex min-h-72 items-center justify-center rounded-3xl border border-dashed border-white/10 bg-black/15 px-4 py-8 text-center text-sm leading-7 text-stone-400 sm:min-h-97.5">
+            Nie znaleziono uslug w katalogu.
           </div>
-        </button>
-      ))}
-    </div>
+        ) : (
+          services.map((service) => {
+            const isActive = selectedServiceId === service.id;
+            const price = new Intl.NumberFormat('pl-PL', {
+              style: 'currency',
+              currency: 'PLN',
+            }).format(service.base_price);
+
+            return (
+              <div key={service.id}>
+                <button
+                  type="button"
+                  onClick={() => onSelect(service.id)}
+                  className={`grid w-full min-w-0 grid-cols-[4.75rem_minmax(0,1fr)_0.75rem] items-center gap-3 rounded-[20px] border px-3 py-3 text-left transition sm:hidden ${
+                    isActive
+                      ? 'border-amber-200/30 bg-amber-300/10 shadow-[0_10px_30px_rgba(214,158,46,0.12)]'
+                      : 'border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/14 hover:bg-white/8'
+                  }`}
+                >
+                  <div className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-500">
+                    {service.duration_minutes}m
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-white">
+                      {service.name}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs font-semibold text-amber-200">
+                      {price}
+                    </p>
+                  </div>
+                  <div
+                    className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                      service.is_active ? 'bg-emerald-300' : 'bg-stone-500'
+                    }`}
+                    aria-hidden="true"
+                  />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onSelect(service.id)}
+                  className={`hidden w-full min-w-0 max-w-full grid-cols-[minmax(0,4.5rem)_minmax(0,1fr)_auto] items-center gap-3 rounded-[18px] border px-3 py-2.5 text-left transition sm:grid ${
+                    isActive
+                      ? 'border-amber-200/30 bg-amber-300/10 shadow-[0_10px_30px_rgba(214,158,46,0.12)]'
+                      : 'border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/14 hover:bg-white/8'
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-stone-500">
+                      Czas
+                    </div>
+                    <div className="mt-0.5 text-base font-semibold tracking-[-0.03em] text-white">
+                      {service.duration_minutes}m
+                    </div>
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-white">
+                      {service.name}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs text-stone-400">
+                      {price}
+                      <span className="px-1 text-stone-500">|</span>
+                      {service.description || 'Brak opisu uslugi'}
+                    </p>
+                  </div>
+
+                  <div className="flex min-w-0 items-center justify-end">
+                    <div
+                      className={`h-2.5 w-2.5 rounded-full ${
+                        service.is_active ? 'bg-emerald-300' : 'bg-stone-500'
+                      }`}
+                      aria-hidden="true"
+                    />
+                  </div>
+                </button>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </article>
   );
 }

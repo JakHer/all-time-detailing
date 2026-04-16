@@ -20,12 +20,17 @@ export function ServiceToolbar({
         <SearchField
           value={query}
           onChange={onQueryChange}
-          placeholder="Szukaj usługi po nazwie lub opisie..."
-          className="sm:max-w-md"
+          placeholder="Szukaj usługi..."
+          className="w-full sm:max-w-md"
         />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <ActionButton icon={Plus} variant="solid" onClick={onCreateClick}>
+          <ActionButton
+            icon={Plus}
+            variant="solid"
+            onClick={onCreateClick}
+            className="w-full sm:w-auto"
+          >
             Nowa usługa
           </ActionButton>
         </div>

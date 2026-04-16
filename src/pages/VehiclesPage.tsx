@@ -1,4 +1,6 @@
-﻿import { useDeferredValue, useMemo, useState } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { X } from 'lucide-react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { PageIntro } from '../components/PageIntro';
 import { VehicleDetails } from '../components/vehicles/VehicleDetails';
@@ -6,6 +8,7 @@ import { VehicleList } from '../components/vehicles/VehicleList';
 import { VehicleModal } from '../components/vehicles/VehicleModal';
 import { VehicleToolbar } from '../components/vehicles/VehicleToolbar';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { MobilePageHeader } from '../components/ui/MobilePageHeader';
 import { Skeleton } from '../components/ui/Skeleton';
 import { useClients } from '../lib/clients';
 import {
@@ -25,6 +28,7 @@ export function VehiclesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isMobileDetailsOpen, setIsMobileDetailsOpen] = useState(false);
 
   const deferredQuery = useDeferredValue(query);
 
@@ -95,6 +99,7 @@ export function VehiclesPage() {
       return;
     }
 
+    setIsMobileDetailsOpen(false);
     setModalMode('edit');
     setIsModalOpen(true);
   }
@@ -133,6 +138,7 @@ export function VehiclesPage() {
       await deleteMutation.mutateAsync(selectedVehicleId);
       setSelectedVehicleId(null);
       setIsDeleteDialogOpen(false);
+      setIsMobileDetailsOpen(false);
       toast.success('Pojazd został usunięty');
     } catch {
       toast.error(
@@ -141,16 +147,32 @@ export function VehiclesPage() {
     }
   }
 
+  function handleSelectVehicle(id: string) {
+    setSelectedVehicleId(id);
+    setIsMobileDetailsOpen(true);
+  }
+
   return (
     <div
       className="flex min-w-0 flex-col gap-4 overflow-x-hidden"
       style={{ overflowAnchor: 'none' }}
     >
-      <PageIntro
+      <div className="hidden sm:block">
+        <PageIntro
+          eyebrow="Pojazdy"
+          title="Kartoteka aut z pełnym kontekstem właściciela i historii wizyt"
+          description="Zarządzaj bazą pojazdów, przypisanymi klientami i historią realizacji bez wychodzenia z jednego widoku."
+          metrics={metrics}
+        />
+      </div>
+
+      <MobilePageHeader
         eyebrow="Pojazdy"
-        title="Kartoteka aut z pełnym kontekstem właściciela i historii wizyt"
-        description="Zarządzaj bazą pojazdów, przypisanymi klientami i historią realizacji bez wychodzenia z jednego widoku."
-        metrics={metrics}
+        title="Baza pojazdow"
+        chips={[
+          `${metricsData?.totalVehicles ?? vehicles.length} aut`,
+          `${metricsData?.uniqueMakes ?? 0} marek`,
+        ]}
       />
 
       <VehicleToolbar
@@ -174,12 +196,15 @@ export function VehiclesPage() {
             <VehicleList
               vehicles={filteredVehicles}
               selectedVehicleId={selectedVehicleId}
-              onSelect={setSelectedVehicleId}
+              onSelect={handleSelectVehicle}
             />
           )}
         </div>
 
-        <div className="min-w-0 max-w-full" style={{ overflowAnchor: 'none' }}>
+        <div
+          className="hidden min-w-0 max-w-full 2xl:block"
+          style={{ overflowAnchor: 'none' }}
+        >
           <VehicleDetails
             vehicle={selectedVehicle}
             isLoading={isLoading && vehicles.length === 0}
@@ -188,6 +213,48 @@ export function VehiclesPage() {
           />
         </div>
       </section>
+
+      <Dialog.Root
+        open={isMobileDetailsOpen && !!selectedVehicle}
+        onOpenChange={setIsMobileDetailsOpen}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-60 bg-black/70 backdrop-blur-sm 2xl:hidden" />
+          <Dialog.Content className="fixed inset-0 z-70 flex h-dvh flex-col overflow-hidden bg-[#121314] outline-none 2xl:hidden">
+            <div className="flex items-center justify-between gap-3 border-b border-white/8 px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))]">
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-200">
+                  Szczegoly pojazdu
+                </p>
+                <p className="mt-1 truncate text-sm text-stone-400">
+                  {selectedVehicle
+                    ? `${selectedVehicle.make} ${selectedVehicle.model}`
+                    : 'Wybrany pojazd'}
+                </p>
+              </div>
+              <Dialog.Close asChild>
+                <button
+                  type="button"
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/6 text-stone-100 transition hover:border-white/16 hover:bg-white/10"
+                  aria-label="Zamknij szczegoly pojazdu"
+                >
+                  <X className="h-4.5 w-4.5" />
+                </button>
+              </Dialog.Close>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+              <VehicleDetails
+                vehicle={selectedVehicle}
+                isLoading={isLoading && vehicles.length === 0}
+                onEditClick={handleEditClick}
+                onDeleteClick={handleDeleteClick}
+                variant="sheet"
+              />
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       <VehicleModal
         isOpen={isModalOpen}
