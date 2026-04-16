@@ -26,5 +26,4 @@ export const navigationItems = [
   { label: 'Pojazdy', to: '/pojazdy' },
   { label: 'Usługi i pakiety', to: '/uslugi' },
   { label: 'Zdjęcia realizacji', to: '/galeria' },
-  { label: 'Ustawienia', to: '/ustawienia' },
 ];

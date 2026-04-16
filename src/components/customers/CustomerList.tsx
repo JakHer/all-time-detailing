@@ -1,4 +1,3 @@
-﻿import { ChevronRight, Mail, Phone, User } from 'lucide-react';
 import type { ClientWithRelations } from '../../lib/clients';
 
 type CustomerListProps = {
@@ -12,64 +11,109 @@ export function CustomerList({
   selectedCustomerId,
   onSelect,
 }: CustomerListProps) {
-  if (customers.length === 0) {
-    return (
-      <div className="w-full max-w-full rounded-3xl border border-dashed border-white/10 bg-black/15 px-4 py-12 text-center text-sm leading-7 text-stone-400">
-        Nie znaleziono klientów w Twojej bazie.
-      </div>
-    );
-  }
-
   return (
-    <div className="grid w-full min-w-0 gap-3">
-      {customers.map((customer) => (
-        <button
-          key={customer.id}
-          onClick={() => onSelect(customer.id)}
-          className={`group flex w-full min-w-0 max-w-full flex-col gap-4 overflow-hidden rounded-[26px] border p-5 text-left transition-all ${
-            selectedCustomerId === customer.id
-              ? 'border-white/20 bg-white/8 shadow-lg ring-1 ring-white/10'
-              : 'border-white/8 bg-white/4 hover:border-white/16 hover:bg-white/6'
-          }`}
-        >
-          <div className="flex min-w-0 items-start justify-between gap-4">
-            <div className="flex min-w-0 items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/6 text-white transition-colors group-hover:bg-white/10">
-                <User className="h-5 w-5 opacity-40" />
-              </div>
-              <div className="min-w-0">
-                <h4 className="wrap-break-word font-semibold text-white transition-colors group-hover:text-white">
-                  {customer.full_name}
-                </h4>
-                <div className="mt-1 grid gap-1 text-sm text-stone-400">
-                  <div className="flex min-w-0 items-start gap-1.5">
-                    <Phone className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                    <span className="break-all">{customer.phone}</span>
-                  </div>
-                  {customer.email ? (
-                    <div className="flex min-w-0 items-start gap-1.5">
-                      <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                      <span className="break-all">{customer.email}</span>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            </div>
+    <article className="w-full max-w-full self-start overflow-hidden rounded-3xl border border-white/10 bg-white/6 p-4 shadow-[0_30px_120px_rgba(0,0,0,0.35)] sm:rounded-4xl sm:px-4 sm:py-3.5 xl:px-5 xl:py-4">
+      <div className="hidden items-end justify-between gap-3 sm:flex">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-200">
+            Lista klientow
+          </p>
+          <h3 className="mt-0.5 text-[1.35rem] font-semibold tracking-[-0.04em] text-white">
+            Baza kontaktow
+          </h3>
+        </div>
+        <div className="text-xs text-stone-400">{customers.length} pozycji</div>
+      </div>
 
-            <div className="flex shrink-0 items-center gap-2">
-              <div
-                className={`flex h-10 w-10 items-center justify-center rounded-xl border border-white/8 bg-white/4 transition-all ${
-                  selectedCustomerId === customer.id
-                    ? 'opacity-100'
-                    : 'opacity-0 group-hover:opacity-100'
-                }`}
-              >
-                <ChevronRight className="h-5 w-5 text-white" />
-              </div>
-            </div>
+      <div className="mb-3 flex items-center justify-between sm:hidden">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">
+          Lista klientow
+        </p>
+        <div className="text-xs text-stone-400">{customers.length} pozycji</div>
+      </div>
+
+      <div className="grid gap-2.5 sm:mt-3">
+        {customers.length === 0 ? (
+          <div className="flex min-h-72 items-center justify-center rounded-3xl border border-dashed border-white/10 bg-black/15 px-4 py-8 text-center text-sm leading-7 text-stone-400 sm:min-h-97.5">
+            Nie znaleziono klientow w Twojej bazie.
           </div>
-        </button>
-      ))}
-    </div>
+        ) : (
+          customers.map((customer) => {
+            const isActive = selectedCustomerId === customer.id;
+            const bookingCount = customer.bookings?.length ?? 0;
+
+            return (
+              <div key={customer.id}>
+                <button
+                  type="button"
+                  onClick={() => onSelect(customer.id)}
+                  className={`grid w-full min-w-0 grid-cols-[4.75rem_minmax(0,1fr)_0.75rem] items-center gap-3 rounded-[20px] border px-3 py-3 text-left transition sm:hidden ${
+                    isActive
+                      ? 'border-amber-200/30 bg-amber-300/10 shadow-[0_10px_30px_rgba(214,158,46,0.12)]'
+                      : 'border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/14 hover:bg-white/8'
+                  }`}
+                >
+                  <div className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-500">
+                    {bookingCount} wiz.
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-white">
+                      {customer.full_name}{' '}
+                      <span className="text-stone-500">|</span>{' '}
+                      <span className="text-stone-400">{customer.phone}</span>
+                    </p>
+                  </div>
+                  <div
+                    className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                      isActive ? 'bg-amber-300' : 'bg-stone-500'
+                    }`}
+                    aria-hidden="true"
+                  />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onSelect(customer.id)}
+                  className={`hidden w-full min-w-0 max-w-full grid-cols-[minmax(0,4.5rem)_minmax(0,1fr)_auto] items-center gap-3 rounded-[18px] border px-3 py-2.5 text-left transition sm:grid ${
+                    isActive
+                      ? 'border-amber-200/30 bg-amber-300/10 shadow-[0_10px_30px_rgba(214,158,46,0.12)]'
+                      : 'border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/14 hover:bg-white/8'
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-stone-500">
+                      Wizyty
+                    </div>
+                    <div className="mt-0.5 text-base font-semibold tracking-[-0.03em] text-white">
+                      {bookingCount}
+                    </div>
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-white">
+                      {customer.full_name}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs text-stone-400">
+                      {customer.phone}
+                      <span className="px-1 text-stone-500">|</span>
+                      {customer.email || 'Brak e-maila'}
+                    </p>
+                  </div>
+
+                  <div className="min-w-0 text-right">
+                    <p className="truncate text-xs text-stone-300">
+                      {customer.vehicles?.length ?? 0} pojazdow
+                    </p>
+                    <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                      kontakt
+                    </p>
+                  </div>
+                </button>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </article>
   );
 }

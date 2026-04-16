@@ -1,5 +1,7 @@
-﻿import { Calendar, Car, Mail, Pencil, Phone, Trash2, User } from 'lucide-react';
+import { Calendar, Car, Pencil, Trash2, User } from 'lucide-react';
+import type { ReactNode } from 'react';
 import type { ClientWithRelations } from '../../lib/clients';
+import { CollapsibleDetailSection } from '../ui/CollapsibleDetailSection';
 import { Skeleton } from '../ui/Skeleton';
 
 type CustomerDetailsProps = {
@@ -7,6 +9,7 @@ type CustomerDetailsProps = {
   isLoading?: boolean;
   onEditClick: () => void;
   onDeleteClick: () => void;
+  variant?: 'card' | 'sheet';
 };
 
 export function CustomerDetails({
@@ -14,15 +17,18 @@ export function CustomerDetails({
   isLoading = false,
   onEditClick,
   onDeleteClick,
+  variant = 'card',
 }: CustomerDetailsProps) {
+  const isSheet = variant === 'sheet';
+
   if (isLoading) {
-    return <Skeleton className="min-h-180 rounded-4xl" />;
+    return <Skeleton className="min-h-160 rounded-4xl" />;
   }
 
   if (!customer) {
     return (
-      <article className="min-h-180 w-full max-w-full overflow-hidden rounded-4xl border border-white/10 bg-white/6 p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-7">
-        <div className="flex min-h-147.5 items-center justify-center rounded-3xl border border-dashed border-white/10 bg-black/15 px-4 py-8 text-center text-sm leading-7 text-stone-400">
+      <article className="min-h-160 w-full max-w-full overflow-hidden rounded-4xl border border-white/10 bg-white/6 p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-7">
+        <div className="flex min-h-128 items-center justify-center rounded-3xl border border-dashed border-white/10 bg-black/15 px-4 py-8 text-center text-sm leading-7 text-stone-400">
           <div>
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-white/4">
               <User className="h-8 w-8 opacity-20" />
@@ -31,8 +37,7 @@ export function CustomerDetails({
               Wybierz klienta
             </h3>
             <p className="mt-2 max-w-sm text-sm leading-relaxed">
-              Wybierz osobę z listy po lewej, aby zobaczyć pełną historię i
-              szczegóły.
+              Wybierz osobe z listy, aby zobaczyc pelna historie i szczegoly.
             </p>
           </div>
         </div>
@@ -46,26 +51,40 @@ export function CustomerDetails({
     bookingCount > 0
       ? new Date(customer.bookings[0].scheduled_at).toLocaleDateString('pl-PL')
       : 'Brak';
+  const headerGapClassName = 'gap-3';
+  const titleClassName = isSheet
+    ? 'mt-1.5 wrap-break-word text-2xl font-semibold tracking-[-0.04em] text-white'
+    : 'mt-1 wrap-break-word text-[1.65rem] font-semibold tracking-[-0.04em] text-white';
+  const metaClassName = isSheet
+    ? 'mt-1.5 break-all text-xs text-stone-400'
+    : 'mt-1.5 break-all text-xs text-stone-400';
+  const activityMetaClassName = 'mt-1 text-sm text-stone-400';
+  const containerClassName = isSheet
+    ? 'w-full max-w-full overflow-hidden'
+    : 'min-h-160 w-full max-w-full overflow-hidden rounded-4xl border border-white/10 bg-white/6 p-5 shadow-[0_30px_120px_rgba(0,0,0,0.35)]';
 
   return (
-    <article className="min-h-180 w-full max-w-full overflow-hidden rounded-4xl border border-white/10 bg-white/6 p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-7">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <article className={containerClassName}>
+      <div
+        className={`flex flex-col ${headerGapClassName} md:flex-row md:items-start md:justify-between`}
+      >
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">
-            Szczegóły klienta
+            Szczegoly klienta
           </p>
-          <h3 className="mt-2 wrap-break-word text-3xl font-semibold tracking-[-0.04em] text-white">
-            {customer.full_name}
-          </h3>
-          <p className="mt-2 break-all text-sm text-stone-400">
+          <h3 className={titleClassName}>{customer.full_name}</h3>
+          <p className={metaClassName}>
             {customer.phone}
-            {customer.email ? ` • ${customer.email}` : ''}
+            {customer.email ? ` | ${customer.email}` : ''}
+          </p>
+          <p className={activityMetaClassName}>
+            Ostatnia aktywnosc: {lastActivity}
           </p>
         </div>
 
-        <div className="flex shrink-0 flex-col items-start gap-3 md:items-end">
-          <div className="shrink-0 whitespace-nowrap rounded-full border border-white/10 bg-white/6 px-4 py-2 text-sm text-stone-300">
-            {bookingCount} {getBookingLabel(bookingCount)} • {vehicleCount}{' '}
+        <div className="flex max-w-full shrink-0 flex-col items-start gap-3 md:items-end">
+          <div className="max-w-full rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-[11px] text-stone-300 md:text-right">
+            {bookingCount} {getBookingLabel(bookingCount)} | {vehicleCount}{' '}
             {getVehicleLabel(vehicleCount)}
           </div>
           <div className="flex flex-wrap gap-2 md:justify-end">
@@ -73,7 +92,7 @@ export function CustomerDetails({
               <Pencil className="h-4.5 w-4.5" />
             </ActionIconButton>
             <ActionIconButton
-              label="Usuń klienta"
+              label="Usun klienta"
               onClick={onDeleteClick}
               tone="danger"
             >
@@ -83,47 +102,32 @@ export function CustomerDetails({
         </div>
       </div>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        <InfoCard
-          icon={<Phone className="h-4.5 w-4.5" />}
-          label="Telefon"
-          value={customer.phone}
-        />
-        <InfoCard
-          icon={<Mail className="h-4.5 w-4.5" />}
-          label="E-mail"
-          value={customer.email || 'Brak adresu e-mail'}
-        />
-        <InfoCard
-          icon={<Car className="h-4.5 w-4.5" />}
-          label="Pojazdy"
-          value={String(vehicleCount)}
-        />
-        <InfoCard
-          icon={<Calendar className="h-4.5 w-4.5" />}
-          label="Ostatnia aktywność"
-          value={lastActivity}
-        />
+      <div className="mt-4 flex flex-wrap gap-2">
+        <SummaryChip label="Pojazdy" value={String(vehicleCount)} />
+        <SummaryChip label="Telefon" value={customer.phone} />
+        {customer.email ? (
+          <SummaryChip label="E-mail" value={customer.email} />
+        ) : null}
       </div>
 
-      <section className="mt-6 rounded-3xl border border-white/8 bg-black/18 p-5">
-        <div className="flex items-center gap-2 font-semibold text-white">
-          <Car className="h-4.5 w-4.5 opacity-40" />
-          <h3>Pojazdy klienta</h3>
-        </div>
-        <div className="mt-4 grid gap-3">
+      <CollapsibleDetailSection
+        title="Pojazdy klienta"
+        icon={<Car className="h-4.5 w-4.5" />}
+        countLabel={`${vehicleCount} ${getVehicleLabel(vehicleCount)}`}
+      >
+        <div className="grid gap-3">
           {customer.vehicles && customer.vehicles.length > 0 ? (
             customer.vehicles.map((vehicle) => (
               <div
                 key={vehicle.id}
-                className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/6 p-4"
+                className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/6 p-3.5"
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <div className="shrink-0 rounded-lg bg-white/6 px-2 py-1 text-[10px] font-bold text-white/60">
                     {vehicle.registration}
                   </div>
                   <div className="min-w-0">
-                    <p className="break-words text-sm font-medium text-white">
+                    <p className="wrap-break-word text-sm font-medium text-white">
                       {vehicle.make} {vehicle.model}
                     </p>
                     <p className="mt-1 text-xs text-stone-500">
@@ -131,28 +135,28 @@ export function CustomerDetails({
                     </p>
                   </div>
                 </div>
-                <p className="max-w-[110px] break-words text-right text-xs text-stone-500">
+                <p className="min-w-0 max-w-27.5 wrap-break-word text-right text-xs text-stone-500">
                   {vehicle.color || 'Brak koloru'}
                 </p>
               </div>
             ))
           ) : (
-            <EmptyPanelMessage message="Ten klient nie ma jeszcze przypisanych pojazdów." />
+            <EmptyPanelMessage message="Ten klient nie ma jeszcze przypisanych pojazdow." />
           )}
         </div>
-      </section>
+      </CollapsibleDetailSection>
 
-      <section className="mt-6 rounded-3xl border border-white/8 bg-black/18 p-5">
-        <div className="flex items-center gap-2 font-semibold text-white">
-          <Calendar className="h-4.5 w-4.5 opacity-40" />
-          <h3>Historia rezerwacji</h3>
-        </div>
-        <div className="mt-4 grid gap-3">
+      <CollapsibleDetailSection
+        title="Historia rezerwacji"
+        icon={<Calendar className="h-4.5 w-4.5" />}
+        countLabel={`${bookingCount} ${getBookingLabel(bookingCount)}`}
+      >
+        <div className="grid gap-3">
           {customer.bookings && customer.bookings.length > 0 ? (
             customer.bookings.map((booking) => (
               <div
                 key={booking.id}
-                className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/6 p-4"
+                className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/6 p-3.5"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-white">
@@ -168,7 +172,7 @@ export function CustomerDetails({
                     )}
                   </p>
                 </div>
-                <p className="shrink-0 text-xs font-semibold text-white/40">
+                <p className="max-w-30 text-right text-xs font-semibold text-white/40">
                   {booking.status}
                 </p>
               </div>
@@ -177,56 +181,38 @@ export function CustomerDetails({
             <EmptyPanelMessage message="Brak historii rezerwacji dla tego klienta." />
           )}
         </div>
-      </section>
+      </CollapsibleDetailSection>
 
-      <section className="mt-6 rounded-3xl border border-white/8 bg-black/18 p-5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">
-          Relacja
-        </p>
-        <h3 className="mt-2 font-semibold text-white">Notatki</h3>
-        <div className="mt-4 rounded-2xl border border-white/8 bg-white/6 p-4">
-          {customer.notes ? (
-            <p className="break-words text-sm leading-7 text-stone-300">
-              {customer.notes}
-            </p>
-          ) : (
-            <p className="text-sm text-stone-500">
-              Brak dodatkowych notatek dla tego klienta.
-            </p>
-          )}
-        </div>
-      </section>
+      <CollapsibleDetailSection
+        title="Notatki"
+        icon={<User className="h-4.5 w-4.5" />}
+      >
+        {customer.notes ? (
+          <p className="wrap-break-word text-sm leading-6 text-stone-300">
+            {customer.notes}
+          </p>
+        ) : (
+          <p className="text-sm text-stone-500">
+            Brak dodatkowych notatek dla tego klienta.
+          </p>
+        )}
+      </CollapsibleDetailSection>
     </article>
   );
 }
 
-type InfoCardProps = {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-};
-
 type ActionIconButtonProps = {
-  children: React.ReactNode;
+  children: ReactNode;
   label: string;
   onClick: () => void;
   tone?: 'default' | 'danger';
 };
 
-function InfoCard({ icon, label, value }: InfoCardProps) {
+function SummaryChip({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex min-w-0 items-center gap-3 rounded-[22px] border border-white/8 bg-white/6 px-4 py-4">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/4 text-white">
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <p className="text-xs uppercase tracking-[0.18em] text-stone-500">
-          {label}
-        </p>
-        <p className="mt-2 break-all text-sm leading-7 text-stone-100">
-          {value}
-        </p>
-      </div>
+    <div className="inline-flex min-w-0 items-center gap-2 rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-xs text-stone-300">
+      <span className="text-stone-500">{label}:</span>
+      <span className="truncate font-medium text-white">{value}</span>
     </div>
   );
 }
@@ -255,13 +241,9 @@ function ActionIconButton({
   );
 }
 
-type EmptyPanelMessageProps = {
-  message: string;
-};
-
-function EmptyPanelMessage({ message }: EmptyPanelMessageProps) {
+function EmptyPanelMessage({ message }: { message: string }) {
   return (
-    <p className="rounded-2xl border border-dashed border-white/8 bg-white/2 p-6 text-center text-sm text-stone-500">
+    <p className="rounded-2xl border border-dashed border-white/8 bg-white/2 p-4 text-center text-sm text-stone-500">
       {message}
     </p>
   );
@@ -272,13 +254,7 @@ function getBookingLabel(count: number) {
 }
 
 function getVehicleLabel(count: number) {
-  if (count === 1) {
-    return 'pojazd';
-  }
-
-  if (count >= 2 && count <= 4) {
-    return 'pojazdy';
-  }
-
-  return 'pojazdów';
+  if (count === 1) return 'pojazd';
+  if (count >= 2 && count <= 4) return 'pojazdy';
+  return 'pojazdow';
 }

@@ -1,38 +1,43 @@
-﻿import { PageIntro } from '../components/PageIntro';
+import { PageIntro } from '../components/PageIntro';
 import { SectionCard } from '../components/SectionCard';
+import { MobilePageHeader } from '../components/ui/MobilePageHeader';
 
 export function SettingsPage() {
   return (
     <>
-      <PageIntro
-        eyebrow="Ustawienia"
-        title="Konfiguracja studia, zespołu i automatyzacji"
-        description="Tutaj zbierzemy ustawienia firmy, użytkowników, szablonów usług, integracji i przyszłych automatyzacji."
-        metrics={[
-          { label: 'Użytkownicy', value: '5' },
-          { label: 'Role', value: '3' },
-          { label: 'Integracje', value: '0' },
-          { label: 'Powiadomienia', value: 'W planie' },
-        ]}
-      />
+      <div className="hidden sm:block">
+        <PageIntro
+          eyebrow="Ustawienia"
+          title="Konfiguracja studia, zespolu i automatyzacji"
+          description="Tutaj zbierzemy ustawienia firmy, uzytkownikow, szablonow uslug, integracji i przyszlych automatyzacji."
+          metrics={[
+            { label: 'Uzytkownicy', value: '5' },
+            { label: 'Role', value: '3' },
+            { label: 'Integracje', value: '0' },
+            { label: 'Powiadomienia', value: 'W planie' },
+          ]}
+        />
+      </div>
+
+      <MobilePageHeader eyebrow="Ustawienia" title="Konfiguracja" />
 
       <section className="grid gap-4 xl:grid-cols-2">
         <SectionCard
           title="Ustawienia organizacji"
-          description="Na początek ten obszar może objąć najważniejszą konfigurację operacyjną."
+          description="Na poczatek ten obszar moze objac najwazniejsza konfiguracje operacyjna."
           items={[
             'Dane studia, godziny pracy i lokalizacje.',
-            'Role użytkowników i poziomy dostępu.',
-            'Domyślne statusy zleceń i schematy pracy.',
+            'Role uzytkownikow i poziomy dostepu.',
+            'Domyslne statusy zlecen i schematy pracy.',
           ]}
         />
         <SectionCard
           title="Integracje i workflow"
-          description="To będzie naturalne miejsce pod integracje oraz procesy automatyczne."
+          description="To bedzie naturalne miejsce pod integracje oraz procesy automatyczne."
           items={[
-            'Podpięcie Supabase i zasad dostępu.',
-            'Szablony wiadomości i przypomnień dla klientów.',
-            'Automatyczne akcje po zakończeniu usługi.',
+            'Podpiecie Supabase i zasad dostepu.',
+            'Szablony wiadomosci i przypomnien dla klientow.',
+            'Automatyczne akcje po zakonczeniu uslugi.',
           ]}
         />
       </section>

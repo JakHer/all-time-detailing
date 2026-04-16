@@ -1,5 +1,5 @@
 import { CalendarPlus2, Plus } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useOpenGlobalBookingModal } from '../../lib/useOpenGlobalBookingModal';
 import { ActionButton } from '../ui/ActionButton';
 import { SearchField } from '../ui/SearchField';
 import { ToolbarPanel } from '../ui/ToolbarPanel';
@@ -15,7 +15,7 @@ export function CustomerToolbar({
   onQueryChange,
   onCreateClick,
 }: CustomerToolbarProps) {
-  const navigate = useNavigate();
+  const openBookingModal = useOpenGlobalBookingModal();
 
   return (
     <ToolbarPanel>
@@ -23,19 +23,25 @@ export function CustomerToolbar({
         <SearchField
           value={query}
           onChange={onQueryChange}
-          placeholder="Szukaj klienta po imieniu, telefonie lub emailu..."
-          className="sm:max-w-md"
+          placeholder="Szukaj klienta..."
+          className="w-full sm:max-w-md"
         />
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <ActionButton
             icon={CalendarPlus2}
-            onClick={() => navigate('/rezerwacje?nowa=1')}
+            onClick={openBookingModal}
+            className="hidden! sm:inline-flex! sm:w-auto"
           >
-            Dodaj rezerwację
+            Dodaj rezerwacje
           </ActionButton>
 
-          <ActionButton icon={Plus} variant="solid" onClick={onCreateClick}>
+          <ActionButton
+            icon={Plus}
+            variant="solid"
+            onClick={onCreateClick}
+            className="w-full sm:w-auto"
+          >
             Nowy klient
           </ActionButton>
         </div>

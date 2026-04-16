@@ -1,4 +1,6 @@
-﻿import { useDeferredValue, useMemo, useState } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { X } from 'lucide-react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CustomerDetails } from '../components/customers/CustomerDetails';
 import { CustomerList } from '../components/customers/CustomerList';
@@ -6,6 +8,7 @@ import { CustomerModal } from '../components/customers/CustomerModal';
 import { CustomerToolbar } from '../components/customers/CustomerToolbar';
 import { PageIntro } from '../components/PageIntro';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { MobilePageHeader } from '../components/ui/MobilePageHeader';
 import { Skeleton } from '../components/ui/Skeleton';
 import {
   useClients,
@@ -25,6 +28,7 @@ export function CustomersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isMobileDetailsOpen, setIsMobileDetailsOpen] = useState(false);
 
   const deferredQuery = useDeferredValue(query);
 
@@ -58,11 +62,11 @@ export function CustomersPage() {
         value: String(metricsData?.newClientsLast30Days ?? 0),
       },
       {
-        label: 'Powracający',
+        label: 'Powracajacy',
         value: `${Math.round(metricsData?.returningRate ?? 0)}%`,
       },
       {
-        label: 'Śr. wartość',
+        label: 'Sr. wartosc',
         value: formatCurrency(metricsData?.averageBookingValue ?? 0),
       },
     ],
@@ -79,6 +83,7 @@ export function CustomersPage() {
       return;
     }
 
+    setIsMobileDetailsOpen(false);
     setModalMode('edit');
     setIsModalOpen(true);
   }
@@ -95,16 +100,16 @@ export function CustomersPage() {
     try {
       if (modalMode === 'edit' && selectedCustomerId) {
         await updateMutation.mutateAsync({ ...data, id: selectedCustomerId });
-        toast.success('Dane klienta zostały zaktualizowane');
+        toast.success('Dane klienta zostaly zaktualizowane');
       } else {
         const newClient = await createMutation.mutateAsync(data);
         setSelectedCustomerId(newClient.id);
-        toast.success('Nowy klient został dodany');
+        toast.success('Nowy klient zostal dodany');
       }
 
       setIsModalOpen(false);
     } catch {
-      toast.error('Wystąpił błąd podczas zapisywania klienta');
+      toast.error('Wystapil blad podczas zapisywania klienta');
     }
   }
 
@@ -117,12 +122,18 @@ export function CustomersPage() {
       await deleteMutation.mutateAsync(selectedCustomerId);
       setSelectedCustomerId(null);
       setIsDeleteDialogOpen(false);
-      toast.success('Klient został usunięty');
+      setIsMobileDetailsOpen(false);
+      toast.success('Klient zostal usuniety');
     } catch {
       toast.error(
-        'Nie można usunąć klienta, ponieważ prawdopodobnie ma przypisane rezerwacje.',
+        'Nie mozna usunac klienta, poniewaz prawdopodobnie ma przypisane rezerwacje.',
       );
     }
+  }
+
+  function handleSelectCustomer(id: string) {
+    setSelectedCustomerId(id);
+    setIsMobileDetailsOpen(true);
   }
 
   return (
@@ -130,11 +141,22 @@ export function CustomersPage() {
       className="flex min-w-0 flex-col gap-4 overflow-x-hidden"
       style={{ overflowAnchor: 'none' }}
     >
-      <PageIntro
+      <div className="hidden sm:block">
+        <PageIntro
+          eyebrow="Klienci"
+          title="Baza klientow z historia wizyt i wartoscia relacji"
+          description="Zarzadzaj swoja baza klientow, przegladaj ich historie wizyt oraz przypisane pojazdy w jednym miejscu."
+          metrics={metrics}
+        />
+      </div>
+
+      <MobilePageHeader
         eyebrow="Klienci"
-        title="Baza klientów z historią wizyt i wartością relacji"
-        description="Zarządzaj swoją bazą klientów, przeglądaj ich historię wizyt oraz przypisane pojazdy w jednym miejscu."
-        metrics={metrics}
+        title="Baza klientow"
+        chips={[
+          `${metricsData?.totalClients ?? clients.length} osob`,
+          `${Math.round(metricsData?.returningRate ?? 0)}% powracalnosc`,
+        ]}
       />
 
       <CustomerToolbar
@@ -158,12 +180,15 @@ export function CustomersPage() {
             <CustomerList
               customers={filteredClients}
               selectedCustomerId={selectedCustomerId}
-              onSelect={setSelectedCustomerId}
+              onSelect={handleSelectCustomer}
             />
           )}
         </div>
 
-        <div className="min-w-0 max-w-full" style={{ overflowAnchor: 'none' }}>
+        <div
+          className="hidden min-w-0 max-w-full 2xl:block"
+          style={{ overflowAnchor: 'none' }}
+        >
           <CustomerDetails
             customer={selectedCustomer}
             isLoading={isLoading && clients.length === 0}
@@ -172,6 +197,46 @@ export function CustomersPage() {
           />
         </div>
       </section>
+
+      <Dialog.Root
+        open={isMobileDetailsOpen && !!selectedCustomer}
+        onOpenChange={setIsMobileDetailsOpen}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-60 bg-black/70 backdrop-blur-sm 2xl:hidden" />
+          <Dialog.Content className="fixed inset-0 z-70 flex h-dvh flex-col overflow-hidden bg-[#121314] outline-none 2xl:hidden">
+            <div className="flex items-center justify-between gap-3 border-b border-white/8 px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))]">
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-200">
+                  Szczegoly klienta
+                </p>
+                <p className="mt-1 truncate text-sm text-stone-400">
+                  {selectedCustomer?.full_name ?? 'Wybrany klient'}
+                </p>
+              </div>
+              <Dialog.Close asChild>
+                <button
+                  type="button"
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/6 text-stone-100 transition hover:border-white/16 hover:bg-white/10"
+                  aria-label="Zamknij szczegoly klienta"
+                >
+                  <X className="h-4.5 w-4.5" />
+                </button>
+              </Dialog.Close>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+              <CustomerDetails
+                customer={selectedCustomer}
+                isLoading={isLoading && clients.length === 0}
+                onEditClick={handleEditClick}
+                onDeleteClick={handleDeleteClick}
+                variant="sheet"
+              />
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       <CustomerModal
         isOpen={isModalOpen}
@@ -193,9 +258,9 @@ export function CustomersPage() {
           onConfirm={() => {
             void confirmDelete();
           }}
-          title="Usuń klienta"
-          description={`Czy na pewno chcesz usunąć klienta ${selectedCustomer?.full_name}? Tej operacji nie można cofnąć.`}
-          confirmLabel="Usuń klienta"
+          title="Usun klienta"
+          description={`Czy na pewno chcesz usunac klienta ${selectedCustomer?.full_name}? Tej operacji nie mozna cofnac.`}
+          confirmLabel="Usun klienta"
           tone="danger"
         />
       ) : null}
@@ -207,5 +272,5 @@ function formatCurrency(value: number) {
   return `${new Intl.NumberFormat('pl-PL', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(value)} zł`;
+  }).format(value)} zl`;
 }

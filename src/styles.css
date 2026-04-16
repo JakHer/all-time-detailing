@@ -4,18 +4,39 @@
   html {
     font-family: 'Segoe UI', 'Noto Sans', Arial, sans-serif;
     background: #0b0c0d;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
     scrollbar-gutter: stable;
+    overflow-y: auto;
+    scrollbar-color: rgba(245, 158, 11, 0.55) rgba(255, 255, 255, 0.04);
   }
 
   body {
     margin: 0;
     min-height: 100vh;
-    overflow-y: scroll;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-y: visible;
     background: #0b0c0d;
+  }
+
+  #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   * {
     box-sizing: border-box;
+  }
+
+  img,
+  svg,
+  video,
+  canvas {
+    max-width: 100%;
   }
 
   button {
@@ -34,5 +55,35 @@
   optgroup {
     background-color: #121314;
     color: #f5f5f4;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  html::-webkit-scrollbar-track,
+  body::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  html::-webkit-scrollbar-thumb,
+  body::-webkit-scrollbar-thumb {
+    border: 3px solid rgba(0, 0, 0, 0);
+    border-radius: 999px;
+    background: rgba(245, 158, 11, 0.45);
+    background-clip: padding-box;
+  }
+
+  html::-webkit-scrollbar-thumb:hover,
+  body::-webkit-scrollbar-thumb:hover {
+    background: rgba(245, 158, 11, 0.62);
+    background-clip: padding-box;
+  }
+
+  html::-webkit-scrollbar-corner,
+  body::-webkit-scrollbar-corner {
+    background: transparent;
   }
 }

@@ -9,7 +9,6 @@ import { CustomersPage } from './pages/CustomersPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { GalleryPage } from './pages/GalleryPage';
 import { ServicesPage } from './pages/ServicesPage';
-import { SettingsPage } from './pages/SettingsPage';
 import { VehiclesPage } from './pages/VehiclesPage';
 
 const router = createBrowserRouter([
@@ -43,7 +42,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'ustawienia',
-        element: <SettingsPage />,
+        element: <Navigate to="/" replace />,
       },
       {
         path: '*',
