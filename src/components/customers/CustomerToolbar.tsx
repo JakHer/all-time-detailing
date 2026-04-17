@@ -1,5 +1,4 @@
-import { CalendarPlus2, Plus } from 'lucide-react';
-import { useOpenGlobalBookingModal } from '../../lib/useOpenGlobalBookingModal';
+import { Plus } from 'lucide-react';
 import { ActionButton } from '../ui/ActionButton';
 import { SearchField } from '../ui/SearchField';
 import { ToolbarPanel } from '../ui/ToolbarPanel';
@@ -15,8 +14,6 @@ export function CustomerToolbar({
   onQueryChange,
   onCreateClick,
 }: CustomerToolbarProps) {
-  const openBookingModal = useOpenGlobalBookingModal();
-
   return (
     <ToolbarPanel>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -28,14 +25,6 @@ export function CustomerToolbar({
         />
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-          <ActionButton
-            icon={CalendarPlus2}
-            onClick={openBookingModal}
-            className="hidden! sm:inline-flex! sm:w-auto"
-          >
-            Dodaj rezerwacje
-          </ActionButton>
-
           <ActionButton
             icon={Plus}
             variant="solid"
