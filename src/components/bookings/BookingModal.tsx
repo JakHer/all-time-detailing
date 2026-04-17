@@ -11,7 +11,6 @@ import {
   Dialog as AriaDialog,
   Heading,
 } from 'react-aria-components';
-import * as Dialog from '@radix-ui/react-dialog';
 import {
   CalendarDays,
   ChevronLeft,
@@ -23,13 +22,10 @@ import {
   CreditCard,
   Layout,
   Info,
-  X,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Select } from '../ui/Select';
-import { Field, SectionTitle, inputClassName } from '../ui/FormElements';
 import { bookingStatuses, type Booking } from '../../data/bookings';
 import {
   formatDuration,
@@ -38,6 +34,9 @@ import {
   type ServiceOption,
   type VehicleOption,
 } from '../../lib/bookings';
+import { Field, SectionTitle, inputClassName } from '../ui/FormElements';
+import { FormModal } from '../ui/FormModal';
+import { Select } from '../ui/Select';
 
 const bookingSchema = z.object({
   client: z.string().trim().min(1, 'Wybierz klienta lub wpisz jego nazwę.'),
@@ -78,8 +77,12 @@ export function BookingModal({
   const [selectedVehicleId, setSelectedVehicleId] = useState('');
 
   const serviceOptions = useMemo(() => {
-    if (!booking || services.some((s) => s.name === booking.service))
+    if (
+      !booking ||
+      services.some((service) => service.name === booking.service)
+    )
       return services;
+
     return [
       ...services,
       {
@@ -110,7 +113,7 @@ export function BookingModal({
   const filteredVehicles = useMemo(
     () =>
       selectedClientId
-        ? vehicles.filter((v) => v.clientId === selectedClientId)
+        ? vehicles.filter((vehicle) => vehicle.clientId === selectedClientId)
         : [],
     [selectedClientId, vehicles],
   );
@@ -122,14 +125,16 @@ export function BookingModal({
     reset(nextValues);
 
     const matchedVehicle = vehicles.find(
-      (v) =>
-        v.registration === booking?.licensePlate ||
-        v.label === booking?.vehicle,
+      (vehicle) =>
+        vehicle.registration === booking?.licensePlate ||
+        vehicle.label === booking?.vehicle,
     );
     const matchedClient =
-      clients.find((c) => c.id === matchedVehicle?.clientId) ??
+      clients.find((client) => client.id === matchedVehicle?.clientId) ??
       clients.find(
-        (c) => c.fullName === booking?.client && c.phone === booking?.phone,
+        (client) =>
+          client.fullName === booking?.client &&
+          client.phone === booking?.phone,
       );
 
     setSelectedClientId(matchedClient?.id ?? '');
@@ -145,28 +150,27 @@ export function BookingModal({
       return;
     }
 
-    // Auto-select only once when client changes
     if (selectedClientId !== lastAutoSelectedClientId.current) {
       if (filteredVehicles.length === 1) {
-        const [v] = filteredVehicles;
-        setSelectedVehicleId(v.id);
-        setValue('vehicle', v.label, { shouldDirty: true });
-        setValue('licensePlate', v.registration, { shouldDirty: true });
+        const [vehicle] = filteredVehicles;
+        setSelectedVehicleId(vehicle.id);
+        setValue('vehicle', vehicle.label, { shouldDirty: true });
+        setValue('licensePlate', vehicle.registration, { shouldDirty: true });
       }
       lastAutoSelectedClientId.current = selectedClientId;
     }
   }, [filteredVehicles, selectedClientId, setValue]);
 
   const selectedClient = useMemo(
-    () => clients.find((c) => c.id === selectedClientId),
+    () => clients.find((client) => client.id === selectedClientId),
     [clients, selectedClientId],
   );
   const selectedVehicle = useMemo(
-    () => vehicles.find((v) => v.id === selectedVehicleId),
+    () => vehicles.find((vehicle) => vehicle.id === selectedVehicleId),
     [vehicles, selectedVehicleId],
   );
 
-  const handleClientChange = (clientId: string) => {
+  function handleClientChange(clientId: string) {
     setSelectedClientId(clientId);
     setSelectedVehicleId('');
     if (!clientId) {
@@ -174,43 +178,45 @@ export function BookingModal({
       setValue('phone', '', { shouldDirty: true });
       return;
     }
-    const client = clients.find((c) => c.id === clientId);
+
+    const client = clients.find((item) => item.id === clientId);
     if (client) {
       setValue('client', client.fullName, { shouldDirty: true });
       setValue('phone', client.phone, { shouldDirty: true });
     }
-  };
+  }
 
-  const handleVehicleChange = (vehicleId: string) => {
+  function handleVehicleChange(vehicleId: string) {
     setSelectedVehicleId(vehicleId);
     if (!vehicleId || vehicleId === 'new') {
       setValue('vehicle', '', { shouldDirty: true });
       setValue('licensePlate', '', { shouldDirty: true });
       return;
     }
-    const v = vehicles.find((v) => v.id === vehicleId);
-    if (v) {
-      setValue('vehicle', v.label, { shouldDirty: true });
-      setValue('licensePlate', v.registration, { shouldDirty: true });
-    }
-  };
 
-  const handleServiceChange = (serviceId: string) => {
-    const s = serviceOptions.find((s) => s.id === serviceId);
+    const vehicle = vehicles.find((item) => item.id === vehicleId);
+    if (vehicle) {
+      setValue('vehicle', vehicle.label, { shouldDirty: true });
+      setValue('licensePlate', vehicle.registration, { shouldDirty: true });
+    }
+  }
+
+  function handleServiceChange(serviceId: string) {
+    const service = serviceOptions.find((item) => item.id === serviceId);
     setValue('serviceId', serviceId, {
       shouldValidate: true,
       shouldDirty: true,
     });
-    if (s) {
-      setValue('duration', formatDuration(s.durationMinutes), {
+    if (service) {
+      setValue('duration', formatDuration(service.durationMinutes), {
         shouldDirty: true,
       });
-      setValue('amount', formatPrice(s.basePrice), { shouldDirty: true });
+      setValue('amount', formatPrice(service.basePrice), { shouldDirty: true });
     }
-  };
+  }
 
-  const onSubmit = (data: BookingFormValues) => {
-    const service = serviceOptions.find((s) => s.id === data.serviceId);
+  function onSubmit(data: BookingFormValues) {
+    const service = serviceOptions.find((item) => item.id === data.serviceId);
     if (!service) return;
 
     const [date, timePart = '09:00'] = data.scheduledAt.split('T');
@@ -222,331 +228,289 @@ export function BookingModal({
     } satisfies Omit<Booking, 'id'>;
 
     onSave(mode === 'edit' && booking ? { ...booking, ...payload } : payload);
-  };
+  }
 
   return (
-    <Dialog.Root open onOpenChange={(open) => !open && onClose()}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl animate-in fade-in duration-300" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[96vh] w-[calc(100%-1rem)] max-w-5xl -translate-x-1/2 -translate-y-1/2 flex-col rounded-4xl border border-white/10 bg-[#0d0e10] shadow-[0_40px_120px_rgba(0,0,0,0.7)] animate-in zoom-in-95 duration-300 lg:max-h-[92vh] lg:w-[calc(100%-4rem)] lg:rounded-[40px]">
-          <header className="flex shrink-0 items-center justify-between border-b border-white/5 bg-white/2 px-6 py-5 md:px-8">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400/10 text-amber-400">
-                <CalendarDays className="h-6 w-6" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold tracking-tight text-white">
-                  {mode === 'create' ? 'Nowa rezerwacja' : 'Edycja wizyty'}
-                </h2>
-                <p className="text-xs font-medium text-stone-500 uppercase tracking-widest mt-0.5">
-                  {mode === 'create'
-                    ? 'Dodawanie do kalendarza'
-                    : 'Aktualizacja danych'}
-                </p>
-              </div>
-            </div>
-            <Dialog.Close className="rounded-xl border border-white/10 bg-white/5 p-2.5 text-stone-400 transition hover:bg-white/10 hover:text-white">
-              <X className="h-5 w-5" />
-            </Dialog.Close>
-          </header>
-
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="flex flex-1 flex-col overflow-hidden"
+    <FormModal
+      open
+      onClose={onClose}
+      onSubmit={handleSubmit(onSubmit)}
+      icon={CalendarDays}
+      title={mode === 'create' ? 'Nowa rezerwacja' : 'Edycja wizyty'}
+      eyebrow={
+        mode === 'create' ? 'Dodawanie do kalendarza' : 'Aktualizacja danych'
+      }
+      size="xl"
+      footer={
+        <>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full rounded-2xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-medium text-white transition hover:bg-white/10 md:w-auto"
           >
-            <div className="flex-1 overflow-y-auto overscroll-contain p-6 md:p-8">
-              <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
-                <div className="space-y-8">
-                  <section className="space-y-5">
-                    <SectionTitle icon={User} title="Klient i Pojazd" />
+            Anuluj
+          </button>
+          <button
+            type="submit"
+            className="w-full rounded-2xl bg-amber-400 px-8 py-3 text-sm font-bold text-black shadow-[0_10px_20px_rgba(251,191,36,0.2)] transition hover:-translate-y-0.5 hover:bg-amber-300 md:w-auto"
+          >
+            {mode === 'create' ? 'Zatwierdź rezerwację' : 'Zapisz zmiany'}
+          </button>
+        </>
+      }
+    >
+      <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
+        <div className="space-y-8">
+          <section className="space-y-5">
+            <SectionTitle icon={User} title="Klient i Pojazd" />
 
-                    <div className="grid gap-4">
-                      {/* Client Selection */}
-                      {!selectedClientId || selectedClientId === 'new' ? (
-                        <div className="grid gap-4 animate-in fade-in duration-300">
-                          <Field label="Wybierz klienta z bazy">
-                            <Select
-                              value={selectedClientId}
-                              onChange={(e) =>
-                                handleClientChange(e.target.value)
-                              }
-                              className={inputClassName}
-                            >
-                              <option value="">Wybierz...</option>
-                              <option value="new">
-                                + Dodaj nowego klienta
-                              </option>
-                              {clients.map((c) => (
-                                <option key={c.id} value={c.id}>
-                                  {c.fullName} | {c.phone}
-                                </option>
-                              ))}
-                            </Select>
-                          </Field>
-
-                          {selectedClientId === 'new' && (
-                            <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-300">
-                              <Field
-                                label="Imię i nazwisko"
-                                error={errors.client?.message}
-                              >
-                                <input
-                                  {...register('client')}
-                                  placeholder="np. Jan Kowalski"
-                                  className={inputClassName}
-                                />
-                              </Field>
-                              <Field
-                                label="Telefon"
-                                error={errors.phone?.message}
-                              >
-                                <input
-                                  {...register('phone')}
-                                  placeholder="000 000 000"
-                                  className={inputClassName}
-                                />
-                              </Field>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-between rounded-2xl border border-amber-200/10 bg-amber-400/5 p-4 animate-in zoom-in-95 duration-300">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-400/10 text-amber-400">
-                              <User className="h-5 w-5" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-bold text-white">
-                                {selectedClient?.fullName}
-                              </p>
-                              <p className="text-xs text-stone-500">
-                                {selectedClient?.phone}
-                              </p>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleClientChange('')}
-                            className="text-[10px] font-bold uppercase tracking-widest text-amber-200/60 hover:text-amber-200"
-                          >
-                            Zmień
-                          </button>
-                        </div>
-                      )}
-
-                      <div className="h-px bg-white/5 my-2" />
-
-                      {/* Vehicle Selection */}
-                      {!selectedVehicleId || selectedVehicleId === 'new' ? (
-                        <div className="grid gap-4 animate-in fade-in duration-300">
-                          <Field label="Pojazd klienta">
-                            <Select
-                              value={selectedVehicleId}
-                              onChange={(e) =>
-                                handleVehicleChange(e.target.value)
-                              }
-                              disabled={!selectedClientId}
-                              className={inputClassName}
-                            >
-                              <option value="">
-                                {selectedClientId
-                                  ? 'Wybierz z listy...'
-                                  : 'Najpierw wybierz klienta'}
-                              </option>
-                              {selectedClientId && (
-                                <option value="new">+ Dodaj nowy pojazd</option>
-                              )}
-                              {filteredVehicles.map((v) => (
-                                <option key={v.id} value={v.id}>
-                                  {v.label} | {v.registration}
-                                </option>
-                              ))}
-                            </Select>
-                          </Field>
-
-                          {(selectedVehicleId === 'new' ||
-                            selectedClientId === 'new') && (
-                            <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-300">
-                              <Field
-                                label="Marka i model"
-                                error={errors.vehicle?.message}
-                              >
-                                <input
-                                  {...register('vehicle')}
-                                  placeholder="np. Audi A6"
-                                  className={inputClassName}
-                                />
-                              </Field>
-                              <Field
-                                label="Rejestracja"
-                                error={errors.licensePlate?.message}
-                              >
-                                <input
-                                  {...register('licensePlate')}
-                                  placeholder="KR 12345"
-                                  className={inputClassName}
-                                />
-                              </Field>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-between rounded-2xl border border-white/5 bg-white/2 p-4 animate-in zoom-in-95 duration-300">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-stone-400">
-                              <Car className="h-5 w-5" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-bold text-white">
-                                {selectedVehicle?.label}
-                              </p>
-                              <p className="text-[10px] font-mono text-stone-500 uppercase">
-                                {selectedVehicle?.registration}
-                              </p>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              filteredVehicles.length > 1
-                                ? handleVehicleChange('')
-                                : handleVehicleChange('new')
-                            }
-                            className="text-[10px] font-bold uppercase tracking-widest text-stone-500 hover:text-white"
-                          >
-                            {filteredVehicles.length > 1
-                              ? 'Zmień'
-                              : 'Dodaj pojazd'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </section>
-                  <section className="space-y-5">
-                    <SectionTitle icon={Wrench} title="Usługa" />
-                    <Field
-                      label="Usługa z katalogu"
-                      error={errors.serviceId?.message}
+            <div className="grid gap-4">
+              {!selectedClientId || selectedClientId === 'new' ? (
+                <div className="grid gap-4 animate-in fade-in duration-300">
+                  <Field label="Wybierz klienta z bazy">
+                    <Select
+                      value={selectedClientId}
+                      onChange={(event) =>
+                        handleClientChange(event.target.value)
+                      }
+                      className={inputClassName}
                     >
-                      <Select
-                        value={values.serviceId}
-                        onChange={(e) => handleServiceChange(e.target.value)}
-                        className={inputClassName}
-                      >
-                        <option value="">Wybierz usługę...</option>
-                        {serviceOptions.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.name}
-                          </option>
-                        ))}
-                      </Select>
-                    </Field>
-                  </section>
-                </div>
+                      <option value="">Wybierz...</option>
+                      <option value="new">+ Dodaj nowego klienta</option>
+                      {clients.map((client) => (
+                        <option key={client.id} value={client.id}>
+                          {client.fullName} | {client.phone}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
 
-                <div className="space-y-8 mt-8 md:mt-0 border-t border-white/5 pt-8 md:border-t-0 md:pt-0">
-                  <section className="space-y-5">
-                    <SectionTitle icon={Clock} title="Termin i Logistyka" />
-                    <div className="grid gap-4">
+                  {selectedClientId === 'new' ? (
+                    <div className="grid gap-4 animate-in slide-in-from-top-2 duration-300 md:grid-cols-2">
                       <Field
-                        label="Data i godzina"
-                        error={errors.scheduledAt?.message}
+                        label="Imię i nazwisko"
+                        error={errors.client?.message}
                       >
-                        <Controller
-                          control={control}
-                          name="scheduledAt"
-                          render={({ field }) => (
-                            <BookingScheduleField
-                              value={field.value}
-                              onChange={field.onChange}
-                            />
-                          )}
+                        <input
+                          {...register('client')}
+                          placeholder="np. Jan Kowalski"
+                          className={inputClassName}
                         />
                       </Field>
-                      <div className="grid grid-cols-2 gap-4">
-                        <Field
-                          label="Czas trwania"
-                          error={errors.duration?.message}
-                        >
-                          <div className="relative">
-                            <input
-                              {...register('duration')}
-                              placeholder="2 h"
-                              className={`${inputClassName} pl-10`}
-                            />
-                            <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-500" />
-                          </div>
-                        </Field>
-                        <Field label="Kwota" error={errors.amount?.message}>
-                          <div className="relative">
-                            <input
-                              {...register('amount')}
-                              placeholder="500 zł"
-                              className={`${inputClassName} pl-10`}
-                            />
-                            <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-500" />
-                          </div>
-                        </Field>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <Field label="Stanowisko" error={errors.bay?.message}>
-                          <div className="relative">
-                            <input
-                              {...register('bay')}
-                              className={`${inputClassName} pl-10`}
-                            />
-                            <Layout className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-500" />
-                          </div>
-                        </Field>
-                        <Field label="Status" error={errors.status?.message}>
-                          <Select
-                            {...register('status')}
-                            className={inputClassName}
-                          >
-                            {bookingStatuses.map((s) => (
-                              <option key={s} value={s}>
-                                {s}
-                              </option>
-                            ))}
-                          </Select>
-                        </Field>
-                      </div>
+                      <Field label="Telefon" error={errors.phone?.message}>
+                        <input
+                          {...register('phone')}
+                          placeholder="000 000 000"
+                          className={inputClassName}
+                        />
+                      </Field>
                     </div>
-                  </section>
-                  <section className="space-y-5">
-                    <SectionTitle icon={Info} title="Dodatkowe informacje" />
-                    <Field label="Notatki do rezerwacji">
-                      <textarea
-                        {...register('notes')}
-                        rows={4}
-                        placeholder="Wpisz ustalenia..."
-                        className={`${inputClassName} resize-none`}
-                      />
-                    </Field>
-                  </section>
+                  ) : null}
                 </div>
+              ) : (
+                <div className="flex items-center justify-between gap-3 rounded-2xl border border-amber-200/10 bg-amber-400/5 p-4 animate-in zoom-in-95 duration-300">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-400/10 text-amber-400">
+                      <User className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-white">
+                        {selectedClient?.fullName}
+                      </p>
+                      <p className="truncate text-xs text-stone-500">
+                        {selectedClient?.phone}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleClientChange('')}
+                    className="shrink-0 text-[10px] font-bold uppercase tracking-widest text-amber-200/60 hover:text-amber-200"
+                  >
+                    Zmień
+                  </button>
+                </div>
+              )}
+
+              <div className="my-2 h-px bg-white/5" />
+
+              {!selectedVehicleId || selectedVehicleId === 'new' ? (
+                <div className="grid gap-4 animate-in fade-in duration-300">
+                  <Field label="Pojazd klienta">
+                    <Select
+                      value={selectedVehicleId}
+                      onChange={(event) =>
+                        handleVehicleChange(event.target.value)
+                      }
+                      disabled={!selectedClientId}
+                      className={inputClassName}
+                    >
+                      <option value="">
+                        {selectedClientId
+                          ? 'Wybierz z listy...'
+                          : 'Najpierw wybierz klienta'}
+                      </option>
+                      {selectedClientId ? (
+                        <option value="new">+ Dodaj nowy pojazd</option>
+                      ) : null}
+                      {filteredVehicles.map((vehicle) => (
+                        <option key={vehicle.id} value={vehicle.id}>
+                          {vehicle.label} | {vehicle.registration}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+
+                  {selectedVehicleId === 'new' || selectedClientId === 'new' ? (
+                    <div className="grid gap-4 animate-in slide-in-from-top-2 duration-300 md:grid-cols-2">
+                      <Field
+                        label="Marka i model"
+                        error={errors.vehicle?.message}
+                      >
+                        <input
+                          {...register('vehicle')}
+                          placeholder="np. Audi A6"
+                          className={inputClassName}
+                        />
+                      </Field>
+                      <Field
+                        label="Rejestracja"
+                        error={errors.licensePlate?.message}
+                      >
+                        <input
+                          {...register('licensePlate')}
+                          placeholder="KR 12345"
+                          className={inputClassName}
+                        />
+                      </Field>
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/5 bg-white/2 p-4 animate-in zoom-in-95 duration-300">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/5 text-stone-400">
+                      <Car className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-white">
+                        {selectedVehicle?.label}
+                      </p>
+                      <p className="truncate text-[10px] font-mono uppercase text-stone-500">
+                        {selectedVehicle?.registration}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      filteredVehicles.length > 1
+                        ? handleVehicleChange('')
+                        : handleVehicleChange('new')
+                    }
+                    className="shrink-0 text-[10px] font-bold uppercase tracking-widest text-stone-500 hover:text-white"
+                  >
+                    {filteredVehicles.length > 1 ? 'Zmień' : 'Dodaj pojazd'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="space-y-5">
+            <SectionTitle icon={Wrench} title="Usługa" />
+            <Field label="Usługa z katalogu" error={errors.serviceId?.message}>
+              <Select
+                value={values.serviceId}
+                onChange={(event) => handleServiceChange(event.target.value)}
+                className={inputClassName}
+              >
+                <option value="">Wybierz usługę...</option>
+                {serviceOptions.map((service) => (
+                  <option key={service.id} value={service.id}>
+                    {service.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </section>
+        </div>
+
+        <div className="mt-8 space-y-8 border-t border-white/5 pt-8 lg:mt-0 lg:border-t-0 lg:pt-0">
+          <section className="space-y-5">
+            <SectionTitle icon={Clock} title="Termin i Logistyka" />
+            <div className="grid gap-4">
+              <Field label="Data i godzina" error={errors.scheduledAt?.message}>
+                <Controller
+                  control={control}
+                  name="scheduledAt"
+                  render={({ field }) => (
+                    <BookingScheduleField
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                  )}
+                />
+              </Field>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Czas trwania" error={errors.duration?.message}>
+                  <div className="relative">
+                    <input
+                      {...register('duration')}
+                      placeholder="2 h"
+                      className={`${inputClassName} pl-10`}
+                    />
+                    <Clock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-500" />
+                  </div>
+                </Field>
+                <Field label="Kwota" error={errors.amount?.message}>
+                  <div className="relative">
+                    <input
+                      {...register('amount')}
+                      placeholder="500 zł"
+                      className={`${inputClassName} pl-10`}
+                    />
+                    <CreditCard className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-500" />
+                  </div>
+                </Field>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Stanowisko" error={errors.bay?.message}>
+                  <div className="relative">
+                    <input
+                      {...register('bay')}
+                      className={`${inputClassName} pl-10`}
+                    />
+                    <Layout className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-500" />
+                  </div>
+                </Field>
+                <Field label="Status" error={errors.status?.message}>
+                  <Select {...register('status')} className={inputClassName}>
+                    {bookingStatuses.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
               </div>
             </div>
-            <footer className="flex shrink-0 items-center justify-end gap-3 border-t border-white/5 bg-white/2 px-6 py-5 md:px-8">
-              <Dialog.Close asChild>
-                <button
-                  type="button"
-                  className="rounded-2xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-medium text-white transition hover:bg-white/10"
-                >
-                  Anuluj
-                </button>
-              </Dialog.Close>
-              <button
-                type="submit"
-                className="rounded-2xl bg-amber-400 px-8 py-3 text-sm font-bold text-black shadow-[0_10px_20px_rgba(251,191,36,0.2)] transition hover:-translate-y-0.5 hover:bg-amber-300"
-              >
-                {mode === 'create' ? 'Zatwierdź rezerwację' : 'Zapisz zmiany'}
-              </button>
-            </footer>
-          </form>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+          </section>
+
+          <section className="space-y-5">
+            <SectionTitle icon={Info} title="Dodatkowe informacje" />
+            <Field label="Notatki do rezerwacji">
+              <textarea
+                {...register('notes')}
+                rows={4}
+                placeholder="Wpisz ustalenia..."
+                className={`${inputClassName} resize-none`}
+              />
+            </Field>
+          </section>
+        </div>
+      </div>
+    </FormModal>
   );
 }
 
@@ -555,51 +519,56 @@ function BookingScheduleField({
   onChange,
 }: {
   value: string;
-  onChange: (v: string) => void;
+  onChange: (value: string) => void;
 }) {
   const [datePart = createTodayDate(), timePart = '09:00'] = value.split('T');
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!isOpen) return;
-    const h = (e: MouseEvent) => {
-      if (!containerRef.current?.contains(e.target as Node)) setIsOpen(false);
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
     };
-    window.addEventListener('mousedown', h);
-    return () => window.removeEventListener('mousedown', h);
+
+    window.addEventListener('mousedown', handlePointerDown);
+    return () => window.removeEventListener('mousedown', handlePointerDown);
   }, [isOpen]);
+
   return (
-    <div className="grid grid-cols-[1fr_120px] gap-2">
+    <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_120px]">
       <div ref={containerRef} className="relative">
         <button
           type="button"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => setIsOpen((current) => !current)}
           className={`${inputClassName} flex items-center justify-between text-left`}
         >
           <span className="truncate">{formatDateLabel(datePart)}</span>
           <CalendarDays className="h-4 w-4 shrink-0 text-stone-500" />
         </button>
-        {isOpen && (
-          <div className="absolute left-0 top-full z-60 mt-2 animate-in fade-in slide-in-from-top-2 duration-200">
-            <AriaDialog className="rounded-3xl border border-white/10 bg-[#161719] p-4 shadow-2xl outline-none">
+        {isOpen ? (
+          <div className="absolute left-0 right-0 top-full z-60 mt-2 animate-in fade-in slide-in-from-top-2 duration-200 sm:right-auto">
+            <AriaDialog className="rounded-3xl border border-white/10 bg-[#161719] p-4 shadow-2xl outline-none sm:w-[20rem]">
               <Calendar
                 value={parseDate(datePart)}
-                onChange={(d) => {
-                  onChange(`${d.toString()}T${timePart}`);
+                onChange={(date) => {
+                  onChange(`${date.toString()}T${timePart}`);
                   setIsOpen(false);
                 }}
               >
-                <header className="flex items-center justify-between gap-4 mb-4">
+                <header className="mb-4 flex items-center justify-between gap-4">
                   <AriaButton
                     slot="previous"
-                    className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white transition"
+                    className="rounded-xl bg-white/5 p-2 text-white transition hover:bg-white/10"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </AriaButton>
                   <Heading className="text-xs font-bold uppercase tracking-widest text-white" />
                   <AriaButton
                     slot="next"
-                    className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white transition"
+                    className="rounded-xl bg-white/5 p-2 text-white transition hover:bg-white/10"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </AriaButton>
@@ -607,7 +576,7 @@ function BookingScheduleField({
                 <CalendarGrid className="w-full border-separate border-spacing-1">
                   <CalendarGridHeader>
                     {(day) => (
-                      <CalendarHeaderCell className="pb-2 text-[10px] font-bold text-stone-600 uppercase">
+                      <CalendarHeaderCell className="pb-2 text-[10px] font-bold uppercase text-stone-600">
                         {day}
                       </CalendarHeaderCell>
                     )}
@@ -617,7 +586,17 @@ function BookingScheduleField({
                       <CalendarCell
                         date={date}
                         className={({ isSelected, isToday, isOutsideMonth }) =>
-                          `flex h-9 w-9 items-center justify-center rounded-xl text-xs transition cursor-pointer outline-none ${isOutsideMonth ? 'text-stone-800' : 'text-stone-300'} ${isSelected ? 'bg-amber-400 !text-black font-bold' : 'hover:bg-white/10'} ${isToday && !isSelected ? 'ring-1 ring-amber-400/50' : ''}`
+                          `flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl text-xs outline-none transition ${
+                            isOutsideMonth ? 'text-stone-800' : 'text-stone-300'
+                          } ${
+                            isSelected
+                              ? 'bg-amber-400 !text-black font-bold'
+                              : 'hover:bg-white/10'
+                          } ${
+                            isToday && !isSelected
+                              ? 'ring-1 ring-amber-400/50'
+                              : ''
+                          }`
                         }
                       />
                     )}
@@ -626,16 +605,16 @@ function BookingScheduleField({
               </Calendar>
             </AriaDialog>
           </div>
-        )}
+        ) : null}
       </div>
       <Select
         value={timePart}
-        onChange={(e) => onChange(`${datePart}T${e.target.value}`)}
+        onChange={(event) => onChange(`${datePart}T${event.target.value}`)}
         className={inputClassName}
       >
-        {timeOptions.map((t) => (
-          <option key={t} value={t}>
-            {t}
+        {timeOptions.map((time) => (
+          <option key={time} value={time}>
+            {time}
           </option>
         ))}
       </Select>
@@ -644,65 +623,77 @@ function BookingScheduleField({
 }
 
 function createEmptyFormValues(): BookingFormValues {
-  const n = new Date();
-  n.setMinutes(Math.ceil(n.getMinutes() / 15) * 15, 0, 0);
+  const now = new Date();
+  now.setMinutes(Math.ceil(now.getMinutes() / 15) * 15, 0, 0);
+
   return {
     client: '',
     phone: '',
     vehicle: '',
     licensePlate: '',
-    scheduledAt: `${createDateString(n)}T${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`,
+    scheduledAt: `${createDateString(now)}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
     serviceId: '',
     duration: '2 h',
-    amount: '0 zł',
+    amount: '0 zl',
     bay: 'Stanowisko 1',
     status: 'Nowa',
     notes: '',
   };
 }
-function mapBookingToValues(b: Booking, s: ServiceOption[]): BookingFormValues {
+
+function mapBookingToValues(
+  booking: Booking,
+  services: ServiceOption[],
+): BookingFormValues {
   return {
-    client: b.client,
-    phone: b.phone,
-    vehicle: b.vehicle,
-    licensePlate: b.licensePlate,
-    scheduledAt: `${b.date}T${b.time}`,
-    serviceId: s.find((x) => x.name === b.service)?.id ?? '',
-    duration: b.duration,
-    amount: b.amount,
-    bay: b.bay,
-    status: b.status,
-    notes: b.notes,
+    client: booking.client,
+    phone: booking.phone,
+    vehicle: booking.vehicle,
+    licensePlate: booking.licensePlate,
+    scheduledAt: `${booking.date}T${booking.time}`,
+    serviceId:
+      services.find((service) => service.name === booking.service)?.id ?? '',
+    duration: booking.duration,
+    amount: booking.amount,
+    bay: booking.bay,
+    status: booking.status,
+    notes: booking.notes,
   };
 }
-function createDateString(d: Date) {
+
+function createDateString(date: Date) {
   return [
-    d.getFullYear(),
-    String(d.getMonth() + 1).padStart(2, '0'),
-    String(d.getDate()).padStart(2, '0'),
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
   ].join('-');
 }
+
 function createTodayDate() {
   return createDateString(new Date());
 }
-function formatDateLabel(v: string) {
-  const [y, m, d] = v.split('-').map(Number);
+
+function formatDateLabel(value: string) {
+  const [year, month, day] = value.split('-').map(Number);
   return new Intl.DateTimeFormat('pl-PL', {
     day: '2-digit',
     month: 'long',
     year: 'numeric',
-  }).format(new Date(y, m - 1, d));
+  }).format(new Date(year, month - 1, day));
 }
-function parseDurationMinutes(d: string) {
-  const n = Number.parseFloat(d.replace(/[^\d.]/g, ''));
-  return Number.isNaN(n) ? 60 : Math.round(n * 60);
+
+function parseDurationMinutes(duration: string) {
+  const value = Number.parseFloat(duration.replace(/[^\d.]/g, ''));
+  return Number.isNaN(value) ? 60 : Math.round(value * 60);
 }
-function parseAmountValue(a: string) {
-  const n = Number.parseFloat(a.replace(/[^\d.]/g, ''));
-  return Number.isNaN(n) ? 0 : n;
+
+function parseAmountValue(amount: string) {
+  const value = Number.parseFloat(amount.replace(/[^\d.]/g, ''));
+  return Number.isNaN(value) ? 0 : value;
 }
-const timeOptions = Array.from({ length: 24 * 4 }, (_, i) => {
-  const h = String(Math.floor(i / 4)).padStart(2, '0');
-  const m = String((i % 4) * 15).padStart(2, '0');
-  return `${h}:${m}`;
+
+const timeOptions = Array.from({ length: 24 * 4 }, (_, index) => {
+  const hours = String(Math.floor(index / 4)).padStart(2, '0');
+  const minutes = String((index % 4) * 15).padStart(2, '0');
+  return `${hours}:${minutes}`;
 });
