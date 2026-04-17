@@ -1,5 +1,6 @@
-﻿import type { LiveJob } from '../../lib/dashboard';
-import { getTodayDateString, formatShortDate } from '../../lib/dateUtils';
+import { useNavigate } from 'react-router-dom';
+import type { LiveJob } from '../../lib/dashboard';
+import { formatShortDate, getTodayDateString } from '../../lib/dateUtils';
 import { StatusBadge } from '../ui/StatusBadge';
 import { Skeleton } from '../ui/Skeleton';
 
@@ -15,6 +16,7 @@ function getJobsLabel(count: number) {
 }
 
 export function LiveQueueSection({ queue, isLoading }: LiveQueueSectionProps) {
+  const navigate = useNavigate();
   const jobs = queue ?? [];
   const todayDate = formatShortDate(getTodayDateString());
   const readyCount = jobs.filter(
@@ -45,10 +47,6 @@ export function LiveQueueSection({ queue, isLoading }: LiveQueueSectionProps) {
           <h3 className="mt-1 text-2xl font-semibold tracking-tight text-white sm:mt-2 sm:text-3xl sm:tracking-[-0.04em]">
             Kolejka zleceń
           </h3>
-          <p className="mt-2 hidden text-sm leading-7 text-stone-300 sm:block sm:mt-3 sm:max-w-2xl">
-            Widok pod recepcję i zespół wykonawczy: kto przyjeżdża, co robimy i
-            na jakim etapie jest każde auto.
-          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 md:justify-end">
@@ -90,11 +88,14 @@ export function LiveQueueSection({ queue, isLoading }: LiveQueueSectionProps) {
           </div>
         ) : (
           jobs.map((job, index) => (
-            <div
-              key={`${job.vehicle}-${job.time}-${index}`}
-              className="min-w-0"
-            >
-              <div className="grid w-full min-w-0 grid-cols-[4.75rem_minmax(0,1fr)_0.75rem] items-center gap-3 rounded-[20px] border border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] px-3 py-3 text-left transition sm:hidden">
+            <div key={`${job.id}-${job.time}-${index}`}>
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(`/rezerwacje?date=${job.date}&booking=${job.id}`)
+                }
+                className="grid w-full min-w-0 grid-cols-[4.75rem_minmax(0,1fr)_0.75rem] items-center gap-3 rounded-[20px] border border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] px-3 py-3 text-left transition hover:border-white/14 hover:bg-white/8 sm:hidden"
+              >
                 <div className="min-w-0 truncate text-sm font-semibold tracking-[-0.03em] text-white">
                   {job.time}
                 </div>
@@ -108,44 +109,41 @@ export function LiveQueueSection({ queue, isLoading }: LiveQueueSectionProps) {
                   className={`h-2.5 w-2.5 shrink-0 rounded-full ${getStatusDotClassName(job.status)}`}
                   aria-hidden="true"
                 />
-              </div>
+              </button>
 
-              <div className="hidden w-full min-w-0 gap-3 rounded-[22px] border border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] p-3.5 text-left sm:grid sm:grid-cols-[minmax(0,5.25rem)_minmax(0,1fr)] sm:items-start sm:gap-4 sm:rounded-[26px] sm:p-4 lg:grid-cols-[minmax(0,5.5rem)_minmax(0,1fr)_minmax(0,8rem)] lg:items-center">
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(`/rezerwacje?date=${job.date}&booking=${job.id}`)
+                }
+                className="hidden w-full min-w-0 max-w-full grid-cols-[minmax(0,4.5rem)_minmax(0,1fr)_auto] items-center gap-3 rounded-[18px] border border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] px-3 py-2.5 text-left transition hover:border-white/14 hover:bg-white/8 sm:grid"
+              >
                 <div className="min-w-0">
-                  <div className="text-[11px] uppercase tracking-[0.18em] text-stone-500 sm:text-xs">
-                    Start
-                  </div>
-                  <div className="mt-1 text-xl font-semibold tracking-[-0.04em] text-white sm:mt-2 sm:text-2xl">
+                  <div className="text-base font-semibold tracking-[-0.03em] text-white">
                     {job.time}
                   </div>
                 </div>
 
                 <div className="min-w-0">
-                  <div className="flex items-center gap-3">
-                    <span className="hidden h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/8 text-xs font-semibold text-stone-200 sm:flex">
-                      0{index + 1}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-base font-semibold text-white sm:text-lg">
-                        {job.vehicle}
-                      </p>
-                      <p className="truncate text-xs text-stone-400 sm:text-sm">
-                        {job.client}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="mt-2 truncate text-sm leading-6 text-stone-300 sm:mt-3 sm:leading-7">
+                  <p className="truncate text-sm font-semibold text-white">
+                    {job.vehicle}
+                  </p>
+                  <p className="mt-0.5 truncate text-xs text-stone-400">
+                    {job.client}
+                    <span className="px-1 text-stone-500">|</span>
                     {job.service}
                   </p>
                 </div>
 
-                <div className="flex min-w-0 items-center justify-between gap-2 sm:col-span-2 lg:col-span-1 lg:flex-col lg:items-end">
-                  <span className="truncate text-sm text-stone-400 lg:max-w-full lg:text-right">
-                    {formatQueueMeta(job)}
-                  </span>
-                  <StatusBadge status={job.status} />
+                <div className="min-w-0 text-right">
+                  <p className="truncate text-xs text-stone-300">
+                    {job.amount}
+                  </p>
+                  <div className="mt-1 flex justify-end">
+                    <StatusBadge status={job.status} />
+                  </div>
                 </div>
-              </div>
+              </button>
             </div>
           ))
         )}
@@ -169,9 +167,4 @@ function getStatusDotClassName(status: LiveJob['status']) {
     default:
       return 'bg-stone-400';
   }
-}
-
-function formatQueueMeta(job: LiveJob) {
-  const parts = [job.amount, job.bay].filter(Boolean);
-  return parts.join(' | ');
 }

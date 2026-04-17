@@ -1,6 +1,6 @@
-﻿type SectionCardProps = {
+type SectionCardProps = {
   title: string;
-  description: string;
+  description?: string;
   items: string[];
 };
 
@@ -10,9 +10,11 @@ export function SectionCard({ title, description, items }: SectionCardProps) {
       <h3 className="text-2xl font-semibold tracking-[-0.04em] text-white sm:text-3xl">
         {title}
       </h3>
-      <p className="mt-3 text-sm leading-6 text-stone-300 sm:leading-7">
-        {description}
-      </p>
+      {description ? (
+        <p className="mt-3 text-sm leading-6 text-stone-300 sm:leading-7">
+          {description}
+        </p>
+      ) : null}
 
       <div className="mt-6 grid gap-3">
         {items.map((item) => (

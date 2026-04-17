@@ -1,19 +1,20 @@
 import { CalendarPlus2, ChevronLeft, ChevronRight } from 'lucide-react';
-import type { BookingStatus } from '../../data/bookings';
 import { ActionButton } from '../ui/ActionButton';
 import { SearchField } from '../ui/SearchField';
+
+export type BookingCalendarView = 'day' | 'week' | 'month';
 
 type BookingToolbarProps = {
   query: string;
   onQueryChange: (value: string) => void;
-  statusFilter: BookingStatus | 'Wszystkie';
-  onStatusFilterChange: (value: BookingStatus | 'Wszystkie') => void;
-  statuses: Array<BookingStatus | 'Wszystkie'>;
+  calendarView: BookingCalendarView;
+  onCalendarViewChange: (value: BookingCalendarView) => void;
   selectedDate: string;
-  selectedDateLabel: string;
+  selectedRangeLabel: string;
+  rangeLabelEyebrow: string;
   onSelectedDateChange: (value: string) => void;
-  onPreviousDay: () => void;
-  onNextDay: () => void;
+  onPreviousPeriod: () => void;
+  onNextPeriod: () => void;
   onToday: () => void;
   onCreateClick: () => void;
 };
@@ -21,41 +22,62 @@ type BookingToolbarProps = {
 export function BookingToolbar({
   query,
   onQueryChange,
-  statusFilter,
-  onStatusFilterChange,
-  statuses,
+  calendarView,
+  onCalendarViewChange,
   selectedDate,
-  selectedDateLabel,
+  selectedRangeLabel,
+  rangeLabelEyebrow,
   onSelectedDateChange,
-  onPreviousDay,
-  onNextDay,
+  onPreviousPeriod,
+  onNextPeriod,
   onToday,
   onCreateClick,
 }: BookingToolbarProps) {
   return (
     <section className="w-full max-w-full overflow-hidden rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.04))] p-3 shadow-lg sm:rounded-4xl sm:p-6">
       <div className="flex flex-col gap-3 sm:gap-6">
+        <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-between">
+          <div className="grid grid-cols-3 gap-2 rounded-2xl border border-white/8 bg-black/18 p-1.5 sm:inline-grid">
+            {viewOptions.map((option) => {
+              const isActive = option.value === calendarView;
+
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => onCalendarViewChange(option.value)}
+                  className={`rounded-xl px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition sm:text-[11px] ${
+                    isActive
+                      ? 'bg-amber-300 text-black shadow-[0_6px_24px_rgba(214,158,46,0.24)]'
+                      : 'text-stone-300 hover:bg-white/8 hover:text-white'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="hidden sm:block">
+            <ActionButton
+              icon={CalendarPlus2}
+              onClick={onCreateClick}
+              className="sm:w-auto"
+            >
+              Dodaj rezerwacje
+            </ActionButton>
+          </div>
+        </div>
+
         <div className="hidden sm:flex sm:flex-col sm:gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">
               Narzedzia recepcji
             </p>
             <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-white md:text-3xl">
-              Harmonogram dnia
+              {getHeadingForView(calendarView)}
             </h3>
-            <p className="mt-2 max-w-2xl text-sm leading-7 text-stone-300">
-              Zmien dzien, przeszukaj wizyty i zawez liste statusow bez
-              przeladowywania calego widoku.
-            </p>
           </div>
-
-          <ActionButton
-            icon={CalendarPlus2}
-            onClick={onCreateClick}
-            className="w-full sm:w-auto"
-          >
-            Dodaj rezerwacje
-          </ActionButton>
         </div>
 
         <div className="sm:hidden">
@@ -64,27 +86,27 @@ export function BookingToolbar({
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={onPreviousDay}
+                  onClick={onPreviousPeriod}
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/6 text-stone-200 transition hover:border-white/16 hover:bg-white/10 hover:text-white"
-                  aria-label="Poprzedni dzien"
+                  aria-label="Poprzedni okres"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
 
                 <div className="min-w-0 flex-1 rounded-2xl border border-white/8 bg-white/4 px-3 py-2 text-center">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-stone-500">
-                    Dzien
+                    {rangeLabelEyebrow}
                   </p>
                   <p className="mt-1 truncate text-sm font-medium text-white">
-                    {selectedDateLabel}
+                    {selectedRangeLabel}
                   </p>
                 </div>
 
                 <button
                   type="button"
-                  onClick={onNextDay}
+                  onClick={onNextPeriod}
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/6 text-stone-200 transition hover:border-white/16 hover:bg-white/10 hover:text-white"
-                  aria-label="Nastepny dzien"
+                  aria-label="Nastepny okres"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
@@ -120,29 +142,6 @@ export function BookingToolbar({
                 />
               </label>
             </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              {statuses.map((status) => {
-                const isActive = statusFilter === status;
-
-                return (
-                  <button
-                    key={status}
-                    type="button"
-                    onClick={() => onStatusFilterChange(status)}
-                    className={`min-w-0 rounded-2xl border px-3 py-2 text-center text-[11px] font-medium transition ${
-                      isActive
-                        ? 'border-amber-200/30 bg-amber-300/12 text-amber-100'
-                        : 'border-white/10 bg-white/6 text-stone-300 hover:border-white/16 hover:bg-white/8 hover:text-white'
-                    } ${status === 'Wszystkie' ? 'col-span-2' : ''}`}
-                  >
-                    <span className="block truncate">
-                      {getMobileStatusLabel(status)}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
           </div>
         </div>
 
@@ -151,19 +150,19 @@ export function BookingToolbar({
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">
-                  Wybrany dzien
+                  {rangeLabelEyebrow}
                 </p>
                 <p className="mt-1 text-lg font-semibold text-white">
-                  {selectedDateLabel}
+                  {selectedRangeLabel}
                 </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={onPreviousDay}
+                  onClick={onPreviousPeriod}
                   className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/6 text-stone-200 transition hover:border-white/16 hover:bg-white/10 hover:text-white"
-                  aria-label="Poprzedni dzien"
+                  aria-label="Poprzedni okres"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
@@ -178,9 +177,9 @@ export function BookingToolbar({
 
                 <button
                   type="button"
-                  onClick={onNextDay}
+                  onClick={onNextPeriod}
                   className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/6 text-stone-200 transition hover:border-white/16 hover:bg-white/10 hover:text-white"
-                  aria-label="Nastepny dzien"
+                  aria-label="Nastepny okres"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
@@ -209,43 +208,24 @@ export function BookingToolbar({
             </label>
           </div>
         </div>
-
-        <div className="hidden sm:flex sm:flex-wrap sm:gap-2.5">
-          {statuses.map((status) => {
-            const isActive = statusFilter === status;
-
-            return (
-              <button
-                key={status}
-                type="button"
-                onClick={() => onStatusFilterChange(status)}
-                className={`shrink-0 snap-start rounded-full border px-3 py-1.5 text-[11px] transition sm:px-4 sm:py-2 sm:text-sm ${
-                  isActive
-                    ? 'border-amber-200/30 bg-amber-300/12 text-amber-100'
-                    : 'border-white/10 bg-white/6 text-stone-300 hover:border-white/16 hover:bg-white/8 hover:text-white'
-                }`}
-              >
-                {status}
-              </button>
-            );
-          })}
-        </div>
       </div>
     </section>
   );
 }
 
-function getMobileStatusLabel(status: BookingStatus | 'Wszystkie') {
-  switch (status) {
-    case 'Wszystkie':
-      return 'Wszystkie';
-    case 'Potwierdzona':
-      return 'Potwierdzone';
-    case 'W realizacji':
-      return 'W realizacji';
-    case 'Gotowa do odbioru':
-      return 'Do odbioru';
+const viewOptions: Array<{ value: BookingCalendarView; label: string }> = [
+  { value: 'day', label: 'Dzien' },
+  { value: 'week', label: 'Tydzien' },
+  { value: 'month', label: 'Miesiac' },
+];
+
+function getHeadingForView(calendarView: BookingCalendarView) {
+  switch (calendarView) {
+    case 'week':
+      return 'Plan tygodnia';
+    case 'month':
+      return 'Przeglad miesiaca';
     default:
-      return status;
+      return 'Harmonogram dnia';
   }
 }

@@ -80,10 +80,7 @@ export function BookingList({
                   }`}
                 >
                   <div className="min-w-0">
-                    <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-stone-500">
-                      Start
-                    </div>
-                    <div className="mt-0.5 text-base font-semibold tracking-[-0.03em] text-white">
+                    <div className="text-base font-semibold tracking-[-0.03em] text-white">
                       {booking.time}
                     </div>
                   </div>

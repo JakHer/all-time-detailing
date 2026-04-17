@@ -44,6 +44,9 @@ export function ServiceList({
               style: 'currency',
               currency: 'PLN',
             }).format(service.base_price);
+            const durationLabel = formatServiceDuration(
+              service.duration_minutes,
+            );
 
             return (
               <div key={service.id}>
@@ -56,8 +59,8 @@ export function ServiceList({
                       : 'border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/14 hover:bg-white/8'
                   }`}
                 >
-                  <div className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-500">
-                    {service.duration_minutes}m
+                  <div className="min-w-0 truncate text-sm font-semibold tracking-[-0.03em] text-white">
+                    {durationLabel}
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-white">
@@ -85,11 +88,8 @@ export function ServiceList({
                   }`}
                 >
                   <div className="min-w-0">
-                    <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-stone-500">
-                      Czas
-                    </div>
-                    <div className="mt-0.5 text-base font-semibold tracking-[-0.03em] text-white">
-                      {service.duration_minutes}m
+                    <div className="text-base font-semibold tracking-[-0.03em] text-white">
+                      {durationLabel}
                     </div>
                   </div>
 
@@ -99,8 +99,6 @@ export function ServiceList({
                     </p>
                     <p className="mt-0.5 truncate text-xs text-stone-400">
                       {price}
-                      <span className="px-1 text-stone-500">|</span>
-                      {service.description || 'Brak opisu uslugi'}
                     </p>
                   </div>
 
@@ -120,4 +118,18 @@ export function ServiceList({
       </div>
     </article>
   );
+}
+
+function formatServiceDuration(durationMinutes: number) {
+  if (durationMinutes < 60) {
+    return `${durationMinutes} min`;
+  }
+
+  const hours = durationMinutes / 60;
+
+  if (Number.isInteger(hours)) {
+    return `${hours} h`;
+  }
+
+  return `${hours.toFixed(1).replace('.', ',')} h`;
 }

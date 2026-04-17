@@ -1,4 +1,4 @@
-import { Calendar, CarFront, Pencil, Trash2, User } from 'lucide-react';
+import { Calendar, CarFront, Pencil, Trash2, User, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { VehicleWithRelations } from '../../lib/vehicles';
 import { CollapsibleDetailSection } from '../ui/CollapsibleDetailSection';
@@ -9,6 +9,7 @@ type VehicleDetailsProps = {
   isLoading?: boolean;
   onEditClick: () => void;
   onDeleteClick: () => void;
+  onCloseClick?: () => void;
   variant?: 'card' | 'sheet';
 };
 
@@ -17,6 +18,7 @@ export function VehicleDetails({
   isLoading = false,
   onEditClick,
   onDeleteClick,
+  onCloseClick,
   variant = 'card',
 }: VehicleDetailsProps) {
   const isSheet = variant === 'sheet';
@@ -64,6 +66,24 @@ export function VehicleDetails({
 
   return (
     <article className={containerClassName}>
+      {!isSheet && onCloseClick ? (
+        <div className="mb-3 flex justify-end">
+          <button
+            type="button"
+            onClick={onCloseClick}
+            onPointerDown={(event) => {
+              event.preventDefault();
+              onCloseClick();
+            }}
+            className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/6 text-white transition hover:border-white/16 hover:bg-white/10"
+            aria-label="Zamknij szczegoly pojazdu"
+            title="Zamknij szczegoly pojazdu"
+          >
+            <X className="h-4.5 w-4.5" />
+          </button>
+        </div>
+      ) : null}
+
       <div
         className={`flex flex-col ${headerGapClassName} md:flex-row md:items-start md:justify-between`}
       >
@@ -243,7 +263,7 @@ function ActionIconButton({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${toneClasses}`}
+      className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border transition ${toneClasses}`}
     >
       {children}
     </button>

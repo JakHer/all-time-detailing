@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 type PageIntroProps = {
   eyebrow: string;
   title: string;
-  description: string;
+  description?: string;
   metrics?: Array<{
     label: string;
     value: string;
@@ -40,9 +40,11 @@ export function PageIntro({
           <h2 className="mt-3 max-w-[22ch] text-[2rem] leading-[0.98] font-semibold tracking-[-0.05em] text-white sm:mt-4 sm:max-w-[24ch] sm:text-5xl xl:min-h-44 xl:text-6xl">
             {title}
           </h2>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-stone-300 sm:mt-5 sm:text-base sm:leading-8 xl:min-h-16">
-            {description}
-          </p>
+          {description ? (
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-stone-300 sm:mt-5 sm:text-base sm:leading-8 xl:min-h-16">
+              {description}
+            </p>
+          ) : null}
         </div>
 
         <div className="flex flex-col gap-3 sm:gap-4 xl:self-stretch">
@@ -52,12 +54,15 @@ export function PageIntro({
               {metrics.map((metric) => (
                 <article
                   key={metric.label}
-                  className="min-w-37 shrink-0 snap-start rounded-2xl border border-white/8 bg-white/6 px-3.5 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:min-w-0 sm:px-4 sm:py-4"
+                  className="flex min-h-24 min-w-37 shrink-0 snap-start flex-col justify-between rounded-2xl border border-white/8 bg-white/6 px-3.5 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:min-h-26 sm:min-w-0 sm:px-4 sm:py-4"
                 >
                   <p className="text-[11px] uppercase tracking-[0.16em] text-stone-400 sm:text-xs sm:tracking-[0.18em]">
                     {metric.label}
                   </p>
-                  <p className="mt-1.5 wrap-break-word text-xl font-semibold tracking-[-0.04em] text-white sm:mt-2 sm:text-2xl">
+                  <p
+                    className="mt-1.5 truncate whitespace-nowrap text-xl font-semibold tracking-[-0.04em] text-white sm:mt-2 sm:text-2xl"
+                    title={metric.value}
+                  >
                     <AnimatedMetricValue value={metric.value} />
                   </p>
                 </article>

@@ -2,7 +2,6 @@
 import {
   ChevronRight,
   Clock,
-  ImageIcon,
   Minus,
   Plus,
   Star,
@@ -294,7 +293,13 @@ export function GalleryGrid({ query }: { query: string }) {
   }
 
   return (
-    <div className="grid min-h-180 min-w-0 gap-6 overflow-hidden 2xl:grid-cols-[minmax(0,1fr)_minmax(0,500px)] 2xl:items-start">
+    <div
+      className={`grid min-h-180 min-w-0 gap-6 overflow-hidden ${
+        selectedVehicle
+          ? '2xl:grid-cols-[minmax(0,1fr)_minmax(0,500px)] 2xl:items-start'
+          : ''
+      }`}
+    >
       <article className="w-full max-w-full self-start overflow-hidden rounded-3xl border border-white/10 bg-white/6 p-4 shadow-[0_30px_120px_rgba(0,0,0,0.35)] sm:rounded-4xl sm:px-4 sm:py-3.5 xl:px-5 xl:py-4">
         <div className="hidden items-end justify-between gap-3 sm:flex">
           <div>
@@ -339,7 +344,7 @@ export function GalleryGrid({ query }: { query: string }) {
                         : 'border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/14 hover:bg-white/8'
                     }`}
                   >
-                    <div className="min-w-0 truncate text-sm font-semibold uppercase tracking-[-0.03em] text-white">
+                    <div className="min-w-0 truncate text-sm font-semibold tracking-[-0.03em] text-white">
                       {vehicle.registration}
                     </div>
                     <div className="min-w-0">
@@ -369,11 +374,8 @@ export function GalleryGrid({ query }: { query: string }) {
                     }`}
                   >
                     <div className="min-w-0">
-                      <div className="truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-white">
+                      <div className="truncate text-base font-semibold tracking-[-0.03em] text-white">
                         {vehicle.registration}
-                      </div>
-                      <div className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-stone-500">
-                        galeria
                       </div>
                     </div>
 
@@ -389,8 +391,7 @@ export function GalleryGrid({ query }: { query: string }) {
                     <div className="min-w-0 text-right">
                       <p className="truncate text-xs text-stone-300">
                         {vehicle.totalPhotos} zdjec
-                      </p>
-                      <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                        <span className="px-1 text-stone-500">|</span>
                         {vehicle.realizations.length} realizacji
                       </p>
                     </div>
@@ -402,25 +403,35 @@ export function GalleryGrid({ query }: { query: string }) {
         </div>
       </article>
 
-      <div className="hidden min-w-0 max-w-full 2xl:block">
-        {!selectedVehicle ? (
+      <div
+        className={`min-w-0 max-w-full ${
+          selectedVehicle ? 'hidden 2xl:block' : 'hidden'
+        }`}
+      >
+        {selectedVehicle ? (
           <article className="min-h-160 w-full max-w-full overflow-hidden rounded-3xl border border-white/10 bg-white/6 p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] sm:rounded-4xl md:p-7">
-            <div className="flex min-h-128 items-center justify-center rounded-3xl border border-dashed border-white/10 bg-black/15 px-4 py-8 text-center text-sm leading-7 text-stone-400">
-              <div>
-                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-white/4">
-                  <ImageIcon className="h-8 w-8 opacity-20" />
-                </div>
-                <h3 className="mt-6 font-semibold text-white/40">
-                  Wybierz pojazd
-                </h3>
-                <p className="mt-2 max-w-sm text-sm leading-relaxed">
-                  Kliknij auto z listy, aby zobaczyc zdjecia i realizacje.
-                </p>
-              </div>
+            <div className="mb-3 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedVehicleId(null);
+                  setSelectedRealizationId(null);
+                  setSelectedPreviewImageId(null);
+                }}
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  setSelectedVehicleId(null);
+                  setSelectedRealizationId(null);
+                  setSelectedPreviewImageId(null);
+                }}
+                className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/6 text-white transition hover:border-white/16 hover:bg-white/10"
+                aria-label="Zamknij szczegoly galerii"
+                title="Zamknij szczegoly galerii"
+              >
+                <X className="h-4.5 w-4.5" />
+              </button>
             </div>
-          </article>
-        ) : (
-          <article className="min-h-160 w-full max-w-full overflow-hidden rounded-3xl border border-white/10 bg-white/6 p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] sm:rounded-4xl md:p-7">
+
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div className="min-w-0 flex-1">
                 <p className="hidden text-xs font-semibold uppercase tracking-[0.2em] text-amber-200 sm:block">
@@ -518,7 +529,7 @@ export function GalleryGrid({ query }: { query: string }) {
               </div>
             </CollapsibleDetailSection>
           </article>
-        )}
+        ) : null}
       </div>
 
       <Dialog.Root

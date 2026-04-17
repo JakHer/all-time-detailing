@@ -1,6 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
-import { useDeferredValue, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CustomerDetails } from '../components/customers/CustomerDetails';
 import { CustomerList } from '../components/customers/CustomerList';
@@ -21,6 +21,11 @@ import {
 } from '../lib/clients';
 
 export function CustomersPage() {
+  const [isDesktopDetailsLayout, setIsDesktopDetailsLayout] = useState(() =>
+    typeof window !== 'undefined'
+      ? window.matchMedia('(min-width: 1536px)').matches
+      : false,
+  );
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(
     null,
   );
@@ -37,6 +42,30 @@ export function CustomersPage() {
   const createMutation = useCreateClient();
   const updateMutation = useUpdateClient();
   const deleteMutation = useDeleteClient();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(min-width: 1536px)');
+    const handleChange = (event: MediaQueryListEvent) => {
+      setIsDesktopDetailsLayout(event.matches);
+    };
+
+    setIsDesktopDetailsLayout(mediaQuery.matches);
+    mediaQuery.addEventListener('change', handleChange);
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isDesktopDetailsLayout) {
+      setIsMobileDetailsOpen(false);
+    }
+  }, [isDesktopDetailsLayout]);
 
   const selectedCustomer =
     clients.find((client) => client.id === selectedCustomerId) ?? null;
@@ -133,8 +162,15 @@ export function CustomersPage() {
 
   function handleSelectCustomer(id: string) {
     setSelectedCustomerId(id);
-    setIsMobileDetailsOpen(true);
+    setIsMobileDetailsOpen(!isDesktopDetailsLayout);
   }
+
+  function closeCustomerDetails() {
+    setSelectedCustomerId(null);
+    setIsMobileDetailsOpen(false);
+  }
+
+  const shouldShowCustomerDetails = selectedCustomer !== null;
 
   return (
     <div
@@ -145,7 +181,6 @@ export function CustomersPage() {
         <PageIntro
           eyebrow="Klienci"
           title="Baza klientow z historia wizyt i wartoscia relacji"
-          description="Zarzadzaj swoja baza klientow, przegladaj ich historie wizyt oraz przypisane pojazdy w jednym miejscu."
           metrics={metrics}
         />
       </div>
@@ -166,7 +201,11 @@ export function CustomersPage() {
       />
 
       <section
-        className="grid min-h-180 min-w-0 gap-6 2xl:grid-cols-[minmax(0,1fr)_minmax(0,500px)] 2xl:items-start"
+        className={`grid min-h-180 min-w-0 gap-6 ${
+          shouldShowCustomerDetails
+            ? '2xl:grid-cols-[minmax(0,1fr)_minmax(0,500px)] 2xl:items-start'
+            : ''
+        }`}
         style={{ overflowAnchor: 'none' }}
       >
         <div className="min-w-0 max-w-full">
@@ -186,7 +225,9 @@ export function CustomersPage() {
         </div>
 
         <div
-          className="hidden min-w-0 max-w-full 2xl:block"
+          className={`min-w-0 max-w-full ${
+            shouldShowCustomerDetails ? 'hidden 2xl:block' : 'hidden'
+          }`}
           style={{ overflowAnchor: 'none' }}
         >
           <CustomerDetails
@@ -194,12 +235,15 @@ export function CustomersPage() {
             isLoading={isLoading && clients.length === 0}
             onEditClick={handleEditClick}
             onDeleteClick={handleDeleteClick}
+            onCloseClick={closeCustomerDetails}
           />
         </div>
       </section>
 
       <Dialog.Root
-        open={isMobileDetailsOpen && !!selectedCustomer}
+        open={
+          !isDesktopDetailsLayout && isMobileDetailsOpen && !!selectedCustomer
+        }
         onOpenChange={setIsMobileDetailsOpen}
       >
         <Dialog.Portal>

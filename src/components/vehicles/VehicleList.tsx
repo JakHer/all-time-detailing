@@ -53,7 +53,7 @@ export function VehicleList({
                       : 'border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/14 hover:bg-white/8'
                   }`}
                 >
-                  <div className="min-w-0 truncate text-sm font-semibold uppercase tracking-[-0.03em] text-white">
+                  <div className="min-w-0 truncate text-sm font-semibold tracking-[-0.03em] text-white">
                     {vehicle.registration}
                   </div>
                   <div className="min-w-0">
@@ -83,11 +83,8 @@ export function VehicleList({
                   }`}
                 >
                   <div className="min-w-0">
-                    <div className="truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-white">
+                    <div className="truncate text-base font-semibold tracking-[-0.03em] text-white">
                       {vehicle.registration}
-                    </div>
-                    <div className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-stone-500">
-                      auto
                     </div>
                   </div>
 
@@ -108,9 +105,6 @@ export function VehicleList({
                         : bookingCount < 5
                           ? 'wizyty'
                           : 'wizyt'}
-                    </p>
-                    <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-stone-500">
-                      historia
                     </p>
                   </div>
                 </button>

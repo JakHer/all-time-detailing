@@ -51,10 +51,6 @@ export function DashboardHero() {
             <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-white md:text-3xl">
               Najczestsze skroty dla recepcji i zespolu
             </h3>
-            <p className="mt-2 max-w-3xl text-sm leading-7 text-stone-300">
-              Najwazniejsze wejscia do aplikacji sa juz aktywne, wiec z pulpitu
-              mozna od razu przejsc do pracy.
-            </p>
           </div>
 
           <ActionButton

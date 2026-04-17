@@ -1,6 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
-import { useDeferredValue, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { PageIntro } from '../components/PageIntro';
 import { VehicleDetails } from '../components/vehicles/VehicleDetails';
@@ -21,6 +21,11 @@ import {
 } from '../lib/vehicles';
 
 export function VehiclesPage() {
+  const [isDesktopDetailsLayout, setIsDesktopDetailsLayout] = useState(() =>
+    typeof window !== 'undefined'
+      ? window.matchMedia('(min-width: 1536px)').matches
+      : false,
+  );
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(
     null,
   );
@@ -38,6 +43,30 @@ export function VehiclesPage() {
   const createMutation = useCreateVehicle();
   const updateMutation = useUpdateVehicle();
   const deleteMutation = useDeleteVehicle();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(min-width: 1536px)');
+    const handleChange = (event: MediaQueryListEvent) => {
+      setIsDesktopDetailsLayout(event.matches);
+    };
+
+    setIsDesktopDetailsLayout(mediaQuery.matches);
+    mediaQuery.addEventListener('change', handleChange);
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isDesktopDetailsLayout) {
+      setIsMobileDetailsOpen(false);
+    }
+  }, [isDesktopDetailsLayout]);
 
   const filteredVehicles = useMemo(() => {
     const searchValue = deferredQuery.toLowerCase().trim();
@@ -149,8 +178,15 @@ export function VehiclesPage() {
 
   function handleSelectVehicle(id: string) {
     setSelectedVehicleId(id);
-    setIsMobileDetailsOpen(true);
+    setIsMobileDetailsOpen(!isDesktopDetailsLayout);
   }
+
+  function closeVehicleDetails() {
+    setSelectedVehicleId(null);
+    setIsMobileDetailsOpen(false);
+  }
+
+  const shouldShowVehicleDetails = selectedVehicle !== null;
 
   return (
     <div
@@ -161,7 +197,6 @@ export function VehiclesPage() {
         <PageIntro
           eyebrow="Pojazdy"
           title="Kartoteka aut z pełnym kontekstem właściciela i historii wizyt"
-          description="Zarządzaj bazą pojazdów, przypisanymi klientami i historią realizacji bez wychodzenia z jednego widoku."
           metrics={metrics}
         />
       </div>
@@ -182,7 +217,11 @@ export function VehiclesPage() {
       />
 
       <section
-        className="grid min-h-180 min-w-0 gap-6 2xl:grid-cols-[minmax(0,1fr)_minmax(0,500px)] 2xl:items-start"
+        className={`grid min-h-180 min-w-0 gap-6 ${
+          shouldShowVehicleDetails
+            ? '2xl:grid-cols-[minmax(0,1fr)_minmax(0,500px)] 2xl:items-start'
+            : ''
+        }`}
         style={{ overflowAnchor: 'none' }}
       >
         <div className="min-w-0 max-w-full">
@@ -202,7 +241,9 @@ export function VehiclesPage() {
         </div>
 
         <div
-          className="hidden min-w-0 max-w-full 2xl:block"
+          className={`min-w-0 max-w-full ${
+            shouldShowVehicleDetails ? 'hidden 2xl:block' : 'hidden'
+          }`}
           style={{ overflowAnchor: 'none' }}
         >
           <VehicleDetails
@@ -210,12 +251,15 @@ export function VehiclesPage() {
             isLoading={isLoading && vehicles.length === 0}
             onEditClick={handleEditClick}
             onDeleteClick={handleDeleteClick}
+            onCloseClick={closeVehicleDetails}
           />
         </div>
       </section>
 
       <Dialog.Root
-        open={isMobileDetailsOpen && !!selectedVehicle}
+        open={
+          !isDesktopDetailsLayout && isMobileDetailsOpen && !!selectedVehicle
+        }
         onOpenChange={setIsMobileDetailsOpen}
       >
         <Dialog.Portal>

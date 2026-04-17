@@ -36,7 +36,6 @@ export function GalleryPage() {
         <PageIntro
           eyebrow="Galeria"
           title="Zdjecia realizacji i dokumentacja jakosci"
-          description="Zarzadzaj wizualnym portfolio studia, dokumentuj stan aut przed i po uslugach oraz buduj zaufanie klientow."
           metrics={metrics}
         />
       </div>

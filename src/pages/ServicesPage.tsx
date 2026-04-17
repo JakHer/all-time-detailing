@@ -1,6 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
-import { useDeferredValue, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { PageIntro } from '../components/PageIntro';
 import { ServiceDetails } from '../components/services/ServiceDetails';
@@ -20,6 +20,11 @@ import {
 } from '../lib/services';
 
 export function ServicesPage() {
+  const [isDesktopDetailsLayout, setIsDesktopDetailsLayout] = useState(() =>
+    typeof window !== 'undefined'
+      ? window.matchMedia('(min-width: 1536px)').matches
+      : false,
+  );
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(
     null,
   );
@@ -36,6 +41,30 @@ export function ServicesPage() {
   const createMutation = useCreateService();
   const updateMutation = useUpdateService();
   const deleteMutation = useDeleteService();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(min-width: 1536px)');
+    const handleChange = (event: MediaQueryListEvent) => {
+      setIsDesktopDetailsLayout(event.matches);
+    };
+
+    setIsDesktopDetailsLayout(mediaQuery.matches);
+    mediaQuery.addEventListener('change', handleChange);
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isDesktopDetailsLayout) {
+      setIsMobileDetailsOpen(false);
+    }
+  }, [isDesktopDetailsLayout]);
 
   const selectedService =
     services.find((service) => service.id === selectedServiceId) ?? null;
@@ -130,8 +159,15 @@ export function ServicesPage() {
 
   function handleSelectService(id: string) {
     setSelectedServiceId(id);
-    setIsMobileDetailsOpen(true);
+    setIsMobileDetailsOpen(!isDesktopDetailsLayout);
   }
+
+  function closeServiceDetails() {
+    setSelectedServiceId(null);
+    setIsMobileDetailsOpen(false);
+  }
+
+  const shouldShowServiceDetails = selectedService !== null;
 
   return (
     <div className="flex min-w-0 flex-col gap-4 overflow-x-hidden">
@@ -139,7 +175,6 @@ export function ServicesPage() {
         <PageIntro
           eyebrow="Uslugi"
           title="Pakiety, cennik i standardy realizacji"
-          description="Zarzadzaj oferta uslug, pakietami i dodatkami, tak aby recepcja mogla szybko skladac spojne wyceny."
           metrics={metrics}
         />
       </div>
@@ -159,7 +194,13 @@ export function ServicesPage() {
         onCreateClick={handleCreateClick}
       />
 
-      <section className="grid min-h-180 min-w-0 gap-6 2xl:grid-cols-[minmax(0,1fr)_minmax(0,500px)] 2xl:items-start">
+      <section
+        className={`grid min-h-180 min-w-0 gap-6 ${
+          shouldShowServiceDetails
+            ? '2xl:grid-cols-[minmax(0,1fr)_minmax(0,500px)] 2xl:items-start'
+            : ''
+        }`}
+      >
         <div className="min-w-0 max-w-full">
           {isLoading ? (
             <div className="grid gap-3">
@@ -176,18 +217,25 @@ export function ServicesPage() {
           )}
         </div>
 
-        <div className="hidden min-w-0 max-w-full 2xl:block">
+        <div
+          className={`min-w-0 max-w-full ${
+            shouldShowServiceDetails ? 'hidden 2xl:block' : 'hidden'
+          }`}
+        >
           <ServiceDetails
             service={selectedService}
             isLoading={isLoading && services.length === 0}
             onEditClick={handleEditClick}
             onDeleteClick={handleDeleteClick}
+            onCloseClick={closeServiceDetails}
           />
         </div>
       </section>
 
       <Dialog.Root
-        open={isMobileDetailsOpen && !!selectedService}
+        open={
+          !isDesktopDetailsLayout && isMobileDetailsOpen && !!selectedService
+        }
         onOpenChange={setIsMobileDetailsOpen}
       >
         <Dialog.Portal>

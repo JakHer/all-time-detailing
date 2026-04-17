@@ -14,10 +14,13 @@ export type DashboardMetric = {
 };
 
 export type LiveJob = {
+  id: string;
+  date: string;
   time: string;
   vehicle: string;
   client: string;
   service: string;
+  amount: string;
   status: BookingStatus;
 };
 
@@ -102,10 +105,13 @@ export async function fetchDashboardData(): Promise<DashboardData> {
   ];
 
   const queue: LiveJob[] = todayBookings.map((b) => ({
+    id: b.id,
+    date: b.date,
     time: b.time,
     vehicle: b.vehicle,
     client: b.client,
     service: b.service,
+    amount: b.amount,
     status: b.status,
   }));
 
