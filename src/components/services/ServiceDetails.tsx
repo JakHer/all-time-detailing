@@ -1,4 +1,4 @@
-import { Info, Pencil, Tag, Trash2 } from 'lucide-react';
+import { Info, Pencil, Tag, Trash2, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { Service } from '../../lib/services';
 import { CollapsibleDetailSection } from '../ui/CollapsibleDetailSection';
@@ -9,6 +9,7 @@ type ServiceDetailsProps = {
   isLoading?: boolean;
   onEditClick: () => void;
   onDeleteClick: () => void;
+  onCloseClick?: () => void;
   variant?: 'card' | 'sheet';
 };
 
@@ -17,6 +18,7 @@ export function ServiceDetails({
   isLoading = false,
   onEditClick,
   onDeleteClick,
+  onCloseClick,
   variant = 'card',
 }: ServiceDetailsProps) {
   const isSheet = variant === 'sheet';
@@ -54,6 +56,24 @@ export function ServiceDetails({
 
   return (
     <article className={containerClassName}>
+      {!isSheet && onCloseClick ? (
+        <div className="mb-3 flex justify-end">
+          <button
+            type="button"
+            onClick={onCloseClick}
+            onPointerDown={(event) => {
+              event.preventDefault();
+              onCloseClick();
+            }}
+            className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/6 text-white transition hover:border-white/16 hover:bg-white/10"
+            aria-label="Zamknij szczegoly uslugi"
+            title="Zamknij szczegoly uslugi"
+          >
+            <X className="h-4.5 w-4.5" />
+          </button>
+        </div>
+      ) : null}
+
       <div
         className={`flex flex-col ${headerGapClassName} md:flex-row md:items-start md:justify-between`}
       >
@@ -96,7 +116,10 @@ export function ServiceDetails({
             currency: 'PLN',
           }).format(service.base_price)}
         />
-        <SummaryChip label="Czas" value={`${service.duration_minutes} min`} />
+        <SummaryChip
+          label="Czas"
+          value={formatServiceDuration(service.duration_minutes)}
+        />
       </div>
 
       <CollapsibleDetailSection
@@ -113,6 +136,20 @@ export function ServiceDetails({
       </CollapsibleDetailSection>
     </article>
   );
+}
+
+function formatServiceDuration(durationMinutes: number) {
+  if (durationMinutes < 60) {
+    return `${durationMinutes} min`;
+  }
+
+  const hours = durationMinutes / 60;
+
+  if (Number.isInteger(hours)) {
+    return `${hours} h`;
+  }
+
+  return `${hours.toFixed(1).replace('.', ',')} h`;
 }
 
 type ActionIconButtonProps = {
@@ -148,7 +185,7 @@ function ActionIconButton({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${toneClasses}`}
+      className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border transition ${toneClasses}`}
     >
       {children}
     </button>

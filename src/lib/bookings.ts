@@ -37,7 +37,7 @@ export type BookingRow = Database['public']['Tables']['bookings']['Row'] & {
 };
 
 export async function fetchBookings(search?: string) {
-  let query = supabase.from('bookings').select(
+  const query = supabase.from('bookings').select(
     `
       id,
       scheduled_at,
@@ -52,13 +52,6 @@ export async function fetchBookings(search?: string) {
     `,
   );
 
-  if (search) {
-    const s = `%${search}%`;
-    query = query.or(
-      `notes.ilike.${s},bay.ilike.${s},clients.full_name.ilike.${s},clients.phone.ilike.${s},vehicles.make.ilike.${s},vehicles.model.ilike.${s},vehicles.registration.ilike.${s},services.name.ilike.${s}`,
-    );
-  }
-
   const { data, error } = await query.order('scheduled_at', {
     ascending: true,
   });
@@ -67,7 +60,21 @@ export async function fetchBookings(search?: string) {
     throw error;
   }
 
-  return (data as BookingRow[]).map(mapBookingRowToViewModel);
+  const bookings = (data as BookingRow[]).map(mapBookingRowToViewModel);
+
+  if (!search) {
+    return bookings;
+  }
+
+  const normalizedSearch = search.trim().toLowerCase();
+
+  if (!normalizedSearch) {
+    return bookings;
+  }
+
+  return bookings.filter((booking) =>
+    matchesBookingSearch(booking, normalizedSearch),
+  );
 }
 
 export async function fetchBookingFormOptions() {
@@ -467,4 +474,24 @@ function formatLocalTime(value: Date) {
   const minutes = String(value.getMinutes()).padStart(2, '0');
 
   return `${hours}:${minutes}`;
+}
+
+function matchesBookingSearch(booking: Booking, search: string) {
+  return [
+    booking.client,
+    booking.phone,
+    booking.clientNotes,
+    booking.vehicle,
+    booking.vehicleDetails,
+    booking.licensePlate,
+    booking.service,
+    booking.notes,
+    booking.bay,
+    booking.amount,
+    booking.date,
+    booking.time,
+    booking.status,
+  ]
+    .filter(Boolean)
+    .some((value) => value.toLowerCase().includes(search));
 }

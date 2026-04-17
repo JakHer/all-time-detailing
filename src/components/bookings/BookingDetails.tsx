@@ -1,4 +1,4 @@
-import { ImagePlus, Pencil, Trash2, XCircle } from 'lucide-react';
+import { ImagePlus, Pencil, Trash2, X, XCircle } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import type { Booking } from '../../data/bookings';
 import { useGalleryImages } from '../../lib/gallery';
@@ -12,6 +12,7 @@ type BookingDetailsProps = {
   onEditClick: () => void;
   onCancelClick: () => void;
   onDeleteClick: () => void;
+  onCloseClick?: () => void;
   variant?: 'card' | 'sheet';
 };
 
@@ -20,6 +21,7 @@ export function BookingDetails({
   onEditClick,
   onCancelClick,
   onDeleteClick,
+  onCloseClick,
   variant = 'card',
 }: BookingDetailsProps) {
   const { data: allImages = [] } = useGalleryImages();
@@ -70,6 +72,24 @@ export function BookingDetails({
   return (
     <>
       <article className={containerClassName}>
+        {!isSheet && onCloseClick ? (
+          <div className="mb-3 flex justify-end">
+            <button
+              type="button"
+              onClick={onCloseClick}
+              onPointerDown={(event) => {
+                event.preventDefault();
+                onCloseClick();
+              }}
+              className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/6 text-white transition hover:border-white/16 hover:bg-white/10"
+              aria-label="Zamknij szczegoly"
+              title="Zamknij szczegoly"
+            >
+              <X className="h-4.5 w-4.5" />
+            </button>
+          </div>
+        ) : null}
+
         <div
           className={`flex min-w-0 flex-col ${headerGapClassName} md:flex-row md:items-start md:justify-between`}
         >
@@ -85,7 +105,9 @@ export function BookingDetails({
           </div>
 
           <div className="flex max-w-full flex-col items-start gap-3 md:items-end">
-            <StatusBadge status={booking.status} className="w-fit" />
+            <div className="flex w-full items-center justify-between gap-3 md:w-auto md:justify-end">
+              <StatusBadge status={booking.status} className="w-fit" />
+            </div>
             <div className="flex w-full flex-wrap gap-2 md:w-auto md:justify-end">
               <ActionIconButton label="Edytuj wizyte" onClick={onEditClick}>
                 <Pencil className="h-4.5 w-4.5" />
@@ -293,7 +315,7 @@ function ActionIconButton({
       disabled={disabled}
       aria-label={label}
       title={label}
-      className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${toneClasses} disabled:cursor-not-allowed disabled:opacity-50`}
+      className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border transition ${toneClasses} disabled:cursor-not-allowed disabled:opacity-50`}
     >
       {children}
     </button>

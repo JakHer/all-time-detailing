@@ -1,22 +1,23 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { X } from 'lucide-react';
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { X } from 'lucide-react';
 import { toast } from 'sonner';
 import { BookingDetails } from '../components/bookings/BookingDetails';
 import { BookingList } from '../components/bookings/BookingList';
 import { BookingModal } from '../components/bookings/BookingModal';
-import { BookingToolbar } from '../components/bookings/BookingToolbar';
+import {
+  BookingToolbar,
+  type BookingCalendarView,
+} from '../components/bookings/BookingToolbar';
+import { BookingMonthView } from '../components/bookings/BookingMonthView';
+import { BookingWeekView } from '../components/bookings/BookingWeekView';
 import { PageIntro } from '../components/PageIntro';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { MobilePageHeader } from '../components/ui/MobilePageHeader';
 import { Skeleton } from '../components/ui/Skeleton';
-import {
-  bookingStatuses,
-  type Booking,
-  type BookingStatus,
-} from '../data/bookings';
+import { type Booking, type BookingStatus } from '../data/bookings';
 import {
   createBooking,
   deleteBooking,
@@ -27,12 +28,16 @@ import {
   updateBookingStatus,
   type BookingFormOptions,
 } from '../lib/bookings';
-import { formatDateForInput, getTodayDateString } from '../lib/dateUtils';
+import {
+  formatMonthLabel,
+  formatWeekdayLabel,
+  getTodayDateString,
+  getWeekDateStrings,
+  isSameMonth,
+  shiftDateByDays,
+  shiftDateByMonths,
+} from '../lib/dateUtils';
 
-const allStatuses: Array<BookingStatus | 'Wszystkie'> = [
-  'Wszystkie',
-  ...bookingStatuses,
-];
 const bookingsQueryKey = ['bookings'] as const;
 const bookingFormOptionsQueryKey = ['booking-form-options'] as const;
 const emptyBookings: Booking[] = [];
@@ -70,14 +75,17 @@ export function BookingsPage() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const today = getTodayDateString();
+  const [isDesktopDetailsLayout, setIsDesktopDetailsLayout] = useState(() =>
+    typeof window !== 'undefined'
+      ? window.matchMedia('(min-width: 1536px)').matches
+      : false,
+  );
   const [selectedDate, setSelectedDate] = useState(today);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
     null,
   );
-  const [statusFilter, setStatusFilter] = useState<BookingStatus | 'Wszystkie'>(
-    'Wszystkie',
-  );
   const [query, setQuery] = useState('');
+  const [calendarView, setCalendarView] = useState<BookingCalendarView>('day');
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isMobileDetailsOpen, setIsMobileDetailsOpen] = useState(false);
@@ -102,6 +110,30 @@ export function BookingsPage() {
     bookingsQuery.isLoading || bookingFormOptionsQuery.isLoading;
 
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(min-width: 1536px)');
+    const handleChange = (event: MediaQueryListEvent) => {
+      setIsDesktopDetailsLayout(event.matches);
+    };
+
+    setIsDesktopDetailsLayout(mediaQuery.matches);
+    mediaQuery.addEventListener('change', handleChange);
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isDesktopDetailsLayout) {
+      setIsMobileDetailsOpen(false);
+    }
+  }, [isDesktopDetailsLayout]);
+
+  useEffect(() => {
     if (searchParams.get('nowa') === '1' && bookingFormOptionsQuery.isSuccess) {
       setModalMode('create');
       const nextParams = new URLSearchParams(searchParams);
@@ -109,6 +141,47 @@ export function BookingsPage() {
       setSearchParams(nextParams, { replace: true });
     }
   }, [bookingFormOptionsQuery.isSuccess, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    const bookingIdFromQuery = searchParams.get('booking');
+    const dateFromQuery = searchParams.get('date');
+
+    if (!bookingIdFromQuery || bookingsQuery.isLoading) {
+      return;
+    }
+
+    const bookingFromQuery = bookings.find(
+      (booking) => booking.id === bookingIdFromQuery,
+    );
+
+    if (!bookingFromQuery) {
+      if (bookingsQuery.isSuccess) {
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.delete('booking');
+        nextParams.delete('date');
+        setSearchParams(nextParams, { replace: true });
+      }
+      return;
+    }
+
+    setCalendarView('day');
+    setSelectedDate(dateFromQuery || bookingFromQuery.date);
+    setSelectedBookingId(bookingFromQuery.id);
+    setIsMobileDetailsOpen(!isDesktopDetailsLayout);
+    scrollBookingsPageToTop();
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('booking');
+    nextParams.delete('date');
+    setSearchParams(nextParams, { replace: true });
+  }, [
+    bookings,
+    bookingsQuery.isLoading,
+    bookingsQuery.isSuccess,
+    isDesktopDetailsLayout,
+    searchParams,
+    setSearchParams,
+  ]);
 
   useEffect(() => {
     if (bookingsQuery.error) {
@@ -130,28 +203,39 @@ export function BookingsPage() {
     }
   }, [bookingFormOptionsQuery.error]);
 
-  const filteredBookings = useMemo(() => {
-    return bookings.filter((booking) => {
-      const matchesDate = booking.date === selectedDate;
-      const matchesStatus =
-        statusFilter === 'Wszystkie' || booking.status === statusFilter;
+  const visibleBookings = useMemo(() => {
+    if (calendarView === 'week') {
+      const weekDates = new Set(getWeekDateStrings(selectedDate));
+      return bookings.filter((booking) => weekDates.has(booking.date));
+    }
 
-      return matchesDate && matchesStatus;
-    });
-  }, [bookings, selectedDate, statusFilter]);
+    if (calendarView === 'month') {
+      return bookings.filter((booking) =>
+        isSameMonth(booking.date, selectedDate),
+      );
+    }
+
+    return bookings.filter((booking) => booking.date === selectedDate);
+  }, [bookings, calendarView, selectedDate]);
 
   useEffect(() => {
     setSelectedBookingId((current) => {
       if (
         current &&
-        filteredBookings.some((booking) => booking.id === current)
+        visibleBookings.some((booking) => booking.id === current)
       ) {
         return current;
       }
 
-      return filteredBookings[0]?.id ?? null;
+      return null;
     });
-  }, [filteredBookings]);
+  }, [visibleBookings]);
+
+  useEffect(() => {
+    if (calendarView !== 'day') {
+      setIsMobileDetailsOpen(false);
+    }
+  }, [calendarView]);
 
   const saveBookingMutation = useMutation<
     SaveBookingResult,
@@ -179,6 +263,7 @@ export function BookingsPage() {
 
       setSelectedDate(booking.date);
       setSelectedBookingId(booking.id);
+      setCalendarView('day');
       setModalMode(null);
 
       if (mode === 'edit') {
@@ -188,7 +273,6 @@ export function BookingsPage() {
         return;
       }
 
-      setStatusFilter('Wszystkie');
       setQuery('');
       toast.success('Dodano rezerwacje', {
         description: `${booking.vehicle} zostala dodana do harmonogramu.`,
@@ -308,6 +392,7 @@ export function BookingsPage() {
       queryClient.invalidateQueries({ queryKey: bookingsQueryKey });
       setSelectedDate(restoredBooking.date);
       setSelectedBookingId(restoredBooking.id);
+      setCalendarView('day');
     },
     onError: (error) => {
       reportBookingError(error);
@@ -316,27 +401,59 @@ export function BookingsPage() {
   });
 
   const selectedBooking =
-    filteredBookings.find((booking) => booking.id === selectedBookingId) ??
-    filteredBookings[0] ??
-    null;
+    visibleBookings.find((booking) => booking.id === selectedBookingId) ?? null;
+
+  const selectedRangeLabel = useMemo(() => {
+    if (calendarView === 'week') {
+      const weekDates = getWeekDateStrings(selectedDate);
+      return `${formatWeekdayLabel(weekDates[0], {
+        day: '2-digit',
+        month: 'short',
+      })} - ${formatWeekdayLabel(weekDates[6], {
+        day: '2-digit',
+        month: 'short',
+      })}`;
+    }
+
+    if (calendarView === 'month') {
+      return formatMonthLabel(selectedDate);
+    }
+
+    return formatSelectedDate(selectedDate, today);
+  }, [calendarView, selectedDate, today]);
+
+  const rangeLabelEyebrow =
+    calendarView === 'week'
+      ? 'Wybrany tydzien'
+      : calendarView === 'month'
+        ? 'Wybrany miesiac'
+        : 'Wybrany dzien';
+  const shouldShowBookingDetails =
+    calendarView === 'day' && selectedBooking !== null;
 
   const metrics = [
-    { label: 'Wybrany dzien', value: `${filteredBookings.length} wizyt` },
+    {
+      label:
+        calendarView === 'month'
+          ? 'Wybrany miesiac'
+          : calendarView === 'week'
+            ? 'Wybrany tydzien'
+            : 'Wybrany dzien',
+      value: `${visibleBookings.length} wizyt`,
+    },
     {
       label: 'Potwierdzone',
-      value: `${filteredBookings.filter((booking) => booking.status === 'Potwierdzona').length}`,
+      value: `${visibleBookings.filter((booking) => booking.status === 'Potwierdzona').length}`,
     },
     {
       label: 'W realizacji',
-      value: `${filteredBookings.filter((booking) => booking.status === 'W realizacji').length}`,
+      value: `${visibleBookings.filter((booking) => booking.status === 'W realizacji').length}`,
     },
     {
       label: 'Do kontaktu',
-      value: `${filteredBookings.filter((booking) => booking.status === 'Nowa').length}`,
+      value: `${visibleBookings.filter((booking) => booking.status === 'Nowa').length}`,
     },
   ];
-
-  const selectedDateLabel = formatSelectedDate(selectedDate, today);
 
   function handleSaveBooking(payload: Booking | NewBookingPayload) {
     saveBookingMutation.mutate(payload);
@@ -389,16 +506,12 @@ export function BookingsPage() {
     }
 
     const bookingToDelete = selectedBooking;
-    const remainingBookings = filteredBookings.filter(
-      (booking) => booking.id !== bookingToDelete.id,
-    );
-    const nextSelectedBookingId = remainingBookings[0]?.id ?? null;
 
     deleteBookingMutation.mutate(
       { bookingId: bookingToDelete.id },
       {
         onSuccess: () => {
-          setSelectedBookingId(nextSelectedBookingId);
+          setSelectedBookingId(null);
           setModalMode(null);
           setIsDeleteConfirmOpen(false);
           setIsMobileDetailsOpen(false);
@@ -416,10 +529,6 @@ export function BookingsPage() {
     );
   }
 
-  function handleStatusFilterChange(value: BookingStatus | 'Wszystkie') {
-    setStatusFilter(value);
-  }
-
   function handleQueryChange(value: string) {
     setQuery(value);
   }
@@ -432,11 +541,17 @@ export function BookingsPage() {
     setSelectedDate(value);
   }
 
-  function shiftSelectedDate(days: number) {
+  function shiftSelectedPeriod(direction: -1 | 1) {
     setSelectedDate((current) => {
-      const nextDate = new Date(`${current}T12:00:00`);
-      nextDate.setDate(nextDate.getDate() + days);
-      return formatDateForInput(nextDate);
+      if (calendarView === 'month') {
+        return shiftDateByMonths(current, direction);
+      }
+
+      if (calendarView === 'week') {
+        return shiftDateByDays(current, direction * 7);
+      }
+
+      return shiftDateByDays(current, direction);
     });
   }
 
@@ -457,9 +572,29 @@ export function BookingsPage() {
     setModalMode(null);
   }
 
+  function closeBookingDetails() {
+    setSelectedBookingId(null);
+    setIsMobileDetailsOpen(false);
+  }
+
   function handleSelectBooking(bookingId: string) {
+    const nextBooking = bookings.find((booking) => booking.id === bookingId);
+
     setSelectedBookingId(bookingId);
-    setIsMobileDetailsOpen(true);
+
+    if (nextBooking && calendarView !== 'day') {
+      setSelectedDate(nextBooking.date);
+      setCalendarView('day');
+      scrollBookingsPageToTop();
+    }
+
+    setIsMobileDetailsOpen(!isDesktopDetailsLayout);
+  }
+
+  function handleSelectCalendarDate(dateString: string) {
+    setSelectedDate(dateString);
+    setCalendarView('day');
+    scrollBookingsPageToTop();
   }
 
   return (
@@ -468,18 +603,17 @@ export function BookingsPage() {
         <PageIntro
           eyebrow="Rezerwacje"
           title="Kalendarz, ktory naprawde porzadkuje dzien studia"
-          description="To jest pierwszy dzialajacy modul recepcji: filtrujesz wizyty, przegladasz szczegoly i dodajesz nowe rezerwacje bez wychodzenia z jednego widoku."
           metrics={metrics}
         />
       </div>
 
       <MobilePageHeader
         eyebrow="Rezerwacje"
-        title="Plan dnia"
+        title={getMobileTitle(calendarView)}
         chips={[
-          `${filteredBookings.length} wizyt`,
+          `${visibleBookings.length} wizyt`,
           `${
-            filteredBookings.filter(
+            visibleBookings.filter(
               (booking) => booking.status === 'W realizacji',
             ).length
           } w realizacji`,
@@ -489,19 +623,25 @@ export function BookingsPage() {
       <BookingToolbar
         query={query}
         onQueryChange={handleQueryChange}
-        statusFilter={statusFilter}
-        onStatusFilterChange={handleStatusFilterChange}
-        statuses={allStatuses}
+        calendarView={calendarView}
+        onCalendarViewChange={setCalendarView}
         selectedDate={selectedDate}
-        selectedDateLabel={selectedDateLabel}
+        selectedRangeLabel={selectedRangeLabel}
+        rangeLabelEyebrow={rangeLabelEyebrow}
         onSelectedDateChange={handleSelectedDateChange}
-        onPreviousDay={() => shiftSelectedDate(-1)}
-        onNextDay={() => shiftSelectedDate(1)}
+        onPreviousPeriod={() => shiftSelectedPeriod(-1)}
+        onNextPeriod={() => shiftSelectedPeriod(1)}
         onToday={() => setSelectedDate(today)}
         onCreateClick={openCreateModal}
       />
 
-      <section className="grid min-h-180 min-w-0 gap-6 2xl:grid-cols-[minmax(0,1fr)_minmax(0,500px)] 2xl:items-start">
+      <section
+        className={`grid min-h-180 min-w-0 gap-6 ${
+          shouldShowBookingDetails
+            ? '2xl:grid-cols-[minmax(0,1fr)_minmax(0,500px)] 2xl:items-start'
+            : ''
+        }`}
+      >
         <div className="min-w-0 max-w-full">
           {isLoading && bookings.length === 0 ? (
             <div className="grid gap-3">
@@ -509,16 +649,34 @@ export function BookingsPage() {
                 <Skeleton key={index} className="h-30 rounded-[26px]" />
               ))}
             </div>
+          ) : calendarView === 'week' ? (
+            <BookingWeekView
+              bookings={visibleBookings}
+              selectedBookingId={selectedBooking?.id ?? null}
+              selectedDate={selectedDate}
+              onSelect={handleSelectBooking}
+              onDaySelect={handleSelectCalendarDate}
+            />
+          ) : calendarView === 'month' ? (
+            <BookingMonthView
+              bookings={visibleBookings}
+              selectedDate={selectedDate}
+              onDaySelect={handleSelectCalendarDate}
+            />
           ) : (
             <BookingList
-              bookings={filteredBookings}
+              bookings={visibleBookings}
               selectedBookingId={selectedBooking?.id ?? null}
               onSelect={handleSelectBooking}
             />
           )}
         </div>
 
-        <div className="hidden min-w-0 max-w-full 2xl:block">
+        <div
+          className={`min-w-0 max-w-full ${
+            shouldShowBookingDetails ? 'hidden 2xl:block' : 'hidden'
+          }`}
+        >
           {isLoading ? (
             <Skeleton className="h-100 rounded-4xl" />
           ) : (
@@ -527,13 +685,19 @@ export function BookingsPage() {
               onEditClick={openEditModal}
               onCancelClick={handleCancelBooking}
               onDeleteClick={openDeleteConfirm}
+              onCloseClick={closeBookingDetails}
             />
           )}
         </div>
       </section>
 
       <Dialog.Root
-        open={isMobileDetailsOpen && !!selectedBooking}
+        open={
+          !isDesktopDetailsLayout &&
+          calendarView === 'day' &&
+          isMobileDetailsOpen &&
+          !!selectedBooking
+        }
         onOpenChange={setIsMobileDetailsOpen}
       >
         <Dialog.Portal>
@@ -565,6 +729,7 @@ export function BookingsPage() {
                 onEditClick={openEditModal}
                 onCancelClick={handleCancelBooking}
                 onDeleteClick={openDeleteConfirm}
+                onCloseClick={closeBookingDetails}
                 variant="sheet"
               />
             </div>
@@ -600,6 +765,17 @@ export function BookingsPage() {
   );
 }
 
+function getMobileTitle(calendarView: BookingCalendarView) {
+  switch (calendarView) {
+    case 'week':
+      return 'Plan tygodnia';
+    case 'month':
+      return 'Przeglad miesiaca';
+    default:
+      return 'Plan dnia';
+  }
+}
+
 function formatSelectedDate(value: string, today: string) {
   const [year, month, day] = value.split('-').map(Number);
 
@@ -619,4 +795,17 @@ function formatSelectedDate(value: string, today: string) {
   }
 
   return formatted;
+}
+
+function scrollBookingsPageToTop() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.requestAnimationFrame(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'auto',
+    });
+  });
 }

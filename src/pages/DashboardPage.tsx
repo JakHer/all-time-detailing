@@ -28,7 +28,6 @@ export function DashboardPage() {
         <PageIntro
           eyebrow="Pulpit glowny"
           title="Mniej chaosu. Wiecej kontroli nad kazdym autem."
-          description="Pulpit studia detailingu z szybkim wejsciem do rezerwacji, klientow i uslug. Tutaj zaczyna sie dzien pracy recepcji i zespolu wykonawczego."
           metrics={data?.metrics}
         />
       </div>
@@ -45,7 +44,7 @@ export function DashboardPage() {
 
       <DashboardHero />
 
-      <section className="grid gap-6 2xl:grid-cols-[minmax(0,1.25fr)_minmax(340px,0.75fr)]">
+      <section className="grid items-start gap-6 2xl:grid-cols-[minmax(0,1.25fr)_minmax(340px,0.75fr)]">
         <LiveQueueSection queue={data?.queue} isLoading={isLoading} />
 
         <HighlightsColumn

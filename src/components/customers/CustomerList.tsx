@@ -53,7 +53,7 @@ export function CustomerList({
                       : 'border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/14 hover:bg-white/8'
                   }`}
                 >
-                  <div className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-500">
+                  <div className="min-w-0 truncate text-sm font-semibold tracking-[-0.03em] text-white">
                     {bookingCount} wiz.
                   </div>
                   <div className="min-w-0">
@@ -81,11 +81,8 @@ export function CustomerList({
                   }`}
                 >
                   <div className="min-w-0">
-                    <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-stone-500">
-                      Wizyty
-                    </div>
-                    <div className="mt-0.5 text-base font-semibold tracking-[-0.03em] text-white">
-                      {bookingCount}
+                    <div className="text-base font-semibold tracking-[-0.03em] text-white">
+                      {bookingCount} wiz.
                     </div>
                   </div>
 
@@ -103,9 +100,6 @@ export function CustomerList({
                   <div className="min-w-0 text-right">
                     <p className="truncate text-xs text-stone-300">
                       {customer.vehicles?.length ?? 0} pojazdow
-                    </p>
-                    <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-stone-500">
-                      kontakt
                     </p>
                   </div>
                 </button>
