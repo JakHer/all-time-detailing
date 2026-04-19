@@ -1,6 +1,7 @@
 import type { Booking } from '../../data/bookings';
 import {
   formatMonthLabel,
+  getTodayDateString,
   getMonthMatrix,
   isSameMonth,
 } from '../../lib/dateUtils';
@@ -16,6 +17,7 @@ export function BookingMonthView({
   selectedDate,
   onDaySelect,
 }: BookingMonthViewProps) {
+  const today = getTodayDateString();
   const monthMatrix = getMonthMatrix(selectedDate);
 
   return (
@@ -53,7 +55,7 @@ export function BookingMonthView({
               (booking) => booking.date === dateString,
             );
             const isCurrentMonth = isSameMonth(dateString, selectedDate);
-            const isSelected = dateString === selectedDate;
+            const isToday = dateString === today && isCurrentMonth;
 
             return (
               <button
@@ -61,7 +63,7 @@ export function BookingMonthView({
                 type="button"
                 onClick={() => onDaySelect(dateString)}
                 className={`min-h-[4.9rem] border-r border-t border-white/8 px-2 py-2 text-left transition last:border-r-0 hover:bg-white/[0.03] sm:min-h-[8.5rem] sm:px-3 sm:py-3 xl:min-h-36 ${
-                  isSelected
+                  isToday
                     ? 'bg-amber-300/8 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.08)]'
                     : ''
                 } ${!isCurrentMonth ? 'text-stone-600' : ''}`}
@@ -70,7 +72,7 @@ export function BookingMonthView({
                   <div className="relative">
                     <span
                       className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold sm:h-9 sm:w-9 sm:text-sm ${
-                        isSelected
+                        isToday
                           ? 'bg-amber-300 text-black'
                           : isCurrentMonth
                             ? 'bg-white/6 text-white'
@@ -90,7 +92,7 @@ export function BookingMonthView({
                         <span
                           className={`absolute -bottom-1 -right-2 hidden sm:inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-[#1f2022] px-1.5 text-[10px] font-semibold ${getDayLoadClassName(
                             dayBookings.length,
-                            isSelected,
+                            isToday,
                           )}`}
                           title={`${dayBookings.length} ${dayBookings.length === 1 ? 'wizyta' : dayBookings.length < 5 ? 'wizyty' : 'wizyt'}`}
                         >

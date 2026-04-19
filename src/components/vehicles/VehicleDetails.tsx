@@ -1,7 +1,14 @@
 import { Calendar, CarFront, Pencil, Trash2, User, X } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { VehicleWithRelations } from '../../lib/vehicles';
+import {
+  BookingHistoryList,
+  type BookingHistoryListItem,
+} from '../bookings/BookingHistoryList';
 import { CollapsibleDetailSection } from '../ui/CollapsibleDetailSection';
+import { DetailActionIconButton } from '../ui/DetailActionIconButton';
+import { DetailLinkRow } from '../ui/DetailLinkRow';
+import { DetailSummaryChip } from '../ui/DetailSummaryChip';
 import { Skeleton } from '../ui/Skeleton';
 
 type VehicleDetailsProps = {
@@ -21,6 +28,7 @@ export function VehicleDetails({
   onCloseClick,
   variant = 'card',
 }: VehicleDetailsProps) {
+  const navigate = useNavigate();
   const isSheet = variant === 'sheet';
 
   if (isLoading) {
@@ -51,6 +59,19 @@ export function VehicleDetails({
   const latestVisitLabel = latestBooking
     ? new Date(latestBooking.scheduled_at).toLocaleDateString('pl-PL')
     : 'Brak historii';
+  const bookingHistoryItems: BookingHistoryListItem[] =
+    vehicle.bookings?.map((booking) => ({
+      id: booking.id,
+      title: booking.services.name,
+      subtitle: `${formatBookingDate(booking.scheduled_at)} | ${formatBookingTime(booking.scheduled_at)}`,
+      metaActionLabel: booking.clients.full_name,
+      metaOnClick: () => navigate(`/klienci?customer=${booking.clients.id}`),
+      status: booking.status,
+      onClick: () =>
+        navigate(
+          `/rezerwacje?booking=${booking.id}&date=${booking.scheduled_at.slice(0, 10)}`,
+        ),
+    })) ?? [];
   const colorPreviewClassName = getColorPreviewClassName(vehicle.color);
   const headerGapClassName = 'gap-3';
   const titleClassName = isSheet
@@ -95,7 +116,13 @@ export function VehicleDetails({
             {vehicle.make} {vehicle.model}
           </h3>
           <p className={metaClassName}>{vehicle.registration}</p>
-          <p className={ownerMetaClassName}>{vehicle.clients.full_name}</p>
+          <button
+            type="button"
+            onClick={() => navigate(`/klienci?customer=${vehicle.clients.id}`)}
+            className={`max-w-fit text-left ${ownerMetaClassName} transition hover:text-stone-200`}
+          >
+            {vehicle.clients.full_name}
+          </button>
         </div>
 
         <div className="flex max-w-full shrink-0 flex-col items-start gap-3 md:items-end">
@@ -104,32 +131,32 @@ export function VehicleDetails({
             {latestVisitLabel}
           </div>
           <div className="flex flex-wrap gap-2 md:justify-end">
-            <ActionIconButton label="Edytuj pojazd" onClick={onEditClick}>
+            <DetailActionIconButton label="Edytuj pojazd" onClick={onEditClick}>
               <Pencil className="h-4.5 w-4.5" />
-            </ActionIconButton>
-            <ActionIconButton
+            </DetailActionIconButton>
+            <DetailActionIconButton
               label="Usun pojazd"
               onClick={onDeleteClick}
               tone="danger"
             >
               <Trash2 className="h-4.5 w-4.5" />
-            </ActionIconButton>
+            </DetailActionIconButton>
           </div>
         </div>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <SummaryChip
+        <DetailSummaryChip
           label="Wizyty"
           value={`${bookingCount} ${getBookingLabel(bookingCount)}`}
         />
-        <SummaryChip
+        <DetailSummaryChip
           label="Rok"
           value={
             vehicle.production_year ? String(vehicle.production_year) : 'Brak'
           }
         />
-        <SummaryChip
+        <DetailSummaryChip
           label="Kolor"
           value={vehicle.color || 'Brak'}
           accent={
@@ -147,21 +174,25 @@ export function VehicleDetails({
         title="Wlasciciel i kontekst"
         icon={<User className="h-4.5 w-4.5" />}
       >
-        <p className="text-sm font-medium text-white">
-          {vehicle.clients.full_name}
-        </p>
-        <p className="mt-2 break-all text-sm text-stone-400">
-          {vehicle.clients.phone}
-        </p>
-        {vehicle.clients.email ? (
-          <p className="mt-1 break-all text-sm text-stone-500">
-            {vehicle.clients.email}
+        <div className="space-y-3">
+          <DetailLinkRow
+            label="Przejdz do klienta"
+            description={`${vehicle.clients.full_name} | ${vehicle.clients.phone}`}
+            onClick={() => navigate(`/klienci?customer=${vehicle.clients.id}`)}
+          />
+          <p className="break-all text-sm text-stone-400">
+            {vehicle.clients.phone}
           </p>
-        ) : null}
-        <p className="mt-3 text-sm leading-6 text-stone-300">
-          {vehicle.clients.notes ||
-            'Brak dodatkowych notatek o wlascicielu tego pojazdu.'}
-        </p>
+          {vehicle.clients.email ? (
+            <p className="break-all text-sm text-stone-500">
+              {vehicle.clients.email}
+            </p>
+          ) : null}
+          <p className="text-sm leading-6 text-stone-300">
+            {vehicle.clients.notes ||
+              'Brak dodatkowych notatek o wlascicielu tego pojazdu.'}
+          </p>
+        </div>
       </CollapsibleDetailSection>
 
       <CollapsibleDetailSection
@@ -169,38 +200,10 @@ export function VehicleDetails({
         icon={<Calendar className="h-4.5 w-4.5" />}
         countLabel={`${bookingCount} ${getBookingLabel(bookingCount)}`}
       >
-        <div className="grid gap-3">
-          {vehicle.bookings && vehicle.bookings.length > 0 ? (
-            vehicle.bookings.map((booking) => (
-              <div
-                key={booking.id}
-                className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/6 p-3.5"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-white">
-                    {booking.services.name}
-                  </p>
-                  <p className="mt-1 text-xs text-stone-500">
-                    {new Date(booking.scheduled_at).toLocaleDateString('pl-PL')}{' '}
-                    |{' '}
-                    {new Date(booking.scheduled_at).toLocaleTimeString(
-                      'pl-PL',
-                      {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      },
-                    )}
-                  </p>
-                </div>
-                <p className="max-w-30 text-right text-xs font-semibold text-white/40">
-                  {booking.status}
-                </p>
-              </div>
-            ))
-          ) : (
-            <EmptyPanelMessage message="Ten pojazd nie ma jeszcze historii rezerwacji." />
-          )}
-        </div>
+        <BookingHistoryList
+          items={bookingHistoryItems}
+          emptyMessage="Ten pojazd nie ma jeszcze historii rezerwacji."
+        />
       </CollapsibleDetailSection>
 
       <CollapsibleDetailSection
@@ -218,63 +221,6 @@ export function VehicleDetails({
         )}
       </CollapsibleDetailSection>
     </article>
-  );
-}
-
-type ActionIconButtonProps = {
-  children: ReactNode;
-  label: string;
-  onClick: () => void;
-  tone?: 'default' | 'danger';
-};
-
-function SummaryChip({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string;
-  accent?: ReactNode;
-}) {
-  return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-xs text-stone-300">
-      {accent}
-      <span className="text-stone-500">{label}:</span>
-      <span className="font-medium text-white">{value}</span>
-    </div>
-  );
-}
-
-function ActionIconButton({
-  children,
-  label,
-  onClick,
-  tone = 'default',
-}: ActionIconButtonProps) {
-  const toneClasses =
-    tone === 'danger'
-      ? 'border-rose-300/20 bg-rose-300/12 text-rose-50 hover:border-rose-300/30 hover:bg-rose-300/18'
-      : 'border-white/10 bg-white/6 text-white hover:border-white/16 hover:bg-white/10';
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border transition ${toneClasses}`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function EmptyPanelMessage({ message }: { message: string }) {
-  return (
-    <p className="rounded-2xl border border-dashed border-white/8 bg-white/2 p-4 text-center text-sm text-stone-500">
-      {message}
-    </p>
   );
 }
 
@@ -308,4 +254,15 @@ function getColorPreviewClassName(color: string | null) {
   if (value.includes('pomaran')) return 'bg-orange-500';
 
   return 'bg-stone-500';
+}
+
+function formatBookingDate(value: string) {
+  return new Date(value).toLocaleDateString('pl-PL');
+}
+
+function formatBookingTime(value: string) {
+  return new Date(value).toLocaleTimeString('pl-PL', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }

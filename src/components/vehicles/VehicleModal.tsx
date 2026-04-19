@@ -3,7 +3,7 @@ import { Car, Info, MessageSquare } from 'lucide-react';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import type { ClientWithRelations } from '../../lib/clients';
+import type { ClientOption } from '../../lib/clients';
 import type { NewVehicle, Vehicle } from '../../lib/vehicles';
 import { Select } from '../ui/Select';
 import { Field, SectionTitle, inputClassName } from '../ui/FormElements';
@@ -35,7 +35,7 @@ type VehicleModalProps = {
   onClose: () => void;
   onSubmit: (data: NewVehicle) => void | Promise<void>;
   initialData?: Vehicle | null;
-  clients: ClientWithRelations[];
+  clients: ClientOption[];
   title: string;
 };
 

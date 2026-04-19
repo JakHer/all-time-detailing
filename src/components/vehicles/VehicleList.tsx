@@ -1,16 +1,25 @@
-import type { VehicleWithRelations } from '../../lib/vehicles';
-import { SelectableListItem } from '../ui/SelectableListItem';
+import type { VehicleListItem } from '../../lib/vehicles';
+import { ActionButton } from '../ui/ActionButton';
+import { VehicleListEntry } from './VehicleListEntry';
 
 type VehicleListProps = {
-  vehicles: VehicleWithRelations[];
+  vehicles: VehicleListItem[];
   selectedVehicleId: string | null;
   onSelect: (id: string) => void;
+  totalCount: number;
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  onLoadMore: () => void;
 };
 
 export function VehicleList({
   vehicles,
   selectedVehicleId,
   onSelect,
+  totalCount,
+  hasNextPage,
+  isFetchingNextPage,
+  onLoadMore,
 }: VehicleListProps) {
   return (
     <article className="w-full max-w-full self-start overflow-hidden rounded-3xl border border-white/10 bg-white/6 p-4 shadow-[0_30px_120px_rgba(0,0,0,0.35)] sm:rounded-4xl sm:px-4 sm:py-3.5 xl:px-5 xl:py-4">
@@ -23,14 +32,18 @@ export function VehicleList({
             Baza aut
           </h3>
         </div>
-        <div className="text-xs text-stone-400">{vehicles.length} pozycji</div>
+        <div className="text-xs text-stone-400">
+          {vehicles.length} z {totalCount} pozycji
+        </div>
       </div>
 
       <div className="mb-3 flex items-center justify-between sm:hidden">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">
           Lista pojazdow
         </p>
-        <div className="text-xs text-stone-400">{vehicles.length} pozycji</div>
+        <div className="text-xs text-stone-400">
+          {vehicles.length} z {totalCount}
+        </div>
       </div>
 
       <div className="grid gap-2.5 sm:mt-3">
@@ -39,66 +52,41 @@ export function VehicleList({
             Nie znaleziono pojazdow pasujacych do wyszukiwania.
           </div>
         ) : (
-          vehicles.map((vehicle) => {
-            const isActive = selectedVehicleId === vehicle.id;
-            const bookingCount = vehicle.bookings?.length ?? 0;
+          <>
+            {vehicles.map((vehicle) => {
+              const isActive = selectedVehicleId === vehicle.id;
+              const bookingCount = vehicle.bookings?.length ?? 0;
 
-            return (
-              <div key={vehicle.id}>
-                <SelectableListItem
-                  onClick={() => onSelect(vehicle.id)}
-                  isActive={isActive}
-                  mobileLeading={
-                    <div className="truncate text-sm font-semibold tracking-[-0.03em] text-white">
-                      {vehicle.registration}
-                    </div>
-                  }
-                  mobileBody={
-                    <p className="truncate text-sm font-medium text-white">
-                      {vehicle.make} {vehicle.model}{' '}
-                      <span className="text-stone-500">|</span>{' '}
-                      <span className="text-stone-400">
-                        {vehicle.clients.full_name}
-                      </span>
-                    </p>
-                  }
-                  mobileTrailing={
-                    <div
-                      className={`h-2.5 w-2.5 shrink-0 rounded-full ${
-                        isActive ? 'bg-amber-300' : 'bg-stone-500'
-                      }`}
-                      aria-hidden="true"
-                    />
-                  }
-                  desktopLeading={
-                    <div className="truncate text-base font-semibold tracking-[-0.03em] text-white">
-                      {vehicle.registration}
-                    </div>
-                  }
-                  desktopBody={
-                    <>
-                      <p className="truncate text-sm font-semibold text-white">
-                        {vehicle.make} {vehicle.model}
-                      </p>
-                      <p className="mt-0.5 truncate text-xs text-stone-400">
-                        {vehicle.clients.full_name}
-                      </p>
-                    </>
-                  }
-                  desktopTrailing={
-                    <p className="truncate text-xs text-stone-300">
-                      {bookingCount}{' '}
-                      {bookingCount === 1
-                        ? 'wizyta'
-                        : bookingCount < 5
-                          ? 'wizyty'
-                          : 'wizyt'}
-                    </p>
-                  }
-                />
+              return (
+                <div key={vehicle.id}>
+                  <VehicleListEntry
+                    onClick={() => onSelect(vehicle.id)}
+                    isActive={isActive}
+                    registration={vehicle.registration}
+                    make={vehicle.make}
+                    model={vehicle.model}
+                    ownerName={vehicle.clients.full_name}
+                    bookingCount={bookingCount}
+                  />
+                </div>
+              );
+            })}
+
+            {hasNextPage ? (
+              <div className="pt-2">
+                <ActionButton
+                  variant="amber"
+                  onClick={onLoadMore}
+                  disabled={isFetchingNextPage}
+                  className="w-full justify-center"
+                >
+                  {isFetchingNextPage
+                    ? 'Doladowywanie pojazdow...'
+                    : 'Doladuj kolejne pojazdy'}
+                </ActionButton>
               </div>
-            );
-          })
+            ) : null}
+          </>
         )}
       </div>
     </article>

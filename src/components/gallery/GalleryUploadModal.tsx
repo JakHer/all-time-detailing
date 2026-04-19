@@ -11,7 +11,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { fetchBookings, type Booking } from '../../lib/bookings';
 import { useUploadGalleryImage, type GalleryImage } from '../../lib/gallery';
-import { useVehicles } from '../../lib/vehicles';
+import { useVehicleOptions } from '../../lib/vehicles';
 import { Select } from '../ui/Select';
 import { inputClassName } from '../ui/FormElements';
 import { FormModal } from '../ui/FormModal';
@@ -62,7 +62,7 @@ export function GalleryUploadModal({
   );
   const [isUploading, setIsUploading] = useState(false);
 
-  const { data: vehicles = [] } = useVehicles();
+  const { data: vehicles = [] } = useVehicleOptions();
   const uploadMutation = useUploadGalleryImage();
 
   const selectedVehicle = useMemo(

@@ -10,9 +10,11 @@ import { ServiceToolbar } from '../components/services/ServiceToolbar';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { MobilePageHeader } from '../components/ui/MobilePageHeader';
 import { Skeleton } from '../components/ui/Skeleton';
+import { scrollPageToTop } from '../lib/scroll';
 import {
   useCreateService,
   useDeleteService,
+  useService,
   useServiceMetrics,
   useServices,
   useUpdateService,
@@ -36,8 +38,9 @@ export function ServicesPage() {
 
   const deferredQuery = useDeferredValue(query);
 
-  const { data: services = [], isLoading } = useServices();
+  const servicesQuery = useServices(deferredQuery);
   const { data: metricsData } = useServiceMetrics();
+  const selectedServiceQuery = useService(selectedServiceId ?? '');
   const createMutation = useCreateService();
   const updateMutation = useUpdateService();
   const deleteMutation = useDeleteService();
@@ -66,22 +69,20 @@ export function ServicesPage() {
     }
   }, [isDesktopDetailsLayout]);
 
-  const selectedService =
-    services.find((service) => service.id === selectedServiceId) ?? null;
-
-  const filteredServices = services.filter((service) => {
-    const searchValue = deferredQuery.toLowerCase();
-    return (
-      service.name.toLowerCase().includes(searchValue) ||
-      service.description?.toLowerCase().includes(searchValue)
-    );
-  });
+  const services =
+    servicesQuery.data?.pages.flatMap((page) => page.items) ?? [];
+  const totalServices = servicesQuery.data?.pages[0]?.totalCount ?? 0;
+  const selectedService = selectedServiceQuery.data ?? null;
+  const isListLoading = servicesQuery.isLoading;
+  const isDetailsLoading =
+    servicesQuery.isLoading ||
+    (selectedServiceId !== null && selectedServiceQuery.isLoading);
 
   const metrics = useMemo(
     () => [
       {
         label: 'Wszystkie uslugi',
-        value: String(metricsData?.totalServices ?? services.length),
+        value: String(metricsData?.totalServices ?? totalServices),
       },
       {
         label: 'Aktywne',
@@ -92,7 +93,7 @@ export function ServicesPage() {
         value: formatCurrency(metricsData?.averagePrice ?? 0),
       },
     ],
-    [services.length, metricsData],
+    [metricsData, totalServices],
   );
 
   function handleCreateClick() {
@@ -156,6 +157,7 @@ export function ServicesPage() {
   function handleSelectService(id: string) {
     setSelectedServiceId(id);
     setIsMobileDetailsOpen(!isDesktopDetailsLayout);
+    scrollPageToTop();
   }
 
   function closeServiceDetails() {
@@ -163,7 +165,7 @@ export function ServicesPage() {
     setIsMobileDetailsOpen(false);
   }
 
-  const shouldShowServiceDetails = selectedService !== null;
+  const shouldShowServiceDetails = selectedServiceId !== null;
 
   return (
     <div className="flex min-w-0 flex-col gap-4 overflow-x-hidden">
@@ -179,7 +181,7 @@ export function ServicesPage() {
         eyebrow="Uslugi"
         title="Oferta studia"
         chips={[
-          `${metricsData?.totalServices ?? services.length} uslug`,
+          `${metricsData?.totalServices ?? totalServices} uslug`,
           `${metricsData?.activeServices ?? 0} aktywne`,
         ]}
       />
@@ -198,7 +200,7 @@ export function ServicesPage() {
         }`}
       >
         <div className="min-w-0 max-w-full">
-          {isLoading ? (
+          {isListLoading ? (
             <div className="grid gap-3">
               {Array.from({ length: 5 }).map((_, index) => (
                 <Skeleton key={index} className="h-22 rounded-[26px]" />
@@ -206,9 +208,15 @@ export function ServicesPage() {
             </div>
           ) : (
             <ServiceList
-              services={filteredServices}
+              services={services}
               selectedServiceId={selectedServiceId}
               onSelect={handleSelectService}
+              totalCount={totalServices}
+              hasNextPage={servicesQuery.hasNextPage ?? false}
+              isFetchingNextPage={servicesQuery.isFetchingNextPage}
+              onLoadMore={() => {
+                void servicesQuery.fetchNextPage();
+              }}
             />
           )}
         </div>
@@ -220,7 +228,7 @@ export function ServicesPage() {
         >
           <ServiceDetails
             service={selectedService}
-            isLoading={isLoading && services.length === 0}
+            isLoading={isDetailsLoading}
             onEditClick={handleEditClick}
             onDeleteClick={handleDeleteClick}
             onCloseClick={closeServiceDetails}
@@ -230,7 +238,7 @@ export function ServicesPage() {
 
       <Dialog.Root
         open={
-          !isDesktopDetailsLayout && isMobileDetailsOpen && !!selectedService
+          !isDesktopDetailsLayout && isMobileDetailsOpen && !!selectedServiceId
         }
         onOpenChange={setIsMobileDetailsOpen}
       >
@@ -260,7 +268,7 @@ export function ServicesPage() {
             <div className="flex-1 overflow-y-auto px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
               <ServiceDetails
                 service={selectedService}
-                isLoading={isLoading && services.length === 0}
+                isLoading={isDetailsLoading}
                 onEditClick={handleEditClick}
                 onDeleteClick={handleDeleteClick}
                 variant="sheet"

@@ -1,10 +1,12 @@
 import { ImagePlus, Pencil, Trash2, X, XCircle } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { Booking } from '../../data/bookings';
 import { useGalleryImages } from '../../lib/gallery';
 import { GalleryUploadModal } from '../gallery/GalleryUploadModal';
 import { CollapsibleDetailSection } from '../ui/CollapsibleDetailSection';
 import { ActionButton } from '../ui/ActionButton';
+import { DetailLinkRow } from '../ui/DetailLinkRow';
 import { StatusBadge } from '../ui/StatusBadge';
 
 type BookingDetailsProps = {
@@ -24,9 +26,15 @@ export function BookingDetails({
   onCloseClick,
   variant = 'card',
 }: BookingDetailsProps) {
+  const navigate = useNavigate();
   const { data: allImages = [] } = useGalleryImages();
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const isSheet = variant === 'sheet';
+  const returnTo = booking
+    ? encodeURIComponent(
+        `/rezerwacje?booking=${booking.id}&date=${booking.date}`,
+      )
+    : '';
 
   if (!booking) {
     return (
@@ -99,7 +107,18 @@ export function BookingDetails({
             </p>
             <h3 className={titleClassName}>{booking.vehicle}</h3>
             <p className={metaClassName}>
-              {booking.client} | {booking.phone}
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(
+                    `/klienci?customer=${booking.clientId}&returnTo=${returnTo}`,
+                  )
+                }
+                className="inline text-left transition hover:text-stone-200"
+              >
+                {booking.client}
+              </button>{' '}
+              | {booking.phone}
             </p>
             <p className={serviceMetaClassName}>{booking.service}</p>
           </div>
@@ -253,9 +272,20 @@ export function BookingDetails({
 
         {booking.clientNotes ? (
           <CollapsibleDetailSection title="O kliencie">
-            <p className="wrap-break-word text-sm leading-6 text-stone-300">
-              {booking.clientNotes}
-            </p>
+            <div className="space-y-3">
+              <DetailLinkRow
+                label="Przejdz do klienta"
+                description={`${booking.client} | ${booking.phone}`}
+                onClick={() =>
+                  navigate(
+                    `/klienci?customer=${booking.clientId}&returnTo=${returnTo}`,
+                  )
+                }
+              />
+              <p className="wrap-break-word text-sm leading-6 text-stone-300">
+                {booking.clientNotes}
+              </p>
+            </div>
           </CollapsibleDetailSection>
         ) : null}
 

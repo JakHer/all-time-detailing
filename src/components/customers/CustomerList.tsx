@@ -1,16 +1,25 @@
-import type { ClientWithRelations } from '../../lib/clients';
+import type { ClientListItem } from '../../lib/clients';
 import { SelectableListItem } from '../ui/SelectableListItem';
+import { ActionButton } from '../ui/ActionButton';
 
 type CustomerListProps = {
-  customers: ClientWithRelations[];
+  customers: ClientListItem[];
   selectedCustomerId: string | null;
   onSelect: (id: string) => void;
+  totalCount: number;
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  onLoadMore: () => void;
 };
 
 export function CustomerList({
   customers,
   selectedCustomerId,
   onSelect,
+  totalCount,
+  hasNextPage,
+  isFetchingNextPage,
+  onLoadMore,
 }: CustomerListProps) {
   return (
     <article className="w-full max-w-full self-start overflow-hidden rounded-3xl border border-white/10 bg-white/6 p-4 shadow-[0_30px_120px_rgba(0,0,0,0.35)] sm:rounded-4xl sm:px-4 sm:py-3.5 xl:px-5 xl:py-4">
@@ -23,14 +32,18 @@ export function CustomerList({
             Baza kontaktow
           </h3>
         </div>
-        <div className="text-xs text-stone-400">{customers.length} pozycji</div>
+        <div className="text-xs text-stone-400">
+          {customers.length} z {totalCount} pozycji
+        </div>
       </div>
 
       <div className="mb-3 flex items-center justify-between sm:hidden">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">
           Lista klientow
         </p>
-        <div className="text-xs text-stone-400">{customers.length} pozycji</div>
+        <div className="text-xs text-stone-400">
+          {customers.length} z {totalCount}
+        </div>
       </div>
 
       <div className="grid gap-2.5 sm:mt-3">
@@ -39,61 +52,78 @@ export function CustomerList({
             Nie znaleziono klientow w Twojej bazie.
           </div>
         ) : (
-          customers.map((customer) => {
-            const isActive = selectedCustomerId === customer.id;
-            const bookingCount = customer.bookings?.length ?? 0;
+          <>
+            {customers.map((customer) => {
+              const isActive = selectedCustomerId === customer.id;
+              const bookingCount = customer.bookings?.length ?? 0;
 
-            return (
-              <div key={customer.id}>
-                <SelectableListItem
-                  onClick={() => onSelect(customer.id)}
-                  isActive={isActive}
-                  mobileLeading={
-                    <div className="truncate text-sm font-semibold tracking-[-0.03em] text-white">
-                      {bookingCount} wiz.
-                    </div>
-                  }
-                  mobileBody={
-                    <p className="truncate text-sm font-medium text-white">
-                      {customer.full_name}{' '}
-                      <span className="text-stone-500">|</span>{' '}
-                      <span className="text-stone-400">{customer.phone}</span>
-                    </p>
-                  }
-                  mobileTrailing={
-                    <div
-                      className={`h-2.5 w-2.5 shrink-0 rounded-full ${
-                        isActive ? 'bg-amber-300' : 'bg-stone-500'
-                      }`}
-                      aria-hidden="true"
-                    />
-                  }
-                  desktopLeading={
-                    <div className="text-base font-semibold tracking-[-0.03em] text-white">
-                      {bookingCount} wiz.
-                    </div>
-                  }
-                  desktopBody={
-                    <>
-                      <p className="truncate text-sm font-semibold text-white">
-                        {customer.full_name}
+              return (
+                <div key={customer.id}>
+                  <SelectableListItem
+                    onClick={() => onSelect(customer.id)}
+                    isActive={isActive}
+                    mobileLeading={
+                      <div className="truncate text-sm font-semibold tracking-[-0.03em] text-white">
+                        {bookingCount} wiz.
+                      </div>
+                    }
+                    mobileBody={
+                      <p className="truncate text-sm font-medium text-white">
+                        {customer.full_name}{' '}
+                        <span className="text-stone-500">|</span>{' '}
+                        <span className="text-stone-400">{customer.phone}</span>
                       </p>
-                      <p className="mt-0.5 truncate text-xs text-stone-400">
-                        {customer.phone}
-                        <span className="px-1 text-stone-500">|</span>
-                        {customer.email || 'Brak e-maila'}
+                    }
+                    mobileTrailing={
+                      <div
+                        className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                          isActive ? 'bg-amber-300' : 'bg-stone-500'
+                        }`}
+                        aria-hidden="true"
+                      />
+                    }
+                    desktopLeading={
+                      <div className="text-base font-semibold tracking-[-0.03em] text-white">
+                        {bookingCount} wiz.
+                      </div>
+                    }
+                    desktopBody={
+                      <>
+                        <p className="truncate text-sm font-semibold text-white">
+                          {customer.full_name}
+                        </p>
+                        <p className="mt-0.5 truncate text-xs text-stone-400">
+                          {customer.phone}
+                          <span className="px-1 text-stone-500">|</span>
+                          {customer.email || 'Brak e-maila'}
+                        </p>
+                      </>
+                    }
+                    desktopTrailing={
+                      <p className="truncate text-xs text-stone-300">
+                        {customer.vehicles?.length ?? 0} pojazdow
                       </p>
-                    </>
-                  }
-                  desktopTrailing={
-                    <p className="truncate text-xs text-stone-300">
-                      {customer.vehicles?.length ?? 0} pojazdow
-                    </p>
-                  }
-                />
+                    }
+                  />
+                </div>
+              );
+            })}
+
+            {hasNextPage ? (
+              <div className="pt-2">
+                <ActionButton
+                  variant="amber"
+                  onClick={onLoadMore}
+                  disabled={isFetchingNextPage}
+                  className="w-full justify-center"
+                >
+                  {isFetchingNextPage
+                    ? 'Doladowywanie klientow...'
+                    : 'Doladuj kolejnych klientow'}
+                </ActionButton>
               </div>
-            );
-          })
+            ) : null}
+          </>
         )}
       </div>
     </article>

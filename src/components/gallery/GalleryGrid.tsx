@@ -16,6 +16,8 @@ import {
   useUpdateGalleryImage,
   type GalleryImageWithRelations,
 } from '../../lib/gallery';
+import { scrollPageToTop } from '../../lib/scroll';
+import { ActionButton } from '../ui/ActionButton';
 import { CollapsibleDetailSection } from '../ui/CollapsibleDetailSection';
 import { SelectableListItem } from '../ui/SelectableListItem';
 import { Skeleton } from '../ui/Skeleton';
@@ -41,6 +43,7 @@ type VehicleGallery = {
 
 export function GalleryGrid({ query }: { query: string }) {
   const { data: images = [], isLoading } = useGalleryImages();
+  const [visibleVehicleCount, setVisibleVehicleCount] = useState(10);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(
     null,
   );
@@ -143,6 +146,15 @@ export function GalleryGrid({ query }: { query: string }) {
         );
       });
   }, [images, query]);
+
+  useEffect(() => {
+    setVisibleVehicleCount(10);
+  }, [query]);
+
+  const visibleVehicleGalleries = useMemo(
+    () => vehicleGalleries.slice(0, visibleVehicleCount),
+    [vehicleGalleries, visibleVehicleCount],
+  );
 
   const selectedVehicle = useMemo(
     () =>
@@ -278,6 +290,7 @@ export function GalleryGrid({ query }: { query: string }) {
   function handleVehicleSelect(vehicleId: string) {
     setSelectedVehicleId(vehicleId);
     setIsMobileVehicleOpen(true);
+    scrollPageToTop();
   }
 
   if (isLoading) {
@@ -312,7 +325,7 @@ export function GalleryGrid({ query }: { query: string }) {
             </h3>
           </div>
           <div className="text-xs text-stone-400">
-            {vehicleGalleries.length} pozycji
+            {visibleVehicleGalleries.length} z {vehicleGalleries.length} pozycji
           </div>
         </div>
 
@@ -321,7 +334,7 @@ export function GalleryGrid({ query }: { query: string }) {
             Lista pojazdow
           </p>
           <div className="text-xs text-stone-400">
-            {vehicleGalleries.length} pozycji
+            {visibleVehicleGalleries.length} z {vehicleGalleries.length}
           </div>
         </div>
 
@@ -331,7 +344,7 @@ export function GalleryGrid({ query }: { query: string }) {
               Nie znaleziono pojazdow w bibliotece dla tego wyszukiwania.
             </div>
           ) : (
-            vehicleGalleries.map((vehicle) => {
+            visibleVehicleGalleries.map((vehicle) => {
               const isActive = selectedVehicleId === vehicle.id;
 
               return (
@@ -388,6 +401,20 @@ export function GalleryGrid({ query }: { query: string }) {
               );
             })
           )}
+
+          {visibleVehicleCount < vehicleGalleries.length ? (
+            <div className="pt-2">
+              <ActionButton
+                variant="amber"
+                onClick={() =>
+                  setVisibleVehicleCount((current) => current + 10)
+                }
+                className="w-full justify-center"
+              >
+                Doladuj kolejne pojazdy
+              </ActionButton>
+            </div>
+          ) : null}
         </div>
       </article>
 

@@ -1,6 +1,7 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { PageIntro } from '../components/PageIntro';
 import { VehicleDetails } from '../components/vehicles/VehicleDetails';
@@ -10,8 +11,10 @@ import { VehicleToolbar } from '../components/vehicles/VehicleToolbar';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { MobilePageHeader } from '../components/ui/MobilePageHeader';
 import { Skeleton } from '../components/ui/Skeleton';
-import { useClients } from '../lib/clients';
+import { useClientOptions } from '../lib/clients';
+import { scrollPageToTop } from '../lib/scroll';
 import {
+  useVehicle,
   useCreateVehicle,
   useDeleteVehicle,
   useUpdateVehicle,
@@ -21,6 +24,7 @@ import {
 } from '../lib/vehicles';
 
 export function VehiclesPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isDesktopDetailsLayout, setIsDesktopDetailsLayout] = useState(() =>
     typeof window !== 'undefined'
       ? window.matchMedia('(min-width: 1536px)').matches
@@ -37,9 +41,10 @@ export function VehiclesPage() {
 
   const deferredQuery = useDeferredValue(query);
 
-  const { data: vehicles = [], isLoading } = useVehicles();
-  const { data: clients = [] } = useClients();
+  const vehiclesQuery = useVehicles(deferredQuery);
+  const { data: clients = [] } = useClientOptions();
   const { data: metricsData } = useVehicleMetrics();
+  const selectedVehicleQuery = useVehicle(selectedVehicleId ?? '');
   const createMutation = useCreateVehicle();
   const updateMutation = useUpdateVehicle();
   const deleteMutation = useDeleteVehicle();
@@ -68,39 +73,36 @@ export function VehiclesPage() {
     }
   }, [isDesktopDetailsLayout]);
 
-  const filteredVehicles = useMemo(() => {
-    const searchValue = deferredQuery.toLowerCase().trim();
+  useEffect(() => {
+    const vehicleIdFromQuery = searchParams.get('vehicle');
 
-    if (!searchValue) {
-      return vehicles;
+    if (!vehicleIdFromQuery) {
+      return;
     }
 
-    return vehicles.filter((vehicle) => {
-      const haystack = [
-        vehicle.make,
-        vehicle.model,
-        vehicle.registration,
-        vehicle.color,
-        vehicle.clients.full_name,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
+    setSelectedVehicleId(vehicleIdFromQuery);
+    setIsMobileDetailsOpen(!isDesktopDetailsLayout);
+    scrollPageToTop();
 
-      return haystack.includes(searchValue);
-    });
-  }, [deferredQuery, vehicles]);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('vehicle');
+    setSearchParams(nextParams, { replace: true });
+  }, [isDesktopDetailsLayout, searchParams, setSearchParams]);
 
-  const selectedVehicle =
-    filteredVehicles.find((vehicle) => vehicle.id === selectedVehicleId) ??
-    vehicles.find((vehicle) => vehicle.id === selectedVehicleId) ??
-    null;
+  const vehicles =
+    vehiclesQuery.data?.pages.flatMap((page) => page.items) ?? [];
+  const totalVehicles = vehiclesQuery.data?.pages[0]?.totalCount ?? 0;
+  const selectedVehicle = selectedVehicleQuery.data ?? null;
+  const isListLoading = vehiclesQuery.isLoading;
+  const isDetailsLoading =
+    vehiclesQuery.isLoading ||
+    (selectedVehicleId !== null && selectedVehicleQuery.isLoading);
 
   const metrics = useMemo(
     () => [
       {
         label: 'Pojazdy w bazie',
-        value: String(metricsData?.totalVehicles ?? vehicles.length),
+        value: String(metricsData?.totalVehicles ?? totalVehicles),
       },
       {
         label: 'Nowe (30 dni)',
@@ -115,7 +117,7 @@ export function VehiclesPage() {
         value: String(metricsData?.uniqueMakes ?? 0),
       },
     ],
-    [metricsData, vehicles.length],
+    [metricsData, totalVehicles],
   );
 
   function handleCreateClick() {
@@ -179,6 +181,7 @@ export function VehiclesPage() {
   function handleSelectVehicle(id: string) {
     setSelectedVehicleId(id);
     setIsMobileDetailsOpen(!isDesktopDetailsLayout);
+    scrollPageToTop();
   }
 
   function closeVehicleDetails() {
@@ -186,7 +189,7 @@ export function VehiclesPage() {
     setIsMobileDetailsOpen(false);
   }
 
-  const shouldShowVehicleDetails = selectedVehicle !== null;
+  const shouldShowVehicleDetails = selectedVehicleId !== null;
 
   return (
     <div
@@ -201,7 +204,7 @@ export function VehiclesPage() {
         eyebrow="Pojazdy"
         title="Baza pojazdow"
         chips={[
-          `${metricsData?.totalVehicles ?? vehicles.length} aut`,
+          `${metricsData?.totalVehicles ?? totalVehicles} aut`,
           `${metricsData?.uniqueMakes ?? 0} marek`,
         ]}
       />
@@ -221,7 +224,7 @@ export function VehiclesPage() {
         style={{ overflowAnchor: 'none' }}
       >
         <div className="min-w-0 max-w-full">
-          {isLoading ? (
+          {isListLoading ? (
             <div className="grid gap-3">
               {Array.from({ length: 5 }).map((_, index) => (
                 <Skeleton key={index} className="h-22 rounded-[26px]" />
@@ -229,9 +232,15 @@ export function VehiclesPage() {
             </div>
           ) : (
             <VehicleList
-              vehicles={filteredVehicles}
+              vehicles={vehicles}
               selectedVehicleId={selectedVehicleId}
               onSelect={handleSelectVehicle}
+              totalCount={totalVehicles}
+              hasNextPage={vehiclesQuery.hasNextPage ?? false}
+              isFetchingNextPage={vehiclesQuery.isFetchingNextPage}
+              onLoadMore={() => {
+                void vehiclesQuery.fetchNextPage();
+              }}
             />
           )}
         </div>
@@ -244,7 +253,7 @@ export function VehiclesPage() {
         >
           <VehicleDetails
             vehicle={selectedVehicle}
-            isLoading={isLoading && vehicles.length === 0}
+            isLoading={isDetailsLoading}
             onEditClick={handleEditClick}
             onDeleteClick={handleDeleteClick}
             onCloseClick={closeVehicleDetails}
@@ -254,7 +263,7 @@ export function VehiclesPage() {
 
       <Dialog.Root
         open={
-          !isDesktopDetailsLayout && isMobileDetailsOpen && !!selectedVehicle
+          !isDesktopDetailsLayout && isMobileDetailsOpen && !!selectedVehicleId
         }
         onOpenChange={setIsMobileDetailsOpen}
       >
@@ -286,7 +295,7 @@ export function VehiclesPage() {
             <div className="flex-1 overflow-y-auto px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
               <VehicleDetails
                 vehicle={selectedVehicle}
-                isLoading={isLoading && vehicles.length === 0}
+                isLoading={isDetailsLoading}
                 onEditClick={handleEditClick}
                 onDeleteClick={handleDeleteClick}
                 variant="sheet"
