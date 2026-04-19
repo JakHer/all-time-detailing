@@ -17,6 +17,7 @@ import {
   type GalleryImageWithRelations,
 } from '../../lib/gallery';
 import { CollapsibleDetailSection } from '../ui/CollapsibleDetailSection';
+import { SelectableListItem } from '../ui/SelectableListItem';
 import { Skeleton } from '../ui/Skeleton';
 
 type Realization = {
@@ -335,19 +336,15 @@ export function GalleryGrid({ query }: { query: string }) {
 
               return (
                 <div key={vehicle.id}>
-                  <button
-                    type="button"
+                  <SelectableListItem
                     onClick={() => handleVehicleSelect(vehicle.id)}
-                    className={`grid w-full min-w-0 grid-cols-[4.75rem_minmax(0,1fr)_0.75rem] items-center gap-3 rounded-[20px] border px-3 py-3 text-left transition sm:hidden ${
-                      isActive
-                        ? 'border-amber-200/30 bg-amber-300/10 shadow-[0_10px_30px_rgba(214,158,46,0.12)]'
-                        : 'border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/14 hover:bg-white/8'
-                    }`}
-                  >
-                    <div className="min-w-0 truncate text-sm font-semibold tracking-[-0.03em] text-white">
-                      {vehicle.registration}
-                    </div>
-                    <div className="min-w-0">
+                    isActive={isActive}
+                    mobileLeading={
+                      <div className="truncate text-sm font-semibold tracking-[-0.03em] text-white">
+                        {vehicle.registration}
+                      </div>
+                    }
+                    mobileBody={
                       <p className="truncate text-sm font-medium text-white">
                         {vehicle.make} {vehicle.model}{' '}
                         <span className="text-stone-500">|</span>{' '}
@@ -355,47 +352,38 @@ export function GalleryGrid({ query }: { query: string }) {
                           {vehicle.clientName}
                         </span>
                       </p>
-                    </div>
-                    <div
-                      className={`h-2.5 w-2.5 shrink-0 rounded-full ${
-                        isActive ? 'bg-amber-300' : 'bg-stone-500'
-                      }`}
-                      aria-hidden="true"
-                    />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSelectedVehicleId(vehicle.id)}
-                    className={`hidden w-full min-w-0 max-w-full grid-cols-[minmax(0,4.5rem)_minmax(0,1fr)_auto] items-center gap-3 rounded-[18px] border px-3 py-2.5 text-left transition sm:grid ${
-                      isActive
-                        ? 'border-amber-200/30 bg-amber-300/10 shadow-[0_10px_30px_rgba(214,158,46,0.12)]'
-                        : 'border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/14 hover:bg-white/8'
-                    }`}
-                  >
-                    <div className="min-w-0">
+                    }
+                    mobileTrailing={
+                      <div
+                        className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                          isActive ? 'bg-amber-300' : 'bg-stone-500'
+                        }`}
+                        aria-hidden="true"
+                      />
+                    }
+                    desktopLeading={
                       <div className="truncate text-base font-semibold tracking-[-0.03em] text-white">
                         {vehicle.registration}
                       </div>
-                    </div>
-
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-white">
-                        {vehicle.make} {vehicle.model}
-                      </p>
-                      <p className="mt-0.5 truncate text-xs text-stone-400">
-                        {vehicle.clientName}
-                      </p>
-                    </div>
-
-                    <div className="min-w-0 text-right">
+                    }
+                    desktopBody={
+                      <>
+                        <p className="truncate text-sm font-semibold text-white">
+                          {vehicle.make} {vehicle.model}
+                        </p>
+                        <p className="mt-0.5 truncate text-xs text-stone-400">
+                          {vehicle.clientName}
+                        </p>
+                      </>
+                    }
+                    desktopTrailing={
                       <p className="truncate text-xs text-stone-300">
                         {vehicle.totalPhotos} zdjec
                         <span className="px-1 text-stone-500">|</span>
                         {vehicle.realizations.length} realizacji
                       </p>
-                    </div>
-                  </button>
+                    }
+                  />
                 </div>
               );
             })

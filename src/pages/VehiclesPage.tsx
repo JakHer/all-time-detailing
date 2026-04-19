@@ -194,11 +194,7 @@ export function VehiclesPage() {
       style={{ overflowAnchor: 'none' }}
     >
       <div className="hidden sm:block">
-        <PageIntro
-          eyebrow="Pojazdy"
-          title="Kartoteka aut z pełnym kontekstem właściciela i historii wizyt"
-          metrics={metrics}
-        />
+        <PageIntro eyebrow="Pojazdy" title="Kartoteka aut" metrics={metrics} />
       </div>
 
       <MobilePageHeader

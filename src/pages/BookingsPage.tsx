@@ -1,4 +1,4 @@
-import * as Dialog from '@radix-ui/react-dialog';
+﻿import * as Dialog from '@radix-ui/react-dialog';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
@@ -600,11 +600,7 @@ export function BookingsPage() {
   return (
     <>
       <div className="hidden sm:block">
-        <PageIntro
-          eyebrow="Rezerwacje"
-          title="Kalendarz, ktory naprawde porzadkuje dzien studia"
-          metrics={metrics}
-        />
+        <PageIntro eyebrow="Rezerwacje" title="Kalendarz" metrics={metrics} />
       </div>
 
       <MobilePageHeader
