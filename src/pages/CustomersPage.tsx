@@ -1,4 +1,4 @@
-import * as Dialog from '@radix-ui/react-dialog';
+﻿import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -178,11 +178,7 @@ export function CustomersPage() {
       style={{ overflowAnchor: 'none' }}
     >
       <div className="hidden sm:block">
-        <PageIntro
-          eyebrow="Klienci"
-          title="Baza klientow z historia wizyt i wartoscia relacji"
-          metrics={metrics}
-        />
+        <PageIntro eyebrow="Klienci" title="Baza klientow" metrics={metrics} />
       </div>
 
       <MobilePageHeader

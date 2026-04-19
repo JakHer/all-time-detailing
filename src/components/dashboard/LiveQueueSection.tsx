@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import type { LiveJob } from '../../lib/dashboard';
 import { formatShortDate, getTodayDateString } from '../../lib/dateUtils';
+import { SelectableListItem } from '../ui/SelectableListItem';
 import { StatusBadge } from '../ui/StatusBadge';
 import { Skeleton } from '../ui/Skeleton';
 
@@ -89,61 +90,56 @@ export function LiveQueueSection({ queue, isLoading }: LiveQueueSectionProps) {
         ) : (
           jobs.map((job, index) => (
             <div key={`${job.id}-${job.time}-${index}`}>
-              <button
-                type="button"
+              <SelectableListItem
                 onClick={() =>
                   navigate(`/rezerwacje?date=${job.date}&booking=${job.id}`)
                 }
-                className="grid w-full min-w-0 grid-cols-[4.75rem_minmax(0,1fr)_0.75rem] items-center gap-3 rounded-[20px] border border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] px-3 py-3 text-left transition hover:border-white/14 hover:bg-white/8 sm:hidden"
-              >
-                <div className="min-w-0 truncate text-sm font-semibold tracking-[-0.03em] text-white">
-                  {job.time}
-                </div>
-                <div className="min-w-0">
+                isActive={false}
+                mobileLeading={
+                  <div className="truncate text-sm font-semibold tracking-[-0.03em] text-white">
+                    {job.time}
+                  </div>
+                }
+                mobileBody={
                   <p className="truncate text-sm font-medium text-white">
                     {job.vehicle} <span className="text-stone-500">|</span>{' '}
                     <span className="text-stone-400">{job.client}</span>
                   </p>
-                </div>
-                <div
-                  className={`h-2.5 w-2.5 shrink-0 rounded-full ${getStatusDotClassName(job.status)}`}
-                  aria-hidden="true"
-                />
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  navigate(`/rezerwacje?date=${job.date}&booking=${job.id}`)
                 }
-                className="hidden w-full min-w-0 max-w-full grid-cols-[minmax(0,4.5rem)_minmax(0,1fr)_auto] items-center gap-3 rounded-[18px] border border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] px-3 py-2.5 text-left transition hover:border-white/14 hover:bg-white/8 sm:grid"
-              >
-                <div className="min-w-0">
+                mobileTrailing={
+                  <div
+                    className={`h-2.5 w-2.5 shrink-0 rounded-full ${getStatusDotClassName(job.status)}`}
+                    aria-hidden="true"
+                  />
+                }
+                desktopLeading={
                   <div className="text-base font-semibold tracking-[-0.03em] text-white">
                     {job.time}
                   </div>
-                </div>
-
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-white">
-                    {job.vehicle}
-                  </p>
-                  <p className="mt-0.5 truncate text-xs text-stone-400">
-                    {job.client}
-                    <span className="px-1 text-stone-500">|</span>
-                    {job.service}
-                  </p>
-                </div>
-
-                <div className="min-w-0 text-right">
-                  <p className="truncate text-xs text-stone-300">
-                    {job.amount}
-                  </p>
-                  <div className="mt-1 flex justify-end">
-                    <StatusBadge status={job.status} />
-                  </div>
-                </div>
-              </button>
+                }
+                desktopBody={
+                  <>
+                    <p className="truncate text-sm font-semibold text-white">
+                      {job.vehicle}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs text-stone-400">
+                      {job.client}
+                      <span className="px-1 text-stone-500">|</span>
+                      {job.service}
+                    </p>
+                  </>
+                }
+                desktopTrailing={
+                  <>
+                    <p className="truncate text-xs text-stone-300">
+                      {job.amount}
+                    </p>
+                    <div className="mt-1 flex justify-end">
+                      <StatusBadge status={job.status} />
+                    </div>
+                  </>
+                }
+              />
             </div>
           ))
         )}

@@ -91,10 +91,6 @@ export function ServicesPage() {
         label: 'Sr. cena',
         value: formatCurrency(metricsData?.averagePrice ?? 0),
       },
-      {
-        label: 'Najczestszy wybor',
-        value: 'Premium interior',
-      },
     ],
     [services.length, metricsData],
   );

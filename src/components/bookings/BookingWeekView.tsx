@@ -1,6 +1,7 @@
 import type { Booking } from '../../data/bookings';
 import { formatWeekdayLabel, getWeekDateStrings } from '../../lib/dateUtils';
 import { CollapsibleDetailSection } from '../ui/CollapsibleDetailSection';
+import { SelectableListItem } from '../ui/SelectableListItem';
 import { StatusBadge } from '../ui/StatusBadge';
 
 type BookingWeekViewProps = {
@@ -140,19 +141,15 @@ export function BookingWeekView({
 
                           return (
                             <div key={booking.id}>
-                              <button
-                                type="button"
+                              <SelectableListItem
                                 onClick={() => onSelect(booking.id)}
-                                className={`grid w-full min-w-0 grid-cols-[4.75rem_minmax(0,1fr)_0.75rem] items-center gap-3 rounded-[20px] border px-3 py-3 text-left transition sm:hidden ${
-                                  isActiveBooking
-                                    ? 'border-amber-200/30 bg-amber-300/10 shadow-[0_10px_30px_rgba(214,158,46,0.12)]'
-                                    : 'border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/14 hover:bg-white/8'
-                                }`}
-                              >
-                                <div className="min-w-0 truncate text-sm font-semibold tracking-[-0.03em] text-white">
-                                  {booking.time}
-                                </div>
-                                <div className="min-w-0">
+                                isActive={isActiveBooking}
+                                mobileLeading={
+                                  <div className="truncate text-sm font-semibold tracking-[-0.03em] text-white">
+                                    {booking.time}
+                                  </div>
+                                }
+                                mobileBody={
                                   <p className="truncate text-sm font-medium text-white">
                                     {booking.vehicle}{' '}
                                     <span className="text-stone-500">|</span>{' '}
@@ -160,53 +157,48 @@ export function BookingWeekView({
                                       {booking.client}
                                     </span>
                                   </p>
-                                </div>
-                                <div
-                                  className={`h-2.5 w-2.5 shrink-0 rounded-full ${getStatusDotClassName(booking.status)}`}
-                                  aria-hidden="true"
-                                />
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => onSelect(booking.id)}
-                                className={`hidden w-full min-w-0 max-w-full grid-cols-[minmax(0,4.5rem)_minmax(0,1fr)_auto] items-center gap-3 rounded-[18px] border px-3 py-2.5 text-left transition sm:grid ${
-                                  isActiveBooking
-                                    ? 'border-amber-200/30 bg-amber-300/10 shadow-[0_10px_30px_rgba(214,158,46,0.12)]'
-                                    : 'border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/14 hover:bg-white/8'
-                                }`}
-                              >
-                                <div className="min-w-0">
-                                  <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-stone-500">
-                                    Start
-                                  </div>
-                                  <div className="mt-0.5 text-base font-semibold tracking-[-0.03em] text-white">
-                                    {booking.time}
-                                  </div>
-                                </div>
-
-                                <div className="min-w-0">
-                                  <p className="truncate text-sm font-semibold text-white">
-                                    {booking.vehicle}
-                                  </p>
-                                  <p className="mt-0.5 truncate text-xs text-stone-400">
-                                    {booking.client}
-                                    <span className="px-1 text-stone-500">
-                                      |
-                                    </span>
-                                    {booking.service}
-                                  </p>
-                                </div>
-
-                                <div className="min-w-0 text-right">
-                                  <p className="truncate text-xs text-stone-300">
-                                    {booking.amount}
-                                  </p>
-                                  <div className="mt-1 flex justify-end">
-                                    <StatusBadge status={booking.status} />
-                                  </div>
-                                </div>
-                              </button>
+                                }
+                                mobileTrailing={
+                                  <div
+                                    className={`h-2.5 w-2.5 shrink-0 rounded-full ${getStatusDotClassName(booking.status)}`}
+                                    aria-hidden="true"
+                                  />
+                                }
+                                desktopLeading={
+                                  <>
+                                    <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-stone-500">
+                                      Start
+                                    </div>
+                                    <div className="mt-0.5 text-base font-semibold tracking-[-0.03em] text-white">
+                                      {booking.time}
+                                    </div>
+                                  </>
+                                }
+                                desktopBody={
+                                  <>
+                                    <p className="truncate text-sm font-semibold text-white">
+                                      {booking.vehicle}
+                                    </p>
+                                    <p className="mt-0.5 truncate text-xs text-stone-400">
+                                      {booking.client}
+                                      <span className="px-1 text-stone-500">
+                                        |
+                                      </span>
+                                      {booking.service}
+                                    </p>
+                                  </>
+                                }
+                                desktopTrailing={
+                                  <>
+                                    <p className="truncate text-xs text-stone-300">
+                                      {booking.amount}
+                                    </p>
+                                    <div className="mt-1 flex justify-end">
+                                      <StatusBadge status={booking.status} />
+                                    </div>
+                                  </>
+                                }
+                              />
                             </div>
                           );
                         })}
