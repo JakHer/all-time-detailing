@@ -7,6 +7,7 @@ type CollapsibleDetailSectionProps = {
   children: ReactNode;
   defaultOpen?: boolean;
   countLabel?: string;
+  summaryBadge?: ReactNode;
 };
 
 export function CollapsibleDetailSection({
@@ -15,6 +16,7 @@ export function CollapsibleDetailSection({
   children,
   defaultOpen = false,
   countLabel,
+  summaryBadge,
 }: CollapsibleDetailSectionProps) {
   return (
     <details
@@ -31,7 +33,10 @@ export function CollapsibleDetailSection({
             ) : null}
           </div>
         </div>
-        <ChevronDown className="h-4 w-4 shrink-0 text-stone-400 transition group-open:rotate-180" />
+        <div className="flex shrink-0 items-center gap-2">
+          {summaryBadge ? summaryBadge : null}
+          <ChevronDown className="h-4 w-4 shrink-0 text-stone-400 transition group-open:rotate-180" />
+        </div>
       </summary>
       <div className="border-t border-white/8 px-4 py-3">{children}</div>
     </details>

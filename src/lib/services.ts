@@ -1,10 +1,21 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import type { Database } from './database.types';
 import { supabase } from './supabase';
 
 export type Service = Database['public']['Tables']['services']['Row'];
 export type NewService = Database['public']['Tables']['services']['Insert'];
 export type UpdateService = Database['public']['Tables']['services']['Update'];
+
+export type ServicesPage = {
+  items: Service[];
+  totalCount: number;
+  nextOffset: number | null;
+};
 
 export type ServiceMetrics = {
   totalServices: number;
@@ -16,22 +27,57 @@ export type ServiceMetrics = {
 export const servicesKeys = {
   all: ['services'] as const,
   lists: () => [...servicesKeys.all, 'list'] as const,
+  list: (filters: string) => [...servicesKeys.lists(), { filters }] as const,
   details: () => [...servicesKeys.all, 'detail'] as const,
   detail: (id: string) => [...servicesKeys.details(), id] as const,
   metrics: () => [...servicesKeys.all, 'metrics'] as const,
 };
 
-export async function getServices(): Promise<Service[]> {
-  const { data, error } = await supabase
+const SERVICES_PAGE_SIZE = 10;
+
+export async function getServicesPage({
+  query = '',
+  offset = 0,
+}: {
+  query?: string;
+  offset?: number;
+}): Promise<ServicesPage> {
+  let request = supabase
     .from('services')
-    .select('*')
-    .order('name', { ascending: true });
+    .select('*', { count: 'exact' })
+    .order('name', { ascending: true })
+    .range(offset, offset + SERVICES_PAGE_SIZE - 1);
+
+  const normalizedQuery = query.trim();
+
+  if (normalizedQuery) {
+    const escapedQuery = normalizedQuery.replace(/[%_,]/g, (character) => {
+      if (character === '%') return '\\%';
+      if (character === '_') return '\\_';
+      return character;
+    });
+
+    request = request.or(
+      `name.ilike.%${escapedQuery}%,description.ilike.%${escapedQuery}%`,
+    );
+  }
+
+  const { data, error, count } = await request;
 
   if (error) {
     throw error;
   }
 
-  return data ?? [];
+  const items = (data ?? []) as Service[];
+  const totalCount = count ?? 0;
+  const nextOffset =
+    offset + items.length < totalCount ? offset + items.length : null;
+
+  return {
+    items,
+    totalCount,
+    nextOffset,
+  };
 }
 
 export async function getService(id: string): Promise<Service> {
@@ -66,10 +112,16 @@ export async function getServiceMetrics(): Promise<ServiceMetrics> {
   };
 }
 
-export function useServices() {
-  return useQuery({
-    queryKey: servicesKeys.lists(),
-    queryFn: getServices,
+export function useServices(query: string) {
+  return useInfiniteQuery({
+    queryKey: servicesKeys.list(query),
+    queryFn: ({ pageParam }) =>
+      getServicesPage({
+        query,
+        offset: pageParam as number,
+      }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextOffset,
   });
 }
 
@@ -103,8 +155,7 @@ export function useCreateService() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: servicesKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: servicesKeys.metrics() });
+      queryClient.invalidateQueries({ queryKey: servicesKeys.all });
     },
   });
 }
@@ -125,9 +176,8 @@ export function useUpdateService() {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: servicesKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: servicesKeys.all });
       queryClient.invalidateQueries({ queryKey: servicesKeys.detail(data.id) });
-      queryClient.invalidateQueries({ queryKey: servicesKeys.metrics() });
     },
   });
 }
@@ -141,8 +191,7 @@ export function useDeleteService() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: servicesKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: servicesKeys.metrics() });
+      queryClient.invalidateQueries({ queryKey: servicesKeys.all });
     },
   });
 }

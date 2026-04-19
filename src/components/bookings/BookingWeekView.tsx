@@ -1,5 +1,9 @@
 import type { Booking } from '../../data/bookings';
-import { formatWeekdayLabel, getWeekDateStrings } from '../../lib/dateUtils';
+import {
+  formatWeekdayLabel,
+  getTodayDateString,
+  getWeekDateStrings,
+} from '../../lib/dateUtils';
 import { CollapsibleDetailSection } from '../ui/CollapsibleDetailSection';
 import { SelectableListItem } from '../ui/SelectableListItem';
 import { StatusBadge } from '../ui/StatusBadge';
@@ -19,6 +23,7 @@ export function BookingWeekView({
   onSelect,
   onDaySelect,
 }: BookingWeekViewProps) {
+  const today = getTodayDateString();
   const weekDates = getWeekDateStrings(selectedDate);
   const bookingsByDate = weekDates.map((dateString) => ({
     dateString,
@@ -44,7 +49,9 @@ export function BookingWeekView({
       <div className="mt-4 sm:mt-5">
         <div className="grid gap-2 sm:hidden">
           {bookingsByDate.map(({ dateString, bookings: dayBookings }) => {
-            const isActiveDay = selectedDate === dateString;
+            const hasBookings = dayBookings.length > 0;
+            const isToday = dateString === today;
+            const isActiveDay = isToday;
             const dayLabel = formatWeekdayLabel(dateString, {
               weekday: 'short',
             });
@@ -57,7 +64,9 @@ export function BookingWeekView({
                 className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[20px] border px-3 py-3 text-left transition ${
                   isActiveDay
                     ? 'border-amber-200/20 bg-amber-300/8'
-                    : 'border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/14 hover:bg-white/8'
+                    : hasBookings
+                      ? 'border-emerald-200/12 bg-white/6 shadow-[inset_0_0_0_1px_rgba(52,211,153,0.06)] hover:border-emerald-200/20 hover:bg-white/8'
+                      : 'border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/14 hover:bg-white/8'
                 }`}
               >
                 <div className="min-w-0">
@@ -100,7 +109,9 @@ export function BookingWeekView({
 
         <div className="hidden sm:block">
           {bookingsByDate.map(({ dateString, bookings: dayBookings }) => {
-            const isActiveDay = selectedDate === dateString;
+            const hasBookings = dayBookings.length > 0;
+            const isToday = dateString === today;
+            const isActiveDay = isToday;
             const dayTitle = `${formatWeekdayLabel(dateString, {
               weekday: 'long',
             })} ${dateString.slice(-2)}`;
@@ -114,13 +125,27 @@ export function BookingWeekView({
                 className={
                   isActiveDay
                     ? '[&>details]:border-amber-200/20 [&>details]:bg-amber-300/8'
-                    : ''
+                    : hasBookings
+                      ? '[&>details]:border-emerald-200/10 [&>details]:shadow-[inset_0_0_0_1px_rgba(52,211,153,0.05)]'
+                      : ''
                 }
               >
                 <CollapsibleDetailSection
                   title={dayTitle}
-                  countLabel={`${daySubtitle} | ${dayBookings.length} wizyt`}
-                  defaultOpen={isActiveDay || dayBookings.length > 0}
+                  countLabel={daySubtitle}
+                  defaultOpen={isToday}
+                  summaryBadge={
+                    hasBookings && !isToday ? (
+                      <span
+                        className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-[#1f2022] px-1.5 text-[10px] font-semibold ${getCountBadgeClassName(
+                          dayBookings.length,
+                        )}`}
+                        aria-label={`${dayBookings.length} ${dayBookings.length === 1 ? 'wizyta' : dayBookings.length < 5 ? 'wizyty' : 'wizyt'}`}
+                      >
+                        {dayBookings.length}
+                      </span>
+                    ) : null
+                  }
                 >
                   <div className="grid gap-2.5">
                     <div className="flex justify-end">

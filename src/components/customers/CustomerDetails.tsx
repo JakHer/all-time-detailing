@@ -1,8 +1,16 @@
 import { Calendar, Car, Pencil, Trash2, User, X } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { ClientWithRelations } from '../../lib/clients';
+import {
+  BookingHistoryList,
+  type BookingHistoryListItem,
+} from '../bookings/BookingHistoryList';
 import { CollapsibleDetailSection } from '../ui/CollapsibleDetailSection';
+import { DetailActionIconButton } from '../ui/DetailActionIconButton';
+import { DetailEmptyPanelMessage } from '../ui/DetailEmptyPanelMessage';
+import { DetailSummaryChip } from '../ui/DetailSummaryChip';
 import { Skeleton } from '../ui/Skeleton';
+import { VehicleListEntry } from '../vehicles/VehicleListEntry';
 
 type CustomerDetailsProps = {
   customer: ClientWithRelations | null;
@@ -21,6 +29,7 @@ export function CustomerDetails({
   onCloseClick,
   variant = 'card',
 }: CustomerDetailsProps) {
+  const navigate = useNavigate();
   const isSheet = variant === 'sheet';
 
   if (isLoading) {
@@ -53,6 +62,18 @@ export function CustomerDetails({
     bookingCount > 0
       ? new Date(customer.bookings[0].scheduled_at).toLocaleDateString('pl-PL')
       : 'Brak';
+  const bookingHistoryItems: BookingHistoryListItem[] =
+    customer.bookings?.map((booking) => ({
+      id: booking.id,
+      title: booking.services?.name ?? 'Usluga',
+      subtitle: `${formatBookingDate(booking.scheduled_at)} | ${formatBookingTime(booking.scheduled_at)}`,
+      meta: formatCustomerBookingMeta(booking),
+      status: booking.status,
+      onClick: () =>
+        navigate(
+          `/rezerwacje?booking=${booking.id}&date=${booking.scheduled_at.slice(0, 10)}`,
+        ),
+    })) ?? [];
   const headerGapClassName = 'gap-3';
   const titleClassName = isSheet
     ? 'mt-1.5 wrap-break-word text-2xl font-semibold tracking-[-0.04em] text-white'
@@ -108,25 +129,28 @@ export function CustomerDetails({
             {getVehicleLabel(vehicleCount)}
           </div>
           <div className="flex flex-wrap gap-2 md:justify-end">
-            <ActionIconButton label="Edytuj klienta" onClick={onEditClick}>
+            <DetailActionIconButton
+              label="Edytuj klienta"
+              onClick={onEditClick}
+            >
               <Pencil className="h-4.5 w-4.5" />
-            </ActionIconButton>
-            <ActionIconButton
+            </DetailActionIconButton>
+            <DetailActionIconButton
               label="Usun klienta"
               onClick={onDeleteClick}
               tone="danger"
             >
               <Trash2 className="h-4.5 w-4.5" />
-            </ActionIconButton>
+            </DetailActionIconButton>
           </div>
         </div>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <SummaryChip label="Pojazdy" value={String(vehicleCount)} />
-        <SummaryChip label="Telefon" value={customer.phone} />
+        <DetailSummaryChip label="Pojazdy" value={String(vehicleCount)} />
+        <DetailSummaryChip label="Telefon" value={customer.phone} />
         {customer.email ? (
-          <SummaryChip label="E-mail" value={customer.email} />
+          <DetailSummaryChip label="E-mail" value={customer.email} />
         ) : null}
       </div>
 
@@ -138,30 +162,20 @@ export function CustomerDetails({
         <div className="grid gap-3">
           {customer.vehicles && customer.vehicles.length > 0 ? (
             customer.vehicles.map((vehicle) => (
-              <div
+              <VehicleListEntry
                 key={vehicle.id}
-                className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/6 p-3.5"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="shrink-0 rounded-lg bg-white/6 px-2 py-1 text-[10px] font-bold text-white/60">
-                    {vehicle.registration}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="wrap-break-word text-sm font-medium text-white">
-                      {vehicle.make} {vehicle.model}
-                    </p>
-                    <p className="mt-1 text-xs text-stone-500">
-                      {vehicle.production_year ?? 'Rok nieznany'}
-                    </p>
-                  </div>
-                </div>
-                <p className="min-w-0 max-w-27.5 wrap-break-word text-right text-xs text-stone-500">
-                  {vehicle.color || 'Brak koloru'}
-                </p>
-              </div>
+                onClick={() => navigate(`/pojazdy?vehicle=${vehicle.id}`)}
+                registration={vehicle.registration}
+                make={vehicle.make}
+                model={vehicle.model}
+                ownerName={customer.full_name}
+                productionYear={vehicle.production_year}
+                color={vehicle.color}
+                trailingMode="detail"
+              />
             ))
           ) : (
-            <EmptyPanelMessage message="Ten klient nie ma jeszcze przypisanych pojazdow." />
+            <DetailEmptyPanelMessage message="Ten klient nie ma jeszcze przypisanych pojazdow." />
           )}
         </div>
       </CollapsibleDetailSection>
@@ -171,36 +185,10 @@ export function CustomerDetails({
         icon={<Calendar className="h-4.5 w-4.5" />}
         countLabel={`${bookingCount} ${getBookingLabel(bookingCount)}`}
       >
-        <div className="grid gap-3">
-          {customer.bookings && customer.bookings.length > 0 ? (
-            customer.bookings.map((booking) => (
-              <div
-                key={booking.id}
-                className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/6 p-3.5"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-white">
-                    {new Date(booking.scheduled_at).toLocaleDateString('pl-PL')}
-                  </p>
-                  <p className="mt-1 text-xs text-stone-500">
-                    {new Date(booking.scheduled_at).toLocaleTimeString(
-                      'pl-PL',
-                      {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      },
-                    )}
-                  </p>
-                </div>
-                <p className="max-w-30 text-right text-xs font-semibold text-white/40">
-                  {booking.status}
-                </p>
-              </div>
-            ))
-          ) : (
-            <EmptyPanelMessage message="Brak historii rezerwacji dla tego klienta." />
-          )}
-        </div>
+        <BookingHistoryList
+          items={bookingHistoryItems}
+          emptyMessage="Brak historii rezerwacji dla tego klienta."
+        />
       </CollapsibleDetailSection>
 
       <CollapsibleDetailSection
@@ -221,54 +209,6 @@ export function CustomerDetails({
   );
 }
 
-type ActionIconButtonProps = {
-  children: ReactNode;
-  label: string;
-  onClick: () => void;
-  tone?: 'default' | 'danger';
-};
-
-function SummaryChip({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="inline-flex min-w-0 items-center gap-2 rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-xs text-stone-300">
-      <span className="text-stone-500">{label}:</span>
-      <span className="truncate font-medium text-white">{value}</span>
-    </div>
-  );
-}
-
-function ActionIconButton({
-  children,
-  label,
-  onClick,
-  tone = 'default',
-}: ActionIconButtonProps) {
-  const toneClasses =
-    tone === 'danger'
-      ? 'border-rose-300/20 bg-rose-300/12 text-rose-50 hover:border-rose-300/30 hover:bg-rose-300/18'
-      : 'border-white/10 bg-white/6 text-white hover:border-white/16 hover:bg-white/10';
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border transition ${toneClasses}`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function EmptyPanelMessage({ message }: { message: string }) {
-  return (
-    <p className="rounded-2xl border border-dashed border-white/8 bg-white/2 p-4 text-center text-sm text-stone-500">
-      {message}
-    </p>
-  );
-}
-
 function getBookingLabel(count: number) {
   return count === 1 ? 'rezerwacja' : 'rezerwacji';
 }
@@ -277,4 +217,39 @@ function getVehicleLabel(count: number) {
   if (count === 1) return 'pojazd';
   if (count >= 2 && count <= 4) return 'pojazdy';
   return 'pojazdow';
+}
+
+function formatBookingDate(value: string) {
+  return new Date(value).toLocaleDateString('pl-PL');
+}
+
+function formatBookingTime(value: string) {
+  return new Date(value).toLocaleTimeString('pl-PL', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function formatPrice(value: number | string) {
+  const amount = Number(value);
+
+  if (!Number.isFinite(amount)) {
+    return String(value);
+  }
+
+  return `${new Intl.NumberFormat('pl-PL', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount)} zl`;
+}
+
+function formatCustomerBookingMeta(
+  booking: ClientWithRelations['bookings'][number],
+) {
+  const vehicleLabel = booking.vehicles
+    ? `${booking.vehicles.make} ${booking.vehicles.model} (${booking.vehicles.registration})`
+    : null;
+  const priceLabel = booking.price ? formatPrice(booking.price) : null;
+
+  return [vehicleLabel, priceLabel].filter(Boolean).join(' | ') || undefined;
 }

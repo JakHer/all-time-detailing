@@ -2,7 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { BookingDetails } from '../components/bookings/BookingDetails';
 import { BookingList } from '../components/bookings/BookingList';
@@ -18,6 +18,7 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { MobilePageHeader } from '../components/ui/MobilePageHeader';
 import { Skeleton } from '../components/ui/Skeleton';
 import { type Booking, type BookingStatus } from '../data/bookings';
+import { scrollPageToTop } from '../lib/scroll';
 import {
   createBooking,
   deleteBooking,
@@ -72,6 +73,7 @@ function reportBookingError(error: unknown) {
 }
 
 export function BookingsPage() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const today = getTodayDateString();
@@ -108,6 +110,7 @@ export function BookingsPage() {
     bookingFormOptionsQuery.data ?? emptyBookingFormOptions;
   const isLoading =
     bookingsQuery.isLoading || bookingFormOptionsQuery.isLoading;
+  const returnTo = searchParams.get('returnTo');
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -168,7 +171,7 @@ export function BookingsPage() {
     setSelectedDate(dateFromQuery || bookingFromQuery.date);
     setSelectedBookingId(bookingFromQuery.id);
     setIsMobileDetailsOpen(!isDesktopDetailsLayout);
-    scrollBookingsPageToTop();
+    scrollPageToTop();
 
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete('booking');
@@ -573,6 +576,11 @@ export function BookingsPage() {
   }
 
   function closeBookingDetails() {
+    if (returnTo) {
+      navigate(returnTo);
+      return;
+    }
+
     setSelectedBookingId(null);
     setIsMobileDetailsOpen(false);
   }
@@ -585,16 +593,16 @@ export function BookingsPage() {
     if (nextBooking && calendarView !== 'day') {
       setSelectedDate(nextBooking.date);
       setCalendarView('day');
-      scrollBookingsPageToTop();
     }
 
     setIsMobileDetailsOpen(!isDesktopDetailsLayout);
+    scrollPageToTop();
   }
 
   function handleSelectCalendarDate(dateString: string) {
     setSelectedDate(dateString);
     setCalendarView('day');
-    scrollBookingsPageToTop();
+    scrollPageToTop();
   }
 
   return (
@@ -694,7 +702,14 @@ export function BookingsPage() {
           isMobileDetailsOpen &&
           !!selectedBooking
         }
-        onOpenChange={setIsMobileDetailsOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            setIsMobileDetailsOpen(true);
+            return;
+          }
+
+          closeBookingDetails();
+        }}
       >
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-60 bg-black/70 backdrop-blur-sm 2xl:hidden" />
@@ -791,17 +806,4 @@ function formatSelectedDate(value: string, today: string) {
   }
 
   return formatted;
-}
-
-function scrollBookingsPageToTop() {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.requestAnimationFrame(() => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'auto',
-    });
-  });
 }

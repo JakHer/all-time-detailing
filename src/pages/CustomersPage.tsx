@@ -1,6 +1,7 @@
 ﻿import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { CustomerDetails } from '../components/customers/CustomerDetails';
 import { CustomerList } from '../components/customers/CustomerList';
@@ -10,8 +11,10 @@ import { PageIntro } from '../components/PageIntro';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { MobilePageHeader } from '../components/ui/MobilePageHeader';
 import { Skeleton } from '../components/ui/Skeleton';
+import { scrollPageToTop } from '../lib/scroll';
 import {
   useClients,
+  useClient,
   useCreateClient,
   useCustomerMetrics,
   useDeleteClient,
@@ -21,6 +24,8 @@ import {
 } from '../lib/clients';
 
 export function CustomersPage() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isDesktopDetailsLayout, setIsDesktopDetailsLayout] = useState(() =>
     typeof window !== 'undefined'
       ? window.matchMedia('(min-width: 1536px)').matches
@@ -37,8 +42,9 @@ export function CustomersPage() {
 
   const deferredQuery = useDeferredValue(query);
 
-  const { data: clients = [], isLoading } = useClients();
+  const clientsQuery = useClients(deferredQuery);
   const { data: metricsData } = useCustomerMetrics();
+  const selectedCustomerQuery = useClient(selectedCustomerId ?? '');
   const createMutation = useCreateClient();
   const updateMutation = useUpdateClient();
   const deleteMutation = useDeleteClient();
@@ -67,24 +73,36 @@ export function CustomersPage() {
     }
   }, [isDesktopDetailsLayout]);
 
-  const selectedCustomer =
-    clients.find((client) => client.id === selectedCustomerId) ?? null;
+  useEffect(() => {
+    const customerIdFromQuery = searchParams.get('customer');
 
-  const filteredClients = clients.filter((client) => {
-    const searchValue = deferredQuery.toLowerCase();
+    if (!customerIdFromQuery) {
+      return;
+    }
 
-    return (
-      client.full_name.toLowerCase().includes(searchValue) ||
-      client.phone.includes(searchValue) ||
-      client.email?.toLowerCase().includes(searchValue)
-    );
-  });
+    setSelectedCustomerId(customerIdFromQuery);
+    setIsMobileDetailsOpen(!isDesktopDetailsLayout);
+    scrollPageToTop();
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('customer');
+    setSearchParams(nextParams, { replace: true });
+  }, [isDesktopDetailsLayout, searchParams, setSearchParams]);
+
+  const clients = clientsQuery.data?.pages.flatMap((page) => page.items) ?? [];
+  const totalClients = clientsQuery.data?.pages[0]?.totalCount ?? 0;
+  const returnTo = searchParams.get('returnTo');
+  const selectedCustomer = selectedCustomerQuery.data ?? null;
+  const isListLoading = clientsQuery.isLoading;
+  const isInitialLoading =
+    clientsQuery.isLoading ||
+    (selectedCustomerId !== null && selectedCustomerQuery.isLoading);
 
   const metrics = useMemo(
     () => [
       {
         label: 'Aktywni klienci',
-        value: String(metricsData?.totalClients ?? clients.length),
+        value: String(metricsData?.totalClients ?? totalClients),
       },
       {
         label: 'Nowi (30 dni)',
@@ -99,7 +117,7 @@ export function CustomersPage() {
         value: formatCurrency(metricsData?.averageBookingValue ?? 0),
       },
     ],
-    [clients.length, metricsData],
+    [metricsData, totalClients],
   );
 
   function handleCreateClick() {
@@ -163,14 +181,20 @@ export function CustomersPage() {
   function handleSelectCustomer(id: string) {
     setSelectedCustomerId(id);
     setIsMobileDetailsOpen(!isDesktopDetailsLayout);
+    scrollPageToTop();
   }
 
   function closeCustomerDetails() {
+    if (returnTo) {
+      navigate(returnTo);
+      return;
+    }
+
     setSelectedCustomerId(null);
     setIsMobileDetailsOpen(false);
   }
 
-  const shouldShowCustomerDetails = selectedCustomer !== null;
+  const shouldShowCustomerDetails = selectedCustomerId !== null;
 
   return (
     <div
@@ -185,7 +209,7 @@ export function CustomersPage() {
         eyebrow="Klienci"
         title="Baza klientow"
         chips={[
-          `${metricsData?.totalClients ?? clients.length} osob`,
+          `${metricsData?.totalClients ?? totalClients} osob`,
           `${Math.round(metricsData?.returningRate ?? 0)}% powracalnosc`,
         ]}
       />
@@ -205,7 +229,7 @@ export function CustomersPage() {
         style={{ overflowAnchor: 'none' }}
       >
         <div className="min-w-0 max-w-full">
-          {isLoading ? (
+          {isListLoading ? (
             <div className="grid gap-3">
               {Array.from({ length: 5 }).map((_, index) => (
                 <Skeleton key={index} className="h-22 rounded-[26px]" />
@@ -213,9 +237,15 @@ export function CustomersPage() {
             </div>
           ) : (
             <CustomerList
-              customers={filteredClients}
+              customers={clients}
               selectedCustomerId={selectedCustomerId}
               onSelect={handleSelectCustomer}
+              totalCount={totalClients}
+              hasNextPage={clientsQuery.hasNextPage ?? false}
+              isFetchingNextPage={clientsQuery.isFetchingNextPage}
+              onLoadMore={() => {
+                void clientsQuery.fetchNextPage();
+              }}
             />
           )}
         </div>
@@ -228,7 +258,7 @@ export function CustomersPage() {
         >
           <CustomerDetails
             customer={selectedCustomer}
-            isLoading={isLoading && clients.length === 0}
+            isLoading={isInitialLoading}
             onEditClick={handleEditClick}
             onDeleteClick={handleDeleteClick}
             onCloseClick={closeCustomerDetails}
@@ -238,9 +268,16 @@ export function CustomersPage() {
 
       <Dialog.Root
         open={
-          !isDesktopDetailsLayout && isMobileDetailsOpen && !!selectedCustomer
+          !isDesktopDetailsLayout && isMobileDetailsOpen && !!selectedCustomerId
         }
-        onOpenChange={setIsMobileDetailsOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            setIsMobileDetailsOpen(true);
+            return;
+          }
+
+          closeCustomerDetails();
+        }}
       >
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-60 bg-black/70 backdrop-blur-sm 2xl:hidden" />
@@ -268,7 +305,7 @@ export function CustomersPage() {
             <div className="flex-1 overflow-y-auto px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
               <CustomerDetails
                 customer={selectedCustomer}
-                isLoading={isLoading && clients.length === 0}
+                isLoading={isInitialLoading}
                 onEditClick={handleEditClick}
                 onDeleteClick={handleDeleteClick}
                 variant="sheet"

@@ -1,16 +1,25 @@
 import type { Service } from '../../lib/services';
 import { SelectableListItem } from '../ui/SelectableListItem';
+import { ActionButton } from '../ui/ActionButton';
 
 type ServiceListProps = {
   services: Service[];
   selectedServiceId: string | null;
   onSelect: (id: string) => void;
+  totalCount: number;
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  onLoadMore: () => void;
 };
 
 export function ServiceList({
   services,
   selectedServiceId,
   onSelect,
+  totalCount,
+  hasNextPage,
+  isFetchingNextPage,
+  onLoadMore,
 }: ServiceListProps) {
   return (
     <article className="w-full max-w-full self-start overflow-hidden rounded-3xl border border-white/10 bg-white/6 p-4 shadow-[0_30px_120px_rgba(0,0,0,0.35)] sm:rounded-4xl sm:px-4 sm:py-3.5 xl:px-5 xl:py-4">
@@ -23,14 +32,18 @@ export function ServiceList({
             Katalog oferty
           </h3>
         </div>
-        <div className="text-xs text-stone-400">{services.length} pozycji</div>
+        <div className="text-xs text-stone-400">
+          {services.length} z {totalCount} pozycji
+        </div>
       </div>
 
       <div className="mb-3 flex items-center justify-between sm:hidden">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">
           Lista uslug
         </p>
-        <div className="text-xs text-stone-400">{services.length} pozycji</div>
+        <div className="text-xs text-stone-400">
+          {services.length} z {totalCount}
+        </div>
       </div>
 
       <div className="grid gap-2.5 sm:mt-3">
@@ -39,71 +52,88 @@ export function ServiceList({
             Nie znaleziono uslug w katalogu.
           </div>
         ) : (
-          services.map((service) => {
-            const isActive = selectedServiceId === service.id;
-            const price = new Intl.NumberFormat('pl-PL', {
-              style: 'currency',
-              currency: 'PLN',
-            }).format(service.base_price);
-            const durationLabel = formatServiceDuration(
-              service.duration_minutes,
-            );
+          <>
+            {services.map((service) => {
+              const isActive = selectedServiceId === service.id;
+              const price = new Intl.NumberFormat('pl-PL', {
+                style: 'currency',
+                currency: 'PLN',
+              }).format(service.base_price);
+              const durationLabel = formatServiceDuration(
+                service.duration_minutes,
+              );
 
-            return (
-              <div key={service.id}>
-                <SelectableListItem
-                  onClick={() => onSelect(service.id)}
-                  isActive={isActive}
-                  mobileLeading={
-                    <div className="truncate text-sm font-semibold tracking-[-0.03em] text-white">
-                      {durationLabel}
-                    </div>
-                  }
-                  mobileBody={
-                    <>
-                      <p className="truncate text-sm font-medium text-white">
-                        {service.name}
-                      </p>
-                      <p className="mt-0.5 truncate text-xs font-semibold text-amber-200">
-                        {price}
-                      </p>
-                    </>
-                  }
-                  mobileTrailing={
-                    <div
-                      className={`h-2.5 w-2.5 shrink-0 rounded-full ${
-                        service.is_active ? 'bg-emerald-300' : 'bg-stone-500'
-                      }`}
-                      aria-hidden="true"
-                    />
-                  }
-                  desktopLeading={
-                    <div className="text-base font-semibold tracking-[-0.03em] text-white">
-                      {durationLabel}
-                    </div>
-                  }
-                  desktopBody={
-                    <>
-                      <p className="truncate text-sm font-semibold text-white">
-                        {service.name}
-                      </p>
-                      <p className="mt-0.5 truncate text-xs text-stone-400">
-                        {price}
-                      </p>
-                    </>
-                  }
-                  desktopTrailing={
-                    <div
-                      className={`ml-auto h-2.5 w-2.5 rounded-full ${
-                        service.is_active ? 'bg-emerald-300' : 'bg-stone-500'
-                      }`}
-                      aria-hidden="true"
-                    />
-                  }
-                />
+              return (
+                <div key={service.id}>
+                  <SelectableListItem
+                    onClick={() => onSelect(service.id)}
+                    isActive={isActive}
+                    mobileLeading={
+                      <div className="truncate text-sm font-semibold tracking-[-0.03em] text-white">
+                        {durationLabel}
+                      </div>
+                    }
+                    mobileBody={
+                      <>
+                        <p className="truncate text-sm font-medium text-white">
+                          {service.name}
+                        </p>
+                        <p className="mt-0.5 truncate text-xs font-semibold text-amber-200">
+                          {price}
+                        </p>
+                      </>
+                    }
+                    mobileTrailing={
+                      <div
+                        className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                          service.is_active ? 'bg-emerald-300' : 'bg-stone-500'
+                        }`}
+                        aria-hidden="true"
+                      />
+                    }
+                    desktopLeading={
+                      <div className="text-base font-semibold tracking-[-0.03em] text-white">
+                        {durationLabel}
+                      </div>
+                    }
+                    desktopBody={
+                      <>
+                        <p className="truncate text-sm font-semibold text-white">
+                          {service.name}
+                        </p>
+                        <p className="mt-0.5 truncate text-xs text-stone-400">
+                          {price}
+                        </p>
+                      </>
+                    }
+                    desktopTrailing={
+                      <div
+                        className={`ml-auto h-2.5 w-2.5 rounded-full ${
+                          service.is_active ? 'bg-emerald-300' : 'bg-stone-500'
+                        }`}
+                        aria-hidden="true"
+                      />
+                    }
+                  />
+                </div>
+              );
+            })}
+
+            {hasNextPage ? (
+              <div className="pt-2">
+                <ActionButton
+                  variant="amber"
+                  onClick={onLoadMore}
+                  disabled={isFetchingNextPage}
+                  className="w-full justify-center"
+                >
+                  {isFetchingNextPage
+                    ? 'Doladowywanie uslug...'
+                    : 'Doladuj kolejne uslugi'}
+                </ActionButton>
               </div>
-            );
-          })
+            ) : null}
+          </>
         )}
       </div>
     </article>

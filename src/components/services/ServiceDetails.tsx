@@ -1,7 +1,8 @@
 import { Info, Pencil, Tag, Trash2, X } from 'lucide-react';
-import type { ReactNode } from 'react';
 import type { Service } from '../../lib/services';
 import { CollapsibleDetailSection } from '../ui/CollapsibleDetailSection';
+import { DetailActionIconButton } from '../ui/DetailActionIconButton';
+import { DetailSummaryChip } from '../ui/DetailSummaryChip';
 import { Skeleton } from '../ui/Skeleton';
 
 type ServiceDetailsProps = {
@@ -95,28 +96,28 @@ export function ServiceDetails({
         </div>
 
         <div className="flex max-w-full shrink-0 flex-wrap gap-2 md:justify-end">
-          <ActionIconButton label="Edytuj usluge" onClick={onEditClick}>
+          <DetailActionIconButton label="Edytuj usluge" onClick={onEditClick}>
             <Pencil className="h-4.5 w-4.5" />
-          </ActionIconButton>
-          <ActionIconButton
+          </DetailActionIconButton>
+          <DetailActionIconButton
             label="Usun usluge"
             onClick={onDeleteClick}
             tone="danger"
           >
             <Trash2 className="h-4.5 w-4.5" />
-          </ActionIconButton>
+          </DetailActionIconButton>
         </div>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <SummaryChip
+        <DetailSummaryChip
           label="Cena"
           value={new Intl.NumberFormat('pl-PL', {
             style: 'currency',
             currency: 'PLN',
           }).format(service.base_price)}
         />
-        <SummaryChip
+        <DetailSummaryChip
           label="Czas"
           value={formatServiceDuration(service.duration_minutes)}
         />
@@ -150,44 +151,4 @@ function formatServiceDuration(durationMinutes: number) {
   }
 
   return `${hours.toFixed(1).replace('.', ',')} h`;
-}
-
-type ActionIconButtonProps = {
-  children: ReactNode;
-  label: string;
-  onClick: () => void;
-  tone?: 'default' | 'danger';
-};
-
-function SummaryChip({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="inline-flex min-w-0 items-center gap-2 rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-xs text-stone-300">
-      <span className="text-stone-500">{label}:</span>
-      <span className="truncate font-medium text-white">{value}</span>
-    </div>
-  );
-}
-
-function ActionIconButton({
-  children,
-  label,
-  onClick,
-  tone = 'default',
-}: ActionIconButtonProps) {
-  const toneClasses =
-    tone === 'danger'
-      ? 'border-rose-300/20 bg-rose-300/12 text-rose-50 hover:border-rose-300/30 hover:bg-rose-300/18'
-      : 'border-white/10 bg-white/6 text-white hover:border-white/16 hover:bg-white/10';
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border transition ${toneClasses}`}
-    >
-      {children}
-    </button>
-  );
 }
