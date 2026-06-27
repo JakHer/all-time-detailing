@@ -1,13 +1,5 @@
-﻿import * as Dialog from '@radix-ui/react-dialog';
-import {
-  ChevronRight,
-  Clock,
-  Minus,
-  Plus,
-  Star,
-  Trash2,
-  X,
-} from 'lucide-react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { ChevronRight, Clock, Minus, Plus, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -17,29 +9,15 @@ import {
   type GalleryImageWithRelations,
 } from '../../lib/gallery';
 import { scrollPageToTop } from '../../lib/scroll';
-import { ActionButton } from '../ui/ActionButton';
-import { CollapsibleDetailSection } from '../ui/CollapsibleDetailSection';
-import { SelectableListItem } from '../ui/SelectableListItem';
-import { Skeleton } from '../ui/Skeleton';
-
-type Realization = {
-  id: string;
-  title: string;
-  date: string;
-  images: GalleryImageWithRelations[];
-  isIndependent: boolean;
-};
-
-type VehicleGallery = {
-  id: string;
-  make: string;
-  model: string;
-  registration: string;
-  clientName: string;
-  realizations: Realization[];
-  totalPhotos: number;
-  featuredImageUrl?: string;
-};
+import { ActionButton } from '../primitives/ActionButton';
+import { ListSkeleton } from '../entity/ListSkeleton';
+import { MasterDetailLayout } from '../layout/MasterDetailLayout';
+import { SelectableListItem } from '../entity/SelectableListItem';
+import { Skeleton } from '../primitives/Skeleton';
+import { layoutStyles, surfaceStyles, textStyles } from '../design/styles';
+import { GalleryImageThumbnail } from './GalleryImageThumbnail';
+import { GalleryVehicleDetails } from './GalleryVehicleDetails';
+import type { VehicleGallery } from './galleryTypes';
 
 export function GalleryGrid({ query }: { query: string }) {
   const { data: images = [], isLoading } = useGalleryImages();
@@ -95,7 +73,7 @@ export function GalleryGrid({ query }: { query: string }) {
         realization = {
           id: realizationId,
           title: hasBooking
-            ? (image.bookings?.services?.name ?? 'Usługa')
+            ? (image.bookings?.services?.name ?? 'Us�uga')
             : 'Portfolio',
           date: new Date(referenceDate).toLocaleDateString('pl-PL'),
           images: [],
@@ -247,22 +225,22 @@ export function GalleryGrid({ query }: { query: string }) {
       });
       toast.success(
         !currentFeatured
-          ? 'Ustawiono jako główne zdjęcie pojazdu'
-          : 'Usunięto wyróżnienie',
+          ? 'Ustawiono jako g��wne zdj�cie pojazdu'
+          : 'Usuni�to wyr�nienie',
       );
     } catch {
-      toast.error('Błąd podczas aktualizacji zdjęcia');
+      toast.error('B��d podczas aktualizacji zdj�cia');
     }
   }
 
   async function handleDeleteImage(id: string, path: string) {
-    if (!confirm('Czy na pewno chcesz usunąć to zdjęcie?')) return;
+    if (!confirm('Czy na pewno chcesz usun�� to zdj�cie?')) return;
 
     try {
       await deleteMutation.mutateAsync({ id, storagePath: path });
-      toast.success('Zdjęcie zostało usunięte');
+      toast.success('Zdj�cie zosta�o usuni�te');
     } catch {
-      toast.error('Błąd podczas usuwania zdjęcia');
+      toast.error('B��d podczas usuwania zdj�cia');
     }
   }
 
@@ -295,257 +273,133 @@ export function GalleryGrid({ query }: { query: string }) {
 
   if (isLoading) {
     return (
-      <div className="grid min-h-180 gap-6 lg:grid-cols-[1fr_500px]">
-        <div className="space-y-3">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <Skeleton key={index} className="h-24 rounded-[26px]" />
-          ))}
-        </div>
-        <Skeleton className="h-full rounded-4xl" />
-      </div>
+      <MasterDetailLayout
+        showDetails
+        list={<ListSkeleton itemClassName="h-24 rounded-[26px]" />}
+        details={<Skeleton className="h-full rounded-4xl" />}
+      />
     );
   }
 
   return (
-    <div
-      className={`grid min-h-180 min-w-0 gap-6 overflow-hidden ${
-        selectedVehicle
-          ? '2xl:grid-cols-[minmax(0,1fr)_minmax(0,500px)] 2xl:items-start'
-          : ''
-      }`}
-    >
-      <article className="w-full max-w-full self-start overflow-hidden rounded-3xl border border-white/10 bg-white/6 p-4 shadow-[0_30px_120px_rgba(0,0,0,0.35)] sm:rounded-4xl sm:px-4 sm:py-3.5 xl:px-5 xl:py-4">
-        <div className="hidden items-end justify-between gap-3 sm:flex">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-200">
-              Lista pojazdow
-            </p>
-            <h3 className="mt-0.5 text-[1.35rem] font-semibold tracking-[-0.04em] text-white">
-              Pojazdy w bibliotece
-            </h3>
-          </div>
-          <div className="text-xs text-stone-400">
-            {visibleVehicleGalleries.length} z {vehicleGalleries.length} pozycji
-          </div>
-        </div>
-
-        <div className="mb-3 flex items-center justify-between sm:hidden">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">
-            Lista pojazdow
-          </p>
-          <div className="text-xs text-stone-400">
-            {visibleVehicleGalleries.length} z {vehicleGalleries.length}
-          </div>
-        </div>
-
-        <div className="grid gap-2.5 sm:mt-3">
-          {vehicleGalleries.length === 0 ? (
-            <div className="flex min-h-72 items-center justify-center rounded-3xl border border-dashed border-white/10 bg-black/15 px-4 py-8 text-center text-sm leading-7 text-stone-400 sm:min-h-97.5">
-              Nie znaleziono pojazdow w bibliotece dla tego wyszukiwania.
-            </div>
-          ) : (
-            visibleVehicleGalleries.map((vehicle) => {
-              const isActive = selectedVehicleId === vehicle.id;
-
-              return (
-                <div key={vehicle.id}>
-                  <SelectableListItem
-                    onClick={() => handleVehicleSelect(vehicle.id)}
-                    isActive={isActive}
-                    mobileLeading={
-                      <div className="truncate text-sm font-semibold tracking-[-0.03em] text-white">
-                        {vehicle.registration}
-                      </div>
-                    }
-                    mobileBody={
-                      <p className="truncate text-sm font-medium text-white">
-                        {vehicle.make} {vehicle.model}{' '}
-                        <span className="text-stone-500">|</span>{' '}
-                        <span className="text-stone-400">
-                          {vehicle.clientName}
-                        </span>
-                      </p>
-                    }
-                    mobileTrailing={
-                      <div
-                        className={`h-2.5 w-2.5 shrink-0 rounded-full ${
-                          isActive ? 'bg-amber-300' : 'bg-stone-500'
-                        }`}
-                        aria-hidden="true"
-                      />
-                    }
-                    desktopLeading={
-                      <div className="truncate text-base font-semibold tracking-[-0.03em] text-white">
-                        {vehicle.registration}
-                      </div>
-                    }
-                    desktopBody={
-                      <>
-                        <p className="truncate text-sm font-semibold text-white">
-                          {vehicle.make} {vehicle.model}
-                        </p>
-                        <p className="mt-0.5 truncate text-xs text-stone-400">
-                          {vehicle.clientName}
-                        </p>
-                      </>
-                    }
-                    desktopTrailing={
-                      <p className="truncate text-xs text-stone-300">
-                        {vehicle.totalPhotos} zdjec
-                        <span className="px-1 text-stone-500">|</span>
-                        {vehicle.realizations.length} realizacji
-                      </p>
-                    }
-                  />
-                </div>
-              );
-            })
-          )}
-
-          {visibleVehicleCount < vehicleGalleries.length ? (
-            <div className="pt-2">
-              <ActionButton
-                variant="amber"
-                onClick={() =>
-                  setVisibleVehicleCount((current) => current + 10)
-                }
-                className="w-full justify-center"
-              >
-                Doladuj kolejne pojazdy
-              </ActionButton>
-            </div>
-          ) : null}
-        </div>
-      </article>
-
-      <div
-        className={`min-w-0 max-w-full ${
-          selectedVehicle ? 'hidden 2xl:block' : 'hidden'
-        }`}
-      >
-        {selectedVehicle ? (
-          <article className="min-h-160 w-full max-w-full overflow-hidden rounded-3xl border border-white/10 bg-white/6 p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] sm:rounded-4xl md:p-7">
-            <div className="mb-3 flex justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedVehicleId(null);
-                  setSelectedRealizationId(null);
-                  setSelectedPreviewImageId(null);
-                }}
-                onPointerDown={(event) => {
-                  event.preventDefault();
-                  setSelectedVehicleId(null);
-                  setSelectedRealizationId(null);
-                  setSelectedPreviewImageId(null);
-                }}
-                className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/6 text-white transition hover:border-white/16 hover:bg-white/10"
-                aria-label="Zamknij szczegoly galerii"
-                title="Zamknij szczegoly galerii"
-              >
-                <X className="h-4.5 w-4.5" />
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-              <div className="min-w-0 flex-1">
-                <p className="hidden text-xs font-semibold uppercase tracking-[0.2em] text-amber-200 sm:block">
-                  Biblioteka pojazdu
-                </p>
-                <h3 className="mt-1 wrap-break-word text-[1.65rem] font-semibold tracking-[-0.04em] text-white">
-                  {selectedVehicle.make} {selectedVehicle.model}
-                </h3>
-                <p className="mt-1.5 break-all text-xs text-stone-400">
-                  {selectedVehicle.clientName} | {selectedVehicle.registration}
-                </p>
+    <>
+      <MasterDetailLayout
+        showDetails={!!selectedVehicle}
+        list={
+          <article className={surfaceStyles.entityList}>
+            <div className={layoutStyles.listHeaderDesktop}>
+              <div>
+                <p className={textStyles.eyebrowAmber}>Lista pojazdow</p>
+                <h3 className={textStyles.listTitle}>Pojazdy w bibliotece</h3>
               </div>
-
-              <div className="flex shrink-0 flex-col items-start gap-3 md:items-end">
-                <div className="shrink-0 whitespace-nowrap rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-[11px] text-stone-300">
-                  {selectedVehicle.realizations.length} realizacje |{' '}
-                  {selectedVehicle.totalPhotos} zdjec
-                </div>
+              <div className={textStyles.listCount}>
+                {visibleVehicleGalleries.length} z {vehicleGalleries.length}{' '}
+                pozycji
               </div>
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              <SummaryChip
-                label="Realizacje"
-                value={`${selectedVehicle.realizations.length}`}
-              />
-              <SummaryChip
-                label="Zdjecia"
-                value={`${selectedVehicle.totalPhotos}`}
-              />
+            <div className={layoutStyles.listHeaderMobile}>
+              <p className={textStyles.eyebrowMuted}>Lista pojazdow</p>
+              <div className={textStyles.listCount}>
+                {visibleVehicleGalleries.length} z {vehicleGalleries.length}
+              </div>
             </div>
 
-            <CollapsibleDetailSection
-              title="Os czasu realizacji"
-              icon={<Clock className="h-4.5 w-4.5" />}
-              countLabel={`${selectedVehicle.realizations.length} wpisow`}
-              defaultOpen
-            >
-              <div className="grid gap-3">
-                {selectedVehicle.realizations.map((realization) => (
-                  <button
-                    key={realization.id}
-                    type="button"
-                    onClick={() => setSelectedRealizationId(realization.id)}
-                    className={`group flex items-center justify-between gap-3 rounded-2xl border p-3 text-left transition ${
-                      selectedRealizationId === realization.id
-                        ? 'border-white/20 bg-white/10'
-                        : 'border-white/8 bg-white/6 hover:border-white/16 hover:bg-white/10'
-                    }`}
-                  >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-white/6">
-                        <img
-                          src={
-                            realization.images.find(
-                              (image) => image.type === 'After',
-                            )?.image_url ?? realization.images[0].image_url
-                          }
-                          alt={realization.title}
-                          loading="lazy"
-                          decoding="async"
-                          draggable={false}
-                          className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
-                        />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`text-[9px] font-extrabold uppercase tracking-widest ${
-                              realization.isIndependent
-                                ? 'text-blue-400'
-                                : 'text-amber-400'
+            <div className={layoutStyles.listItems}>
+              {vehicleGalleries.length === 0 ? (
+                <div className={surfaceStyles.emptyState}>
+                  Nie znaleziono pojazdow w bibliotece dla tego wyszukiwania.
+                </div>
+              ) : (
+                visibleVehicleGalleries.map((vehicle) => {
+                  const isActive = selectedVehicleId === vehicle.id;
+
+                  return (
+                    <div key={vehicle.id}>
+                      <SelectableListItem
+                        onClick={() => handleVehicleSelect(vehicle.id)}
+                        isActive={isActive}
+                        mobileLeading={
+                          <div className="truncate text-sm font-semibold tracking-[-0.03em] text-white">
+                            {vehicle.registration}
+                          </div>
+                        }
+                        mobileBody={
+                          <p className="truncate text-sm font-medium text-white">
+                            {vehicle.make} {vehicle.model}{' '}
+                            <span className="text-stone-500">|</span>{' '}
+                            <span className="text-stone-400">
+                              {vehicle.clientName}
+                            </span>
+                          </p>
+                        }
+                        mobileTrailing={
+                          <div
+                            className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                              isActive ? 'bg-amber-300' : 'bg-stone-500'
                             }`}
-                          >
-                            {realization.isIndependent
-                              ? 'Projekt'
-                              : 'Realizacja'}
-                          </span>
-                          <span className="text-[10px] text-stone-500">
-                            | {realization.date}
-                          </span>
-                        </div>
-                        <h4 className="mt-1 wrap-break-word text-sm font-semibold text-white">
-                          {realization.title}
-                        </h4>
-                        <p className="mt-1 text-xs text-stone-500">
-                          {realization.images.length} zdjec w tej realizacji
-                        </p>
-                      </div>
+                            aria-hidden="true"
+                          />
+                        }
+                        desktopLeading={
+                          <div className="truncate text-base font-semibold tracking-[-0.03em] text-white">
+                            {vehicle.registration}
+                          </div>
+                        }
+                        desktopBody={
+                          <>
+                            <p className="truncate text-sm font-semibold text-white">
+                              {vehicle.make} {vehicle.model}
+                            </p>
+                            <p className="mt-0.5 truncate text-xs text-stone-400">
+                              {vehicle.clientName}
+                            </p>
+                          </>
+                        }
+                        desktopTrailing={
+                          <p className="truncate text-xs text-stone-300">
+                            {vehicle.totalPhotos} zdjec
+                            <span className="px-1 text-stone-500">|</span>
+                            {vehicle.realizations.length} realizacji
+                          </p>
+                        }
+                      />
                     </div>
+                  );
+                })
+              )}
 
-                    <ChevronRight className="h-4.5 w-4.5 shrink-0 text-white/50 transition group-hover:translate-x-0.5 group-hover:text-white" />
-                  </button>
-                ))}
-              </div>
-            </CollapsibleDetailSection>
+              {visibleVehicleCount < vehicleGalleries.length ? (
+                <div className="pt-2">
+                  <ActionButton
+                    variant="amber"
+                    onClick={() =>
+                      setVisibleVehicleCount((current) => current + 10)
+                    }
+                    className="w-full justify-center"
+                  >
+                    Doladuj kolejne pojazdy
+                  </ActionButton>
+                </div>
+              ) : null}
+            </div>
           </article>
-        ) : null}
-      </div>
+        }
+        details={
+          selectedVehicle ? (
+            <GalleryVehicleDetails
+              vehicle={selectedVehicle}
+              selectedRealizationId={selectedRealizationId}
+              onSelectRealization={setSelectedRealizationId}
+              onClose={() => {
+                setSelectedVehicleId(null);
+                setSelectedRealizationId(null);
+                setSelectedPreviewImageId(null);
+              }}
+            />
+          ) : null
+        }
+      />
 
       <Dialog.Root
         open={isMobileVehicleOpen && !!selectedVehicle}
@@ -701,11 +555,11 @@ export function GalleryGrid({ query }: { query: string }) {
                     <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">
-                          Podgląd zdjęcia
+                          Podgl�d zdj�cia
                         </p>
                         <p className="mt-2 text-sm text-stone-400">
-                          Klikaj miniatury niżej, aby płynnie przełączać zdjęcia
-                          bez przeładowywania całego modala.
+                          Klikaj miniatury ni�ej, aby p�ynnie prze��cza� zdj�cia
+                          bez prze�adowywania ca�ego modala.
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
@@ -713,7 +567,7 @@ export function GalleryGrid({ query }: { query: string }) {
                           type="button"
                           onClick={handlePreviewZoomOut}
                           className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/6 text-white transition hover:border-white/16 hover:bg-white/10"
-                          aria-label="Pomniejsz zdjęcie"
+                          aria-label="Pomniejsz zdj�cie"
                         >
                           <Minus className="h-4 w-4" />
                         </button>
@@ -728,7 +582,7 @@ export function GalleryGrid({ query }: { query: string }) {
                           type="button"
                           onClick={handlePreviewZoomIn}
                           className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/6 text-white transition hover:border-white/16 hover:bg-white/10"
-                          aria-label="Powiększ zdjęcie"
+                          aria-label="Powi�ksz zdj�cie"
                         >
                           <Plus className="h-4 w-4" />
                         </button>
@@ -760,7 +614,7 @@ export function GalleryGrid({ query }: { query: string }) {
                       </h3>
                       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                         {selectedRealization.images.map((image) => (
-                          <ImageThumbnail
+                          <GalleryImageThumbnail
                             key={image.id}
                             image={image}
                             isActive={selectedPreviewImage?.id === image.id}
@@ -785,7 +639,7 @@ export function GalleryGrid({ query }: { query: string }) {
                           </h3>
                           <div className="grid grid-cols-2 gap-4">
                             {realizationBuckets.beforeImages.map((image) => (
-                              <ImageThumbnail
+                              <GalleryImageThumbnail
                                 key={image.id}
                                 image={image}
                                 isActive={selectedPreviewImage?.id === image.id}
@@ -821,7 +675,7 @@ export function GalleryGrid({ query }: { query: string }) {
                           </h3>
                           <div className="grid grid-cols-2 gap-4">
                             {realizationBuckets.afterImages.map((image) => (
-                              <ImageThumbnail
+                              <GalleryImageThumbnail
                                 key={image.id}
                                 image={image}
                                 isActive={selectedPreviewImage?.id === image.id}
@@ -858,7 +712,7 @@ export function GalleryGrid({ query }: { query: string }) {
                           </h3>
                           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
                             {realizationBuckets.otherImages.map((image) => (
-                              <ImageThumbnail
+                              <GalleryImageThumbnail
                                 key={image.id}
                                 image={image}
                                 isActive={selectedPreviewImage?.id === image.id}
@@ -890,88 +744,6 @@ export function GalleryGrid({ query }: { query: string }) {
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
-    </div>
-  );
-}
-
-function ImageThumbnail({
-  image,
-  isActive,
-  onOpenPreview,
-  onToggleFeatured,
-  onDelete,
-}: {
-  image: GalleryImageWithRelations;
-  isActive: boolean;
-  onOpenPreview: () => void;
-  onToggleFeatured: () => void;
-  onDelete: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onOpenPreview}
-      className={`group relative aspect-square overflow-hidden rounded-3xl border bg-white/5 text-left ring-1 transition ${
-        isActive
-          ? 'border-amber-200/40 ring-amber-200/30'
-          : 'border-white/10 ring-white/5 hover:border-white/20'
-      }`}
-    >
-      <img
-        src={image.image_url}
-        alt={image.type || 'Zdjęcie realizacji'}
-        loading="lazy"
-        decoding="async"
-        draggable={false}
-        className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
-      />
-      <div className="absolute inset-0 bg-black/30 opacity-0 transition-opacity group-hover:opacity-100" />
-
-      <div className="absolute inset-0 flex items-center justify-center gap-2 opacity-0 transition-all duration-150 group-hover:opacity-100">
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onToggleFeatured();
-          }}
-          className={`flex h-10 w-10 items-center justify-center rounded-2xl backdrop-blur-md transition ${
-            image.is_featured
-              ? 'bg-amber-400 text-black'
-              : 'bg-white/10 text-white hover:bg-white/20'
-          }`}
-          title="Ustaw jako główne zdjęcie pojazdu"
-        >
-          <Star
-            className={`h-5 w-5 ${image.is_featured ? 'fill-current' : ''}`}
-          />
-        </button>
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onDelete();
-          }}
-          className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/20 text-red-400 backdrop-blur-md transition hover:bg-red-500/40"
-          title="Usuń zdjęcie"
-        >
-          <Trash2 className="h-5 w-5" />
-        </button>
-      </div>
-
-      {image.is_featured ? (
-        <div className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-amber-400 text-black shadow-lg">
-          <Star className="h-3 w-3 fill-current" />
-        </div>
-      ) : null}
-    </button>
-  );
-}
-
-function SummaryChip({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="inline-flex min-w-0 items-center gap-2 rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-xs text-stone-300">
-      <span className="text-stone-500">{label}:</span>
-      <span className="truncate font-medium text-white">{value}</span>
-    </div>
+    </>
   );
 }

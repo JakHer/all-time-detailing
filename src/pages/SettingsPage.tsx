@@ -1,6 +1,6 @@
-import { PageIntro } from '../components/PageIntro';
-import { SectionCard } from '../components/SectionCard';
-import { MobilePageHeader } from '../components/ui/MobilePageHeader';
+import { PageIntro } from '../components/common/PageIntro';
+import { SectionCard } from '../components/common/SectionCard';
+import { MobilePageHeader } from '../components/common/MobilePageHeader';
 
 export function SettingsPage() {
   return (

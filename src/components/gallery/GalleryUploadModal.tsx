@@ -12,9 +12,9 @@ import { toast } from 'sonner';
 import { fetchBookings, type Booking } from '../../lib/bookings';
 import { useUploadGalleryImage, type GalleryImage } from '../../lib/gallery';
 import { useVehicleOptions } from '../../lib/vehicles';
-import { Select } from '../ui/Select';
-import { inputClassName } from '../ui/FormElements';
-import { FormModal } from '../ui/FormModal';
+import { Select } from '../primitives/Select';
+import { inputClassName } from '../forms/FormElements';
+import { FormModal } from '../forms/FormModal';
 
 type GalleryUploadModalProps = {
   isOpen: boolean;

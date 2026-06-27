@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import type { LiveJob } from '../../lib/dashboard';
 import { formatShortDate, getTodayDateString } from '../../lib/dateUtils';
-import { SelectableListItem } from '../ui/SelectableListItem';
-import { StatusBadge } from '../ui/StatusBadge';
-import { Skeleton } from '../ui/Skeleton';
+import { SelectableListItem } from '../entity/SelectableListItem';
+import { StatusBadge } from '../primitives/StatusBadge';
+import { Skeleton } from '../primitives/Skeleton';
 
 type LiveQueueSectionProps = {
   queue?: LiveJob[];

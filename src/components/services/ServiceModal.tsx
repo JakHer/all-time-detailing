@@ -4,8 +4,9 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import type { NewService, Service } from '../../lib/services';
-import { Field, SectionTitle, inputClassName } from '../ui/FormElements';
-import { FormModal } from '../ui/FormModal';
+import { Field, SectionTitle, inputClassName } from '../forms/FormElements';
+import { FormModal } from '../forms/FormModal';
+import { buttonStyles } from '../design/styles';
 
 const serviceSchema = z.object({
   name: z.string().min(3, 'Nazwa usługi musi mieć min. 3 znaki.'),
@@ -84,14 +85,14 @@ export function ServiceModal({
           <button
             type="button"
             onClick={onClose}
-            className="w-full rounded-2xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-medium text-white transition hover:bg-white/10 md:w-auto"
+            className={buttonStyles.modalSecondary}
           >
             Anuluj
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-2xl bg-amber-400 px-8 py-3 text-sm font-bold text-black shadow-[0_10px_20px_rgba(251,191,36,0.2)] transition hover:-translate-y-0.5 hover:bg-amber-300 disabled:opacity-50 disabled:hover:translate-y-0 md:w-auto"
+            className={buttonStyles.modalPrimary}
           >
             {isSubmitting
               ? 'Zapisywanie...'

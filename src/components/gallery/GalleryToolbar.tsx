@@ -1,5 +1,5 @@
 import { ImagePlus, Search } from 'lucide-react';
-import { ActionButton } from '../ui/ActionButton';
+import { ActionButton } from '../primitives/ActionButton';
 
 type GalleryToolbarProps = {
   query: string;

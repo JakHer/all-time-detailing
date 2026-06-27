@@ -5,6 +5,7 @@ import {
   getMonthMatrix,
   isSameMonth,
 } from '../../lib/dateUtils';
+import { surfaceStyles, textStyles } from '../design/styles';
 
 type BookingMonthViewProps = {
   bookings: Booking[];
@@ -21,17 +22,15 @@ export function BookingMonthView({
   const monthMatrix = getMonthMatrix(selectedDate);
 
   return (
-    <article className="w-full max-w-full self-start overflow-hidden rounded-3xl border border-white/10 bg-white/6 p-4 shadow-[0_30px_120px_rgba(0,0,0,0.35)] sm:rounded-4xl sm:px-4 sm:py-3.5 xl:px-5 xl:py-4">
+    <article className={surfaceStyles.entityList}>
       <div className="flex items-end justify-between gap-3">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-200">
-            Miesiac
-          </p>
-          <h3 className="mt-0.5 text-[1.35rem] font-semibold tracking-[-0.04em] text-white">
+          <p className={textStyles.eyebrowAmber}>Miesiac</p>
+          <h3 className={textStyles.listTitle}>
             {formatMonthLabel(selectedDate)}
           </h3>
         </div>
-        <div className="text-xs text-stone-400">
+        <div className={textStyles.listCount}>
           {bookings.length} wizyt w miesiacu
         </div>
       </div>

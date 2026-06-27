@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useOpenGlobalBookingModal } from '../../lib/useOpenGlobalBookingModal';
-import { ActionButton } from '../ui/ActionButton';
+import { ActionButton } from '../primitives/ActionButton';
 
 const primaryAction = {
   title: 'Dodaj rezerwacje',

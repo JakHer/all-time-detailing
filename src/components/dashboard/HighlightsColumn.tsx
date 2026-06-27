@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { actionCards } from '../../data/dashboard';
 import type { FeaturedService } from '../../lib/dashboard';
 import { useOpenGlobalBookingModal } from '../../lib/useOpenGlobalBookingModal';
-import { Skeleton } from '../ui/Skeleton';
+import { Skeleton } from '../primitives/Skeleton';
 
 type HighlightsColumnProps = {
   featuredServices?: FeaturedService[];

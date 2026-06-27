@@ -1,12 +1,12 @@
 import { ImagePlus } from 'lucide-react';
 import { useState } from 'react';
-import { PageIntro } from '../components/PageIntro';
+import { PageIntro } from '../components/common/PageIntro';
 import { GalleryGrid } from '../components/gallery/GalleryGrid';
 import { GalleryUploadModal } from '../components/gallery/GalleryUploadModal';
-import { ActionButton } from '../components/ui/ActionButton';
-import { MobilePageHeader } from '../components/ui/MobilePageHeader';
-import { SearchField } from '../components/ui/SearchField';
-import { ToolbarPanel } from '../components/ui/ToolbarPanel';
+import { ActionButton } from '../components/primitives/ActionButton';
+import { MobilePageHeader } from '../components/common/MobilePageHeader';
+import { SearchField } from '../components/primitives/SearchField';
+import { ToolbarPanel } from '../components/layout/ToolbarPanel';
 import { useGalleryImages } from '../lib/gallery';
 
 export function GalleryPage() {
