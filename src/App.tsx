@@ -8,6 +8,7 @@ import { BookingsPage } from './pages/BookingsPage';
 import { CustomersPage } from './pages/CustomersPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { GalleryPage } from './pages/GalleryPage';
+import { KpiPage } from './pages/KpiPage';
 import { ServicesPage } from './pages/ServicesPage';
 import { VehiclesPage } from './pages/VehiclesPage';
 
@@ -39,6 +40,10 @@ const router = createBrowserRouter([
       {
         path: 'galeria',
         element: <GalleryPage />,
+      },
+      {
+        path: 'kpi',
+        element: <KpiPage />,
       },
       {
         path: 'ustawienia',
