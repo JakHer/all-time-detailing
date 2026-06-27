@@ -36,7 +36,26 @@ export type BookingRow = Database['public']['Tables']['bookings']['Row'] & {
   services: Database['public']['Tables']['services']['Row'];
 };
 
-export async function fetchBookings(search?: string) {
+const matchesBookingSearch = (booking: Booking, search: string) =>
+  [
+    booking.client,
+    booking.phone,
+    booking.clientNotes,
+    booking.vehicle,
+    booking.vehicleDetails,
+    booking.licensePlate,
+    booking.service,
+    booking.notes,
+    booking.bay,
+    booking.amount,
+    booking.date,
+    booking.time,
+    booking.status,
+  ]
+    .filter((value): value is string => typeof value === 'string')
+    .some((value) => value.toLowerCase().includes(search));
+
+export const fetchBookings = async (search?: string) => {
   const query = supabase.from('bookings').select(
     `
       id,
@@ -75,9 +94,9 @@ export async function fetchBookings(search?: string) {
   return bookings.filter((booking) =>
     matchesBookingSearch(booking, normalizedSearch),
   );
-}
+};
 
-export async function fetchBookingFormOptions() {
+export const fetchBookingFormOptions = async () => {
   const [clientsResult, vehiclesResult, servicesResult] = await Promise.all([
     supabase
       .from('clients')
@@ -126,9 +145,9 @@ export async function fetchBookingFormOptions() {
         }) satisfies ServiceOption,
     ),
   };
-}
+};
 
-export async function createBooking(input: BookingInsert) {
+export const createBooking = async (input: BookingInsert) => {
   const relationIds = await upsertBookingRelations(input);
   const { data, error } = await supabase
     .from('bookings')
@@ -161,9 +180,9 @@ export async function createBooking(input: BookingInsert) {
 
   if (error) throw error;
   return mapBookingRowToViewModel(data as BookingRow);
-}
+};
 
-export async function updateBooking(input: Booking) {
+export const updateBooking = async (input: Booking) => {
   const relationIds = await upsertBookingRelations(input);
   const { data, error } = await supabase
     .from('bookings')
@@ -197,12 +216,12 @@ export async function updateBooking(input: Booking) {
 
   if (error) throw error;
   return mapBookingRowToViewModel(data as BookingRow);
-}
+};
 
-export async function updateBookingStatus(
+export const updateBookingStatus = async (
   bookingId: string,
   status: BookingStatus,
-) {
+) => {
   const { data, error } = await supabase
     .from('bookings')
     .update({ status })
@@ -225,18 +244,18 @@ export async function updateBookingStatus(
 
   if (error) throw error;
   return mapBookingRowToViewModel(data as BookingRow);
-}
+};
 
-export async function deleteBooking(bookingId: string) {
+export const deleteBooking = async (bookingId: string) => {
   const { error } = await supabase
     .from('bookings')
     .delete()
     .eq('id', bookingId);
 
   if (error) throw error;
-}
+};
 
-export async function restoreBooking(input: Booking) {
+export const restoreBooking = async (input: Booking) => {
   const relationIds = await upsertBookingRelations(input);
   const { data, error } = await supabase
     .from('bookings')
@@ -270,9 +289,9 @@ export async function restoreBooking(input: Booking) {
 
   if (error) throw error;
   return mapBookingRowToViewModel(data as BookingRow);
-}
+};
 
-async function upsertBookingRelations(booking: BookingInsert | Booking) {
+const upsertBookingRelations = async (booking: BookingInsert | Booking) => {
   const clientId = await upsertClient(booking.client, booking.phone);
   const vehicleId = await upsertVehicle(
     clientId,
@@ -290,9 +309,9 @@ async function upsertBookingRelations(booking: BookingInsert | Booking) {
     vehicleId,
     serviceId,
   };
-}
+};
 
-async function upsertClient(fullName: string, phone: string) {
+const upsertClient = async (fullName: string, phone: string) => {
   const { data: existingClient, error: selectError } = await supabase
     .from('clients')
     .select('id')
@@ -314,13 +333,13 @@ async function upsertClient(fullName: string, phone: string) {
 
   if (error) throw error;
   return data.id;
-}
+};
 
-async function upsertVehicle(
+const upsertVehicle = async (
   clientId: string,
   vehicleLabel: string,
   registration: string,
-) {
+) => {
   const { data: existingVehicle, error: selectError } = await supabase
     .from('vehicles')
     .select('id')
@@ -351,9 +370,13 @@ async function upsertVehicle(
 
   if (error) throw error;
   return data.id;
-}
+};
 
-async function upsertService(name: string, duration: string, amount: string) {
+const upsertService = async (
+  name: string,
+  duration: string,
+  amount: string,
+) => {
   const { data: existingService, error: selectError } = await supabase
     .from('services')
     .select('id')
@@ -385,9 +408,9 @@ async function upsertService(name: string, duration: string, amount: string) {
 
   if (error) throw error;
   return data.id;
-}
+};
 
-export function mapBookingRowToViewModel(row: BookingRow): Booking {
+export const mapBookingRowToViewModel = (row: BookingRow): Booking => {
   const scheduledAt = new Date(row.scheduled_at);
   const vehicleDetails = [row.vehicles.color, row.vehicles.production_year]
     .filter(Boolean)
@@ -412,22 +435,22 @@ export function mapBookingRowToViewModel(row: BookingRow): Booking {
     bay: row.bay ?? '',
     notes: row.notes ?? '',
   };
-}
+};
 
-export function splitVehicleLabel(vehicleLabel: string) {
+export const splitVehicleLabel = (vehicleLabel: string) => {
   const [make = '', ...modelParts] = vehicleLabel.trim().split(/\s+/);
 
   return {
     make,
     model: modelParts.join(' ') || make,
   };
-}
+};
 
-export function combineDateAndTime(date: string, time: string) {
+export const combineDateAndTime = (date: string, time: string) => {
   return new Date(`${date}T${time}:00`).toISOString();
-}
+};
 
-export function parseDurationToMinutes(duration: string) {
+export const parseDurationToMinutes = (duration: string) => {
   const normalized = duration.replace(',', '.').trim();
   const numericValue = Number.parseFloat(normalized.replace(/[^\d.]/g, ''));
 
@@ -436,9 +459,9 @@ export function parseDurationToMinutes(duration: string) {
   }
 
   return Math.round(numericValue * 60);
-}
+};
 
-export function parsePriceToNumber(amount: string) {
+export const parsePriceToNumber = (amount: string) => {
   const normalized = amount.replace(',', '.').replace(/[^\d.]/g, '');
   const numericValue = Number.parseFloat(normalized);
 
@@ -447,51 +470,31 @@ export function parsePriceToNumber(amount: string) {
   }
 
   return numericValue;
-}
+};
 
-export function formatDuration(durationMinutes: number) {
+export const formatDuration = (durationMinutes: number) => {
   const hours = durationMinutes / 60;
   return Number.isInteger(hours) ? `${hours} h` : `${hours.toFixed(1)} h`;
-}
+};
 
-export function formatPrice(price: number) {
+export const formatPrice = (price: number) => {
   return `${new Intl.NumberFormat('pl-PL', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(price)} zł`;
-}
+};
 
-function formatLocalDate(value: Date) {
+const formatLocalDate = (value: Date) => {
   const year = value.getFullYear();
   const month = String(value.getMonth() + 1).padStart(2, '0');
   const day = String(value.getDate()).padStart(2, '0');
 
   return `${year}-${month}-${day}`;
-}
+};
 
-function formatLocalTime(value: Date) {
+const formatLocalTime = (value: Date) => {
   const hours = String(value.getHours()).padStart(2, '0');
   const minutes = String(value.getMinutes()).padStart(2, '0');
 
   return `${hours}:${minutes}`;
-}
-
-function matchesBookingSearch(booking: Booking, search: string) {
-  return [
-    booking.client,
-    booking.phone,
-    booking.clientNotes,
-    booking.vehicle,
-    booking.vehicleDetails,
-    booking.licensePlate,
-    booking.service,
-    booking.notes,
-    booking.bay,
-    booking.amount,
-    booking.date,
-    booking.time,
-    booking.status,
-  ]
-    .filter(Boolean)
-    .some((value) => value.toLowerCase().includes(search));
-}
+};

@@ -37,7 +37,7 @@ export function PageIntro({
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-200 sm:text-xs">
             {eyebrow}
           </p>
-          <h2 className="mt-3 max-w-[22ch] text-[2rem] leading-[0.98] font-semibold tracking-[-0.05em] text-white sm:mt-4 sm:max-w-[24ch] sm:text-5xl xl:min-h-44 xl:text-6xl">
+          <h2 className="mt-3 max-w-[22ch] text-[2rem] leading-[0.98] font-semibold tracking-tighter text-white sm:mt-4 sm:max-w-[24ch] sm:text-5xl xl:min-h-44 xl:text-6xl">
             {title}
           </h2>
           {description ? (
