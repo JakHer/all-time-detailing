@@ -1,15 +1,16 @@
-import * as Dialog from '@radix-ui/react-dialog';
-import { X } from 'lucide-react';
-import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { PageIntro } from '../components/PageIntro';
+import { PageIntro } from '../components/common/PageIntro';
 import { ServiceDetails } from '../components/services/ServiceDetails';
 import { ServiceList } from '../components/services/ServiceList';
 import { ServiceModal } from '../components/services/ServiceModal';
 import { ServiceToolbar } from '../components/services/ServiceToolbar';
-import { ConfirmDialog } from '../components/ui/ConfirmDialog';
-import { MobilePageHeader } from '../components/ui/MobilePageHeader';
-import { Skeleton } from '../components/ui/Skeleton';
+import { ConfirmDialog } from '../components/primitives/ConfirmDialog';
+import { ListSkeleton } from '../components/entity/ListSkeleton';
+import { MasterDetailLayout } from '../components/layout/MasterDetailLayout';
+import { MobileDetailSheet } from '../components/layout/MobileDetailSheet';
+import { MobilePageHeader } from '../components/common/MobilePageHeader';
+import { useResponsiveDetailsPanel } from '../components/layout/useResponsiveDetailsPanel';
 import { scrollPageToTop } from '../lib/scroll';
 import {
   useCreateService,
@@ -22,11 +23,13 @@ import {
 } from '../lib/services';
 
 export function ServicesPage() {
-  const [isDesktopDetailsLayout, setIsDesktopDetailsLayout] = useState(() =>
-    typeof window !== 'undefined'
-      ? window.matchMedia('(min-width: 1536px)').matches
-      : false,
-  );
+  const {
+    isDesktopDetailsLayout,
+    isMobileDetailsOpen,
+    setIsMobileDetailsOpen,
+    openDetailsForCurrentLayout,
+    closeMobileDetails,
+  } = useResponsiveDetailsPanel();
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(
     null,
   );
@@ -34,7 +37,6 @@ export function ServicesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isMobileDetailsOpen, setIsMobileDetailsOpen] = useState(false);
 
   const deferredQuery = useDeferredValue(query);
 
@@ -44,30 +46,6 @@ export function ServicesPage() {
   const createMutation = useCreateService();
   const updateMutation = useUpdateService();
   const deleteMutation = useDeleteService();
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    const mediaQuery = window.matchMedia('(min-width: 1536px)');
-    const handleChange = (event: MediaQueryListEvent) => {
-      setIsDesktopDetailsLayout(event.matches);
-    };
-
-    setIsDesktopDetailsLayout(mediaQuery.matches);
-    mediaQuery.addEventListener('change', handleChange);
-
-    return () => {
-      mediaQuery.removeEventListener('change', handleChange);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isDesktopDetailsLayout) {
-      setIsMobileDetailsOpen(false);
-    }
-  }, [isDesktopDetailsLayout]);
 
   const services =
     servicesQuery.data?.pages.flatMap((page) => page.items) ?? [];
@@ -106,7 +84,7 @@ export function ServicesPage() {
       return;
     }
 
-    setIsMobileDetailsOpen(false);
+    closeMobileDetails();
     setModalMode('edit');
     setIsModalOpen(true);
   }
@@ -145,7 +123,7 @@ export function ServicesPage() {
       await deleteMutation.mutateAsync(selectedServiceId);
       setSelectedServiceId(null);
       setIsDeleteDialogOpen(false);
-      setIsMobileDetailsOpen(false);
+      closeMobileDetails();
       toast.success('Usluga zostala usunieta');
     } catch {
       toast.error(
@@ -156,13 +134,13 @@ export function ServicesPage() {
 
   function handleSelectService(id: string) {
     setSelectedServiceId(id);
-    setIsMobileDetailsOpen(!isDesktopDetailsLayout);
+    openDetailsForCurrentLayout();
     scrollPageToTop();
   }
 
   function closeServiceDetails() {
     setSelectedServiceId(null);
-    setIsMobileDetailsOpen(false);
+    closeMobileDetails();
   }
 
   const shouldShowServiceDetails = selectedServiceId !== null;
@@ -192,20 +170,11 @@ export function ServicesPage() {
         onCreateClick={handleCreateClick}
       />
 
-      <section
-        className={`grid min-h-180 min-w-0 gap-6 ${
-          shouldShowServiceDetails
-            ? '2xl:grid-cols-[minmax(0,1fr)_minmax(0,500px)] 2xl:items-start'
-            : ''
-        }`}
-      >
-        <div className="min-w-0 max-w-full">
-          {isListLoading ? (
-            <div className="grid gap-3">
-              {Array.from({ length: 5 }).map((_, index) => (
-                <Skeleton key={index} className="h-22 rounded-[26px]" />
-              ))}
-            </div>
+      <MasterDetailLayout
+        showDetails={shouldShowServiceDetails}
+        list={
+          isListLoading ? (
+            <ListSkeleton />
           ) : (
             <ServiceList
               services={services}
@@ -218,14 +187,9 @@ export function ServicesPage() {
                 void servicesQuery.fetchNextPage();
               }}
             />
-          )}
-        </div>
-
-        <div
-          className={`min-w-0 max-w-full ${
-            shouldShowServiceDetails ? 'hidden 2xl:block' : 'hidden'
-          }`}
-        >
+          )
+        }
+        details={
           <ServiceDetails
             service={selectedService}
             isLoading={isDetailsLoading}
@@ -233,50 +197,26 @@ export function ServicesPage() {
             onDeleteClick={handleDeleteClick}
             onCloseClick={closeServiceDetails}
           />
-        </div>
-      </section>
+        }
+      />
 
-      <Dialog.Root
+      <MobileDetailSheet
         open={
           !isDesktopDetailsLayout && isMobileDetailsOpen && !!selectedServiceId
         }
         onOpenChange={setIsMobileDetailsOpen}
+        eyebrow="Szczegoly uslugi"
+        title={selectedService?.name ?? 'Wybrana usluga'}
+        closeLabel="Zamknij szczegoly uslugi"
       >
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-60 bg-black/70 backdrop-blur-sm 2xl:hidden" />
-          <Dialog.Content className="fixed inset-0 z-70 flex h-dvh flex-col overflow-hidden bg-[#121314] outline-none 2xl:hidden">
-            <div className="flex items-center justify-between gap-3 border-b border-white/8 px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))]">
-              <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-200">
-                  Szczegoly uslugi
-                </p>
-                <p className="mt-1 truncate text-sm text-stone-400">
-                  {selectedService?.name ?? 'Wybrana usluga'}
-                </p>
-              </div>
-              <Dialog.Close asChild>
-                <button
-                  type="button"
-                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/6 text-stone-100 transition hover:border-white/16 hover:bg-white/10"
-                  aria-label="Zamknij szczegoly uslugi"
-                >
-                  <X className="h-4.5 w-4.5" />
-                </button>
-              </Dialog.Close>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-              <ServiceDetails
-                service={selectedService}
-                isLoading={isDetailsLoading}
-                onEditClick={handleEditClick}
-                onDeleteClick={handleDeleteClick}
-                variant="sheet"
-              />
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+        <ServiceDetails
+          service={selectedService}
+          isLoading={isDetailsLoading}
+          onEditClick={handleEditClick}
+          onDeleteClick={handleDeleteClick}
+          variant="sheet"
+        />
+      </MobileDetailSheet>
 
       <ServiceModal
         isOpen={isModalOpen}

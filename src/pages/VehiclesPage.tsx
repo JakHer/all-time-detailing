@@ -1,16 +1,17 @@
-import * as Dialog from '@radix-ui/react-dialog';
-import { X } from 'lucide-react';
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { PageIntro } from '../components/PageIntro';
+import { PageIntro } from '../components/common/PageIntro';
 import { VehicleDetails } from '../components/vehicles/VehicleDetails';
 import { VehicleList } from '../components/vehicles/VehicleList';
 import { VehicleModal } from '../components/vehicles/VehicleModal';
 import { VehicleToolbar } from '../components/vehicles/VehicleToolbar';
-import { ConfirmDialog } from '../components/ui/ConfirmDialog';
-import { MobilePageHeader } from '../components/ui/MobilePageHeader';
-import { Skeleton } from '../components/ui/Skeleton';
+import { ConfirmDialog } from '../components/primitives/ConfirmDialog';
+import { ListSkeleton } from '../components/entity/ListSkeleton';
+import { MasterDetailLayout } from '../components/layout/MasterDetailLayout';
+import { MobileDetailSheet } from '../components/layout/MobileDetailSheet';
+import { MobilePageHeader } from '../components/common/MobilePageHeader';
+import { useResponsiveDetailsPanel } from '../components/layout/useResponsiveDetailsPanel';
 import { useClientOptions } from '../lib/clients';
 import { scrollPageToTop } from '../lib/scroll';
 import {
@@ -25,11 +26,13 @@ import {
 
 export function VehiclesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [isDesktopDetailsLayout, setIsDesktopDetailsLayout] = useState(() =>
-    typeof window !== 'undefined'
-      ? window.matchMedia('(min-width: 1536px)').matches
-      : false,
-  );
+  const {
+    isDesktopDetailsLayout,
+    isMobileDetailsOpen,
+    setIsMobileDetailsOpen,
+    openDetailsForCurrentLayout,
+    closeMobileDetails,
+  } = useResponsiveDetailsPanel();
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(
     null,
   );
@@ -37,7 +40,6 @@ export function VehiclesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isMobileDetailsOpen, setIsMobileDetailsOpen] = useState(false);
 
   const deferredQuery = useDeferredValue(query);
 
@@ -50,30 +52,6 @@ export function VehiclesPage() {
   const deleteMutation = useDeleteVehicle();
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    const mediaQuery = window.matchMedia('(min-width: 1536px)');
-    const handleChange = (event: MediaQueryListEvent) => {
-      setIsDesktopDetailsLayout(event.matches);
-    };
-
-    setIsDesktopDetailsLayout(mediaQuery.matches);
-    mediaQuery.addEventListener('change', handleChange);
-
-    return () => {
-      mediaQuery.removeEventListener('change', handleChange);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isDesktopDetailsLayout) {
-      setIsMobileDetailsOpen(false);
-    }
-  }, [isDesktopDetailsLayout]);
-
-  useEffect(() => {
     const vehicleIdFromQuery = searchParams.get('vehicle');
 
     if (!vehicleIdFromQuery) {
@@ -81,13 +59,13 @@ export function VehiclesPage() {
     }
 
     setSelectedVehicleId(vehicleIdFromQuery);
-    setIsMobileDetailsOpen(!isDesktopDetailsLayout);
+    openDetailsForCurrentLayout();
     scrollPageToTop();
 
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete('vehicle');
     setSearchParams(nextParams, { replace: true });
-  }, [isDesktopDetailsLayout, searchParams, setSearchParams]);
+  }, [openDetailsForCurrentLayout, searchParams, setSearchParams]);
 
   const vehicles =
     vehiclesQuery.data?.pages.flatMap((page) => page.items) ?? [];
@@ -130,7 +108,7 @@ export function VehiclesPage() {
       return;
     }
 
-    setIsMobileDetailsOpen(false);
+    closeMobileDetails();
     setModalMode('edit');
     setIsModalOpen(true);
   }
@@ -169,7 +147,7 @@ export function VehiclesPage() {
       await deleteMutation.mutateAsync(selectedVehicleId);
       setSelectedVehicleId(null);
       setIsDeleteDialogOpen(false);
-      setIsMobileDetailsOpen(false);
+      closeMobileDetails();
       toast.success('Pojazd został usunięty');
     } catch {
       toast.error(
@@ -180,13 +158,13 @@ export function VehiclesPage() {
 
   function handleSelectVehicle(id: string) {
     setSelectedVehicleId(id);
-    setIsMobileDetailsOpen(!isDesktopDetailsLayout);
+    openDetailsForCurrentLayout();
     scrollPageToTop();
   }
 
   function closeVehicleDetails() {
     setSelectedVehicleId(null);
-    setIsMobileDetailsOpen(false);
+    closeMobileDetails();
   }
 
   const shouldShowVehicleDetails = selectedVehicleId !== null;
@@ -215,21 +193,11 @@ export function VehiclesPage() {
         onCreateClick={handleCreateClick}
       />
 
-      <section
-        className={`grid min-h-180 min-w-0 gap-6 ${
-          shouldShowVehicleDetails
-            ? '2xl:grid-cols-[minmax(0,1fr)_minmax(0,500px)] 2xl:items-start'
-            : ''
-        }`}
-        style={{ overflowAnchor: 'none' }}
-      >
-        <div className="min-w-0 max-w-full">
-          {isListLoading ? (
-            <div className="grid gap-3">
-              {Array.from({ length: 5 }).map((_, index) => (
-                <Skeleton key={index} className="h-22 rounded-[26px]" />
-              ))}
-            </div>
+      <MasterDetailLayout
+        showDetails={shouldShowVehicleDetails}
+        list={
+          isListLoading ? (
+            <ListSkeleton />
           ) : (
             <VehicleList
               vehicles={vehicles}
@@ -242,15 +210,9 @@ export function VehiclesPage() {
                 void vehiclesQuery.fetchNextPage();
               }}
             />
-          )}
-        </div>
-
-        <div
-          className={`min-w-0 max-w-full ${
-            shouldShowVehicleDetails ? 'hidden 2xl:block' : 'hidden'
-          }`}
-          style={{ overflowAnchor: 'none' }}
-        >
+          )
+        }
+        details={
           <VehicleDetails
             vehicle={selectedVehicle}
             isLoading={isDetailsLoading}
@@ -258,52 +220,30 @@ export function VehiclesPage() {
             onDeleteClick={handleDeleteClick}
             onCloseClick={closeVehicleDetails}
           />
-        </div>
-      </section>
+        }
+      />
 
-      <Dialog.Root
+      <MobileDetailSheet
         open={
           !isDesktopDetailsLayout && isMobileDetailsOpen && !!selectedVehicleId
         }
         onOpenChange={setIsMobileDetailsOpen}
+        eyebrow="Szczegoly pojazdu"
+        title={
+          selectedVehicle
+            ? `${selectedVehicle.make} ${selectedVehicle.model}`
+            : 'Wybrany pojazd'
+        }
+        closeLabel="Zamknij szczegoly pojazdu"
       >
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-60 bg-black/70 backdrop-blur-sm 2xl:hidden" />
-          <Dialog.Content className="fixed inset-0 z-70 flex h-dvh flex-col overflow-hidden bg-[#121314] outline-none 2xl:hidden">
-            <div className="flex items-center justify-between gap-3 border-b border-white/8 px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))]">
-              <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-200">
-                  Szczegoly pojazdu
-                </p>
-                <p className="mt-1 truncate text-sm text-stone-400">
-                  {selectedVehicle
-                    ? `${selectedVehicle.make} ${selectedVehicle.model}`
-                    : 'Wybrany pojazd'}
-                </p>
-              </div>
-              <Dialog.Close asChild>
-                <button
-                  type="button"
-                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/6 text-stone-100 transition hover:border-white/16 hover:bg-white/10"
-                  aria-label="Zamknij szczegoly pojazdu"
-                >
-                  <X className="h-4.5 w-4.5" />
-                </button>
-              </Dialog.Close>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-              <VehicleDetails
-                vehicle={selectedVehicle}
-                isLoading={isDetailsLoading}
-                onEditClick={handleEditClick}
-                onDeleteClick={handleDeleteClick}
-                variant="sheet"
-              />
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+        <VehicleDetails
+          vehicle={selectedVehicle}
+          isLoading={isDetailsLoading}
+          onEditClick={handleEditClick}
+          onDeleteClick={handleDeleteClick}
+          variant="sheet"
+        />
+      </MobileDetailSheet>
 
       <VehicleModal
         isOpen={isModalOpen}

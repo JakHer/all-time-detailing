@@ -1,6 +1,6 @@
 import { CalendarPlus2, ChevronLeft, ChevronRight } from 'lucide-react';
-import { ActionButton } from '../ui/ActionButton';
-import { SearchField } from '../ui/SearchField';
+import { ActionButton } from '../primitives/ActionButton';
+import { SearchField } from '../primitives/SearchField';
 
 export type BookingCalendarView = 'day' | 'week' | 'month';
 

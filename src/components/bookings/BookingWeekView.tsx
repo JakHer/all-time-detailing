@@ -4,9 +4,10 @@ import {
   getTodayDateString,
   getWeekDateStrings,
 } from '../../lib/dateUtils';
-import { CollapsibleDetailSection } from '../ui/CollapsibleDetailSection';
-import { SelectableListItem } from '../ui/SelectableListItem';
-import { StatusBadge } from '../ui/StatusBadge';
+import { CollapsibleDetailSection } from '../details/CollapsibleDetailSection';
+import { SelectableListItem } from '../entity/SelectableListItem';
+import { StatusBadge } from '../primitives/StatusBadge';
+import { layoutStyles, surfaceStyles, textStyles } from '../design/styles';
 
 type BookingWeekViewProps = {
   bookings: Booking[];
@@ -31,22 +32,25 @@ export function BookingWeekView({
   }));
 
   return (
-    <article className="w-full max-w-full self-start overflow-hidden rounded-3xl border border-white/10 bg-white/6 p-3 shadow-[0_30px_120px_rgba(0,0,0,0.35)] sm:rounded-4xl sm:p-5">
-      <div className="flex items-end justify-between gap-3">
+    <article className={surfaceStyles.entityList}>
+      <div className={layoutStyles.listHeaderDesktop}>
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-200">
-            Tydzien
-          </p>
-          <h3 className="mt-1 text-[1.7rem] font-semibold tracking-[-0.04em] text-white sm:text-2xl">
-            Plan tygodnia
-          </h3>
+          <p className={textStyles.eyebrowAmber}>Tydzien</p>
+          <h3 className={textStyles.listTitle}>Plan tygodnia</h3>
         </div>
-        <div className="text-[11px] text-stone-400 sm:text-xs">
+        <div className={textStyles.listCount}>
           {bookings.length} wizyt w tygodniu
         </div>
       </div>
 
-      <div className="mt-4 sm:mt-5">
+      <div className={layoutStyles.listHeaderMobile}>
+        <p className={textStyles.eyebrowMuted}>Tydzien</p>
+        <div className={textStyles.listCount}>
+          {bookings.length} wizyt w tygodniu
+        </div>
+      </div>
+
+      <div className="sm:mt-5">
         <div className="grid gap-2 sm:hidden">
           {bookingsByDate.map(({ dateString, bookings: dayBookings }) => {
             const hasBookings = dayBookings.length > 0;

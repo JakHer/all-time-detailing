@@ -1,4 +1,4 @@
-﻿export const actionCards = [
+export const actionCards = [
   {
     title: 'Nowa rezerwacja',
     body: 'Szybkie dodanie klienta, auta i zakresu usług z poziomu recepcji.',

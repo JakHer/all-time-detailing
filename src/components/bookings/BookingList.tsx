@@ -1,6 +1,7 @@
 import type { Booking } from '../../data/bookings';
-import { StatusBadge } from '../ui/StatusBadge';
-import { SelectableListItem } from '../ui/SelectableListItem';
+import { StatusBadge } from '../primitives/StatusBadge';
+import { SelectableListItem } from '../entity/SelectableListItem';
+import { layoutStyles, surfaceStyles, textStyles } from '../design/styles';
 
 type BookingListProps = {
   bookings: Booking[];
@@ -14,29 +15,23 @@ export function BookingList({
   onSelect,
 }: BookingListProps) {
   return (
-    <article className="w-full max-w-full self-start overflow-hidden rounded-3xl border border-white/10 bg-white/6 p-4 shadow-[0_30px_120px_rgba(0,0,0,0.35)] sm:rounded-4xl sm:px-4 sm:py-3.5 xl:px-5 xl:py-4">
-      <div className="hidden items-end justify-between gap-3 sm:flex">
+    <article className={surfaceStyles.entityList}>
+      <div className={layoutStyles.listHeaderDesktop}>
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-200">
-            Lista wizyt
-          </p>
-          <h3 className="mt-0.5 text-[1.35rem] font-semibold tracking-[-0.04em] text-white">
-            Plan dnia
-          </h3>
+          <p className={textStyles.eyebrowAmber}>Lista wizyt</p>
+          <h3 className={textStyles.listTitle}>Plan dnia</h3>
         </div>
-        <div className="text-xs text-stone-400">{bookings.length} pozycji</div>
+        <div className={textStyles.listCount}>{bookings.length} pozycji</div>
       </div>
 
-      <div className="mb-3 flex items-center justify-between sm:hidden">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">
-          Lista wizyt
-        </p>
-        <div className="text-xs text-stone-400">{bookings.length} pozycji</div>
+      <div className={layoutStyles.listHeaderMobile}>
+        <p className={textStyles.eyebrowMuted}>Lista wizyt</p>
+        <div className={textStyles.listCount}>{bookings.length} pozycji</div>
       </div>
 
-      <div className="grid gap-2.5 sm:mt-3">
+      <div className={layoutStyles.listItems}>
         {bookings.length === 0 ? (
-          <div className="flex min-h-72 items-center justify-center rounded-3xl border border-dashed border-white/10 bg-black/15 px-4 py-8 text-center text-sm leading-7 text-stone-400 sm:min-h-97.5">
+          <div className={surfaceStyles.emptyState}>
             Brak wizyt spelniajacych aktualne filtry. Sprobuj zmienic dzien,
             status albo wyszukiwanie.
           </div>

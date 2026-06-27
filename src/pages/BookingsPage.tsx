@@ -1,6 +1,4 @@
-﻿import * as Dialog from '@radix-ui/react-dialog';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { X } from 'lucide-react';
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -13,10 +11,14 @@ import {
 } from '../components/bookings/BookingToolbar';
 import { BookingMonthView } from '../components/bookings/BookingMonthView';
 import { BookingWeekView } from '../components/bookings/BookingWeekView';
-import { PageIntro } from '../components/PageIntro';
-import { ConfirmDialog } from '../components/ui/ConfirmDialog';
-import { MobilePageHeader } from '../components/ui/MobilePageHeader';
-import { Skeleton } from '../components/ui/Skeleton';
+import { PageIntro } from '../components/common/PageIntro';
+import { ConfirmDialog } from '../components/primitives/ConfirmDialog';
+import { ListSkeleton } from '../components/entity/ListSkeleton';
+import { MasterDetailLayout } from '../components/layout/MasterDetailLayout';
+import { MobileDetailSheet } from '../components/layout/MobileDetailSheet';
+import { MobilePageHeader } from '../components/common/MobilePageHeader';
+import { Skeleton } from '../components/primitives/Skeleton';
+import { useResponsiveDetailsPanel } from '../components/layout/useResponsiveDetailsPanel';
 import { type Booking, type BookingStatus } from '../data/bookings';
 import { scrollPageToTop } from '../lib/scroll';
 import {
@@ -77,11 +79,13 @@ export function BookingsPage() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const today = getTodayDateString();
-  const [isDesktopDetailsLayout, setIsDesktopDetailsLayout] = useState(() =>
-    typeof window !== 'undefined'
-      ? window.matchMedia('(min-width: 1536px)').matches
-      : false,
-  );
+  const {
+    isDesktopDetailsLayout,
+    isMobileDetailsOpen,
+    setIsMobileDetailsOpen,
+    openDetailsForCurrentLayout,
+    closeMobileDetails,
+  } = useResponsiveDetailsPanel();
   const [selectedDate, setSelectedDate] = useState(today);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
     null,
@@ -90,7 +94,6 @@ export function BookingsPage() {
   const [calendarView, setCalendarView] = useState<BookingCalendarView>('day');
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [isMobileDetailsOpen, setIsMobileDetailsOpen] = useState(false);
 
   const deferredQuery = useDeferredValue(query);
   const normalizedQuery = deferredQuery.trim().toLowerCase();
@@ -111,30 +114,6 @@ export function BookingsPage() {
   const isLoading =
     bookingsQuery.isLoading || bookingFormOptionsQuery.isLoading;
   const returnTo = searchParams.get('returnTo');
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    const mediaQuery = window.matchMedia('(min-width: 1536px)');
-    const handleChange = (event: MediaQueryListEvent) => {
-      setIsDesktopDetailsLayout(event.matches);
-    };
-
-    setIsDesktopDetailsLayout(mediaQuery.matches);
-    mediaQuery.addEventListener('change', handleChange);
-
-    return () => {
-      mediaQuery.removeEventListener('change', handleChange);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isDesktopDetailsLayout) {
-      setIsMobileDetailsOpen(false);
-    }
-  }, [isDesktopDetailsLayout]);
 
   useEffect(() => {
     if (searchParams.get('nowa') === '1' && bookingFormOptionsQuery.isSuccess) {
@@ -170,7 +149,7 @@ export function BookingsPage() {
     setCalendarView('day');
     setSelectedDate(dateFromQuery || bookingFromQuery.date);
     setSelectedBookingId(bookingFromQuery.id);
-    setIsMobileDetailsOpen(!isDesktopDetailsLayout);
+    openDetailsForCurrentLayout();
     scrollPageToTop();
 
     const nextParams = new URLSearchParams(searchParams);
@@ -181,7 +160,7 @@ export function BookingsPage() {
     bookings,
     bookingsQuery.isLoading,
     bookingsQuery.isSuccess,
-    isDesktopDetailsLayout,
+    openDetailsForCurrentLayout,
     searchParams,
     setSearchParams,
   ]);
@@ -236,9 +215,9 @@ export function BookingsPage() {
 
   useEffect(() => {
     if (calendarView !== 'day') {
-      setIsMobileDetailsOpen(false);
+      closeMobileDetails();
     }
-  }, [calendarView]);
+  }, [calendarView, closeMobileDetails]);
 
   const saveBookingMutation = useMutation<
     SaveBookingResult,
@@ -517,7 +496,7 @@ export function BookingsPage() {
           setSelectedBookingId(null);
           setModalMode(null);
           setIsDeleteConfirmOpen(false);
-          setIsMobileDetailsOpen(false);
+          closeMobileDetails();
           toast.error('Wizyta usunieta', {
             description: `${bookingToDelete.vehicle} zostala usunieta z harmonogramu.`,
             action: {
@@ -567,7 +546,7 @@ export function BookingsPage() {
       return;
     }
 
-    setIsMobileDetailsOpen(false);
+    closeMobileDetails();
     setModalMode('edit');
   }
 
@@ -582,7 +561,7 @@ export function BookingsPage() {
     }
 
     setSelectedBookingId(null);
-    setIsMobileDetailsOpen(false);
+    closeMobileDetails();
   }
 
   function handleSelectBooking(bookingId: string) {
@@ -595,7 +574,7 @@ export function BookingsPage() {
       setCalendarView('day');
     }
 
-    setIsMobileDetailsOpen(!isDesktopDetailsLayout);
+    openDetailsForCurrentLayout();
     scrollPageToTop();
   }
 
@@ -639,20 +618,11 @@ export function BookingsPage() {
         onCreateClick={openCreateModal}
       />
 
-      <section
-        className={`grid min-h-180 min-w-0 gap-6 ${
-          shouldShowBookingDetails
-            ? '2xl:grid-cols-[minmax(0,1fr)_minmax(0,500px)] 2xl:items-start'
-            : ''
-        }`}
-      >
-        <div className="min-w-0 max-w-full">
-          {isLoading && bookings.length === 0 ? (
-            <div className="grid gap-3">
-              {Array.from({ length: 4 }).map((_, index) => (
-                <Skeleton key={index} className="h-30 rounded-[26px]" />
-              ))}
-            </div>
+      <MasterDetailLayout
+        showDetails={shouldShowBookingDetails}
+        list={
+          isLoading && bookings.length === 0 ? (
+            <ListSkeleton count={4} itemClassName="h-30 rounded-[26px]" />
           ) : calendarView === 'week' ? (
             <BookingWeekView
               bookings={visibleBookings}
@@ -673,15 +643,10 @@ export function BookingsPage() {
               selectedBookingId={selectedBooking?.id ?? null}
               onSelect={handleSelectBooking}
             />
-          )}
-        </div>
-
-        <div
-          className={`min-w-0 max-w-full ${
-            shouldShowBookingDetails ? 'hidden 2xl:block' : 'hidden'
-          }`}
-        >
-          {isLoading ? (
+          )
+        }
+        details={
+          isLoading ? (
             <Skeleton className="h-100 rounded-4xl" />
           ) : (
             <BookingDetails
@@ -691,11 +656,11 @@ export function BookingsPage() {
               onDeleteClick={openDeleteConfirm}
               onCloseClick={closeBookingDetails}
             />
-          )}
-        </div>
-      </section>
+          )
+        }
+      />
 
-      <Dialog.Root
+      <MobileDetailSheet
         open={
           !isDesktopDetailsLayout &&
           calendarView === 'day' &&
@@ -710,43 +675,19 @@ export function BookingsPage() {
 
           closeBookingDetails();
         }}
+        eyebrow="Szczegoly wizyty"
+        title={selectedBooking?.vehicle ?? 'Wybrana rezerwacja'}
+        closeLabel="Zamknij szczegoly wizyty"
       >
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-60 bg-black/70 backdrop-blur-sm 2xl:hidden" />
-          <Dialog.Content className="fixed inset-0 z-70 flex h-dvh flex-col overflow-hidden bg-[#121314] outline-none 2xl:hidden">
-            <div className="flex items-center justify-between gap-3 border-b border-white/8 px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))]">
-              <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-200">
-                  Szczegoly wizyty
-                </p>
-                <p className="mt-1 truncate text-sm text-stone-400">
-                  {selectedBooking?.vehicle ?? 'Wybrana rezerwacja'}
-                </p>
-              </div>
-              <Dialog.Close asChild>
-                <button
-                  type="button"
-                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/6 text-stone-100 transition hover:border-white/16 hover:bg-white/10"
-                  aria-label="Zamknij szczegoly wizyty"
-                >
-                  <X className="h-4.5 w-4.5" />
-                </button>
-              </Dialog.Close>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-              <BookingDetails
-                booking={selectedBooking ?? undefined}
-                onEditClick={openEditModal}
-                onCancelClick={handleCancelBooking}
-                onDeleteClick={openDeleteConfirm}
-                onCloseClick={closeBookingDetails}
-                variant="sheet"
-              />
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+        <BookingDetails
+          booking={selectedBooking ?? undefined}
+          onEditClick={openEditModal}
+          onCancelClick={handleCancelBooking}
+          onDeleteClick={openDeleteConfirm}
+          onCloseClick={closeBookingDetails}
+          variant="sheet"
+        />
+      </MobileDetailSheet>
 
       {modalMode ? (
         <BookingModal

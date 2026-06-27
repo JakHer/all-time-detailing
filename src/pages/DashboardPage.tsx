@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { PageIntro } from '../components/PageIntro';
+import { PageIntro } from '../components/common/PageIntro';
 import { DashboardHero } from '../components/dashboard/DashboardHero';
 import { HighlightsColumn } from '../components/dashboard/HighlightsColumn';
 import { LiveQueueSection } from '../components/dashboard/LiveQueueSection';
-import { MobilePageHeader } from '../components/ui/MobilePageHeader';
+import { MobilePageHeader } from '../components/common/MobilePageHeader';
 import { fetchDashboardData } from '../lib/dashboard';
 
 const dashboardQueryKey = ['dashboard'] as const;

@@ -1,5 +1,6 @@
 import type { VehicleListItem } from '../../lib/vehicles';
-import { ActionButton } from '../ui/ActionButton';
+import { ActionButton } from '../primitives/ActionButton';
+import { layoutStyles, surfaceStyles, textStyles } from '../design/styles';
 import { VehicleListEntry } from './VehicleListEntry';
 
 type VehicleListProps = {
@@ -22,33 +23,27 @@ export function VehicleList({
   onLoadMore,
 }: VehicleListProps) {
   return (
-    <article className="w-full max-w-full self-start overflow-hidden rounded-3xl border border-white/10 bg-white/6 p-4 shadow-[0_30px_120px_rgba(0,0,0,0.35)] sm:rounded-4xl sm:px-4 sm:py-3.5 xl:px-5 xl:py-4">
-      <div className="hidden items-end justify-between gap-3 sm:flex">
+    <article className={surfaceStyles.entityList}>
+      <div className={layoutStyles.listHeaderDesktop}>
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-200">
-            Lista pojazdow
-          </p>
-          <h3 className="mt-0.5 text-[1.35rem] font-semibold tracking-[-0.04em] text-white">
-            Baza aut
-          </h3>
+          <p className={textStyles.eyebrowAmber}>Lista pojazdow</p>
+          <h3 className={textStyles.listTitle}>Baza aut</h3>
         </div>
-        <div className="text-xs text-stone-400">
+        <div className={textStyles.listCount}>
           {vehicles.length} z {totalCount} pozycji
         </div>
       </div>
 
-      <div className="mb-3 flex items-center justify-between sm:hidden">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">
-          Lista pojazdow
-        </p>
-        <div className="text-xs text-stone-400">
+      <div className={layoutStyles.listHeaderMobile}>
+        <p className={textStyles.eyebrowMuted}>Lista pojazdow</p>
+        <div className={textStyles.listCount}>
           {vehicles.length} z {totalCount}
         </div>
       </div>
 
-      <div className="grid gap-2.5 sm:mt-3">
+      <div className={layoutStyles.listItems}>
         {vehicles.length === 0 ? (
-          <div className="flex min-h-72 items-center justify-center rounded-3xl border border-dashed border-white/10 bg-black/15 px-4 py-8 text-center text-sm leading-7 text-stone-400 sm:min-h-97.5">
+          <div className={surfaceStyles.emptyState}>
             Nie znaleziono pojazdow pasujacych do wyszukiwania.
           </div>
         ) : (

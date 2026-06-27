@@ -1,16 +1,58 @@
-﻿import {
+import { lazy, Suspense } from 'react';
+import {
   Navigate,
   RouterProvider,
   createBrowserRouter,
 } from 'react-router-dom';
 import { AppShell } from './layout/AppShell';
-import { BookingsPage } from './pages/BookingsPage';
-import { CustomersPage } from './pages/CustomersPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { GalleryPage } from './pages/GalleryPage';
-import { KpiPage } from './pages/KpiPage';
-import { ServicesPage } from './pages/ServicesPage';
-import { VehiclesPage } from './pages/VehiclesPage';
+
+const DashboardPage = lazy(() =>
+  import('./pages/DashboardPage').then((module) => ({
+    default: module.DashboardPage,
+  })),
+);
+const BookingsPage = lazy(() =>
+  import('./pages/BookingsPage').then((module) => ({
+    default: module.BookingsPage,
+  })),
+);
+const CustomersPage = lazy(() =>
+  import('./pages/CustomersPage').then((module) => ({
+    default: module.CustomersPage,
+  })),
+);
+const VehiclesPage = lazy(() =>
+  import('./pages/VehiclesPage').then((module) => ({
+    default: module.VehiclesPage,
+  })),
+);
+const ServicesPage = lazy(() =>
+  import('./pages/ServicesPage').then((module) => ({
+    default: module.ServicesPage,
+  })),
+);
+const GalleryPage = lazy(() =>
+  import('./pages/GalleryPage').then((module) => ({
+    default: module.GalleryPage,
+  })),
+);
+const KpiPage = lazy(() =>
+  import('./pages/KpiPage').then((module) => ({
+    default: module.KpiPage,
+  })),
+);
+
+const RouteFallback = () => {
+  return (
+    <div className="grid min-h-120 place-items-center rounded-3xl border border-white/10 bg-white/4 p-6 text-sm text-stone-400 sm:rounded-4xl">
+      Ladowanie widoku...
+    </div>
+  );
+};
+
+const withRouteSuspense = (element: JSX.Element) => {
+  return <Suspense fallback={<RouteFallback />}>{element}</Suspense>;
+};
 
 const router = createBrowserRouter([
   {
@@ -19,31 +61,31 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <DashboardPage />,
+        element: withRouteSuspense(<DashboardPage />),
       },
       {
         path: 'rezerwacje',
-        element: <BookingsPage />,
+        element: withRouteSuspense(<BookingsPage />),
       },
       {
         path: 'klienci',
-        element: <CustomersPage />,
+        element: withRouteSuspense(<CustomersPage />),
       },
       {
         path: 'pojazdy',
-        element: <VehiclesPage />,
+        element: withRouteSuspense(<VehiclesPage />),
       },
       {
         path: 'uslugi',
-        element: <ServicesPage />,
+        element: withRouteSuspense(<ServicesPage />),
       },
       {
         path: 'galeria',
-        element: <GalleryPage />,
+        element: withRouteSuspense(<GalleryPage />),
       },
       {
         path: 'kpi',
-        element: <KpiPage />,
+        element: withRouteSuspense(<KpiPage />),
       },
       {
         path: 'ustawienia',

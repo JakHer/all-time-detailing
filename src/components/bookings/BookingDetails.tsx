@@ -1,13 +1,20 @@
-import { ImagePlus, Pencil, Trash2, X, XCircle } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { ImagePlus, Pencil, Trash2, XCircle } from 'lucide-react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Booking } from '../../data/bookings';
 import { useGalleryImages } from '../../lib/gallery';
 import { GalleryUploadModal } from '../gallery/GalleryUploadModal';
-import { CollapsibleDetailSection } from '../ui/CollapsibleDetailSection';
-import { ActionButton } from '../ui/ActionButton';
-import { DetailLinkRow } from '../ui/DetailLinkRow';
-import { StatusBadge } from '../ui/StatusBadge';
+import { CollapsibleDetailSection } from '../details/CollapsibleDetailSection';
+import { ActionButton } from '../primitives/ActionButton';
+import { DetailActionIconButton } from '../details/DetailActionIconButton';
+import { DetailLinkRow } from '../details/DetailLinkRow';
+import {
+  DetailCloseButton,
+  DetailPanel,
+  DetailPlaceholder,
+} from '../details/DetailPanel';
+import { DetailSummaryChip } from '../details/DetailSummaryChip';
+import { StatusBadge } from '../primitives/StatusBadge';
 
 type BookingDetailsProps = {
   booking: Booking | undefined;
@@ -38,11 +45,7 @@ export function BookingDetails({
 
   if (!booking) {
     return (
-      <article className="min-h-160 w-full max-w-full overflow-hidden rounded-4xl border border-white/10 bg-white/6 p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-7">
-        <div className="flex min-h-128 items-center justify-center rounded-3xl border border-dashed border-white/10 bg-black/15 px-4 py-8 text-center text-sm leading-7 text-stone-400">
-          Wybierz rezerwacje z listy, aby zobaczyc szczegoly wizyty.
-        </div>
-      </article>
+      <DetailPlaceholder message="Wybierz rezerwacje z listy, aby zobaczyc szczegoly wizyty." />
     );
   }
 
@@ -73,28 +76,15 @@ export function BookingDetails({
     : 'mt-1.5 wrap-break-word text-xs text-stone-400';
   const serviceMetaClassName = 'mt-1 text-sm text-stone-400';
 
-  const containerClassName = isSheet
-    ? 'w-full max-w-full overflow-hidden'
-    : 'min-h-160 w-full max-w-full overflow-hidden rounded-4xl border border-white/10 bg-white/6 p-5 shadow-[0_30px_120px_rgba(0,0,0,0.35)]';
-
   return (
     <>
-      <article className={containerClassName}>
+      <DetailPanel variant={variant}>
         {!isSheet && onCloseClick ? (
           <div className="mb-3 flex justify-end">
-            <button
-              type="button"
+            <DetailCloseButton
+              label="Zamknij szczegoly"
               onClick={onCloseClick}
-              onPointerDown={(event) => {
-                event.preventDefault();
-                onCloseClick();
-              }}
-              className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/6 text-white transition hover:border-white/16 hover:bg-white/10"
-              aria-label="Zamknij szczegoly"
-              title="Zamknij szczegoly"
-            >
-              <X className="h-4.5 w-4.5" />
-            </button>
+            />
           </div>
         ) : null}
 
@@ -128,36 +118,39 @@ export function BookingDetails({
               <StatusBadge status={booking.status} className="w-fit" />
             </div>
             <div className="flex w-full flex-wrap gap-2 md:w-auto md:justify-end">
-              <ActionIconButton label="Edytuj wizyte" onClick={onEditClick}>
+              <DetailActionIconButton
+                label="Edytuj wizyte"
+                onClick={onEditClick}
+              >
                 <Pencil className="h-4.5 w-4.5" />
-              </ActionIconButton>
-              <ActionIconButton
+              </DetailActionIconButton>
+              <DetailActionIconButton
                 label="Anuluj wizyte"
                 onClick={onCancelClick}
                 disabled={isCancelled}
                 tone="warning"
               >
                 <XCircle className="h-4.5 w-4.5" />
-              </ActionIconButton>
-              <ActionIconButton
+              </DetailActionIconButton>
+              <DetailActionIconButton
                 label="Usun wizyte"
                 onClick={onDeleteClick}
                 tone="danger"
               >
                 <Trash2 className="h-4.5 w-4.5" />
-              </ActionIconButton>
+              </DetailActionIconButton>
             </div>
           </div>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <SummaryChip label="Data" value={booking.date} />
-          <SummaryChip label="Godzina" value={booking.time} />
-          <SummaryChip label="Stanowisko" value={booking.bay} />
-          <SummaryChip label="Wartosc" value={booking.amount} />
-          <SummaryChip label="Rejestracja" value={booking.licensePlate} />
+          <DetailSummaryChip label="Data" value={booking.date} />
+          <DetailSummaryChip label="Godzina" value={booking.time} />
+          <DetailSummaryChip label="Stanowisko" value={booking.bay} />
+          <DetailSummaryChip label="Wartosc" value={booking.amount} />
+          <DetailSummaryChip label="Rejestracja" value={booking.licensePlate} />
           {booking.vehicleDetails ? (
-            <SummaryChip label="Auto" value={booking.vehicleDetails} />
+            <DetailSummaryChip label="Auto" value={booking.vehicleDetails} />
           ) : null}
         </div>
 
@@ -294,7 +287,7 @@ export function BookingDetails({
             {booking.notes}
           </p>
         </CollapsibleDetailSection>
-      </article>
+      </DetailPanel>
 
       <GalleryUploadModal
         isOpen={isUploadModalOpen}
@@ -304,50 +297,5 @@ export function BookingDetails({
         initialType={initialType}
       />
     </>
-  );
-}
-
-type ActionIconButtonProps = {
-  children: ReactNode;
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-  tone?: 'default' | 'warning' | 'danger';
-};
-
-function SummaryChip({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="inline-flex min-w-0 items-center gap-2 rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-xs text-stone-300">
-      <span className="text-stone-500">{label}:</span>
-      <span className="truncate font-medium text-white">{value}</span>
-    </div>
-  );
-}
-
-function ActionIconButton({
-  children,
-  label,
-  onClick,
-  disabled = false,
-  tone = 'default',
-}: ActionIconButtonProps) {
-  const toneClasses =
-    tone === 'danger'
-      ? 'border-rose-300/20 bg-rose-300/12 text-rose-50 hover:border-rose-300/30 hover:bg-rose-300/18'
-      : tone === 'warning'
-        ? 'border-amber-200/20 bg-amber-300/12 text-amber-50 hover:border-amber-200/30 hover:bg-amber-300/18'
-        : 'border-white/10 bg-white/6 text-white hover:border-white/16 hover:bg-white/10';
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      title={label}
-      className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border transition ${toneClasses} disabled:cursor-not-allowed disabled:opacity-50`}
-    >
-      {children}
-    </button>
   );
 }

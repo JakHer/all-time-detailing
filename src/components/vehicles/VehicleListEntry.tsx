@@ -1,5 +1,5 @@
 import { ChevronRight } from 'lucide-react';
-import { SelectableListItem } from '../ui/SelectableListItem';
+import { SelectableListItem } from '../entity/SelectableListItem';
 
 type VehicleListEntryProps = {
   registration: string;

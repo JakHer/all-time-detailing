@@ -1,6 +1,6 @@
 import type { BookingStatus } from '../../data/bookings';
 import { ChevronRight } from 'lucide-react';
-import { StatusBadge } from '../ui/StatusBadge';
+import { StatusBadge } from '../primitives/StatusBadge';
 
 export type BookingHistoryListItem = {
   id: string;

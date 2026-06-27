@@ -1,5 +1,3 @@
-﻿import * as Dialog from '@radix-ui/react-dialog';
-import { X } from 'lucide-react';
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -7,10 +5,13 @@ import { CustomerDetails } from '../components/customers/CustomerDetails';
 import { CustomerList } from '../components/customers/CustomerList';
 import { CustomerModal } from '../components/customers/CustomerModal';
 import { CustomerToolbar } from '../components/customers/CustomerToolbar';
-import { PageIntro } from '../components/PageIntro';
-import { ConfirmDialog } from '../components/ui/ConfirmDialog';
-import { MobilePageHeader } from '../components/ui/MobilePageHeader';
-import { Skeleton } from '../components/ui/Skeleton';
+import { PageIntro } from '../components/common/PageIntro';
+import { ConfirmDialog } from '../components/primitives/ConfirmDialog';
+import { ListSkeleton } from '../components/entity/ListSkeleton';
+import { MasterDetailLayout } from '../components/layout/MasterDetailLayout';
+import { MobileDetailSheet } from '../components/layout/MobileDetailSheet';
+import { MobilePageHeader } from '../components/common/MobilePageHeader';
+import { useResponsiveDetailsPanel } from '../components/layout/useResponsiveDetailsPanel';
 import { scrollPageToTop } from '../lib/scroll';
 import {
   useClients,
@@ -26,11 +27,13 @@ import {
 export function CustomersPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [isDesktopDetailsLayout, setIsDesktopDetailsLayout] = useState(() =>
-    typeof window !== 'undefined'
-      ? window.matchMedia('(min-width: 1536px)').matches
-      : false,
-  );
+  const {
+    isDesktopDetailsLayout,
+    isMobileDetailsOpen,
+    setIsMobileDetailsOpen,
+    openDetailsForCurrentLayout,
+    closeMobileDetails,
+  } = useResponsiveDetailsPanel();
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(
     null,
   );
@@ -38,7 +41,6 @@ export function CustomersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isMobileDetailsOpen, setIsMobileDetailsOpen] = useState(false);
 
   const deferredQuery = useDeferredValue(query);
 
@@ -50,30 +52,6 @@ export function CustomersPage() {
   const deleteMutation = useDeleteClient();
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    const mediaQuery = window.matchMedia('(min-width: 1536px)');
-    const handleChange = (event: MediaQueryListEvent) => {
-      setIsDesktopDetailsLayout(event.matches);
-    };
-
-    setIsDesktopDetailsLayout(mediaQuery.matches);
-    mediaQuery.addEventListener('change', handleChange);
-
-    return () => {
-      mediaQuery.removeEventListener('change', handleChange);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isDesktopDetailsLayout) {
-      setIsMobileDetailsOpen(false);
-    }
-  }, [isDesktopDetailsLayout]);
-
-  useEffect(() => {
     const customerIdFromQuery = searchParams.get('customer');
 
     if (!customerIdFromQuery) {
@@ -81,13 +59,13 @@ export function CustomersPage() {
     }
 
     setSelectedCustomerId(customerIdFromQuery);
-    setIsMobileDetailsOpen(!isDesktopDetailsLayout);
+    openDetailsForCurrentLayout();
     scrollPageToTop();
 
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete('customer');
     setSearchParams(nextParams, { replace: true });
-  }, [isDesktopDetailsLayout, searchParams, setSearchParams]);
+  }, [openDetailsForCurrentLayout, searchParams, setSearchParams]);
 
   const clients = clientsQuery.data?.pages.flatMap((page) => page.items) ?? [];
   const totalClients = clientsQuery.data?.pages[0]?.totalCount ?? 0;
@@ -130,7 +108,7 @@ export function CustomersPage() {
       return;
     }
 
-    setIsMobileDetailsOpen(false);
+    closeMobileDetails();
     setModalMode('edit');
     setIsModalOpen(true);
   }
@@ -169,7 +147,7 @@ export function CustomersPage() {
       await deleteMutation.mutateAsync(selectedCustomerId);
       setSelectedCustomerId(null);
       setIsDeleteDialogOpen(false);
-      setIsMobileDetailsOpen(false);
+      closeMobileDetails();
       toast.success('Klient zostal usuniety');
     } catch {
       toast.error(
@@ -180,7 +158,7 @@ export function CustomersPage() {
 
   function handleSelectCustomer(id: string) {
     setSelectedCustomerId(id);
-    setIsMobileDetailsOpen(!isDesktopDetailsLayout);
+    openDetailsForCurrentLayout();
     scrollPageToTop();
   }
 
@@ -191,7 +169,7 @@ export function CustomersPage() {
     }
 
     setSelectedCustomerId(null);
-    setIsMobileDetailsOpen(false);
+    closeMobileDetails();
   }
 
   const shouldShowCustomerDetails = selectedCustomerId !== null;
@@ -220,21 +198,11 @@ export function CustomersPage() {
         onCreateClick={handleCreateClick}
       />
 
-      <section
-        className={`grid min-h-180 min-w-0 gap-6 ${
-          shouldShowCustomerDetails
-            ? '2xl:grid-cols-[minmax(0,1fr)_minmax(0,500px)] 2xl:items-start'
-            : ''
-        }`}
-        style={{ overflowAnchor: 'none' }}
-      >
-        <div className="min-w-0 max-w-full">
-          {isListLoading ? (
-            <div className="grid gap-3">
-              {Array.from({ length: 5 }).map((_, index) => (
-                <Skeleton key={index} className="h-22 rounded-[26px]" />
-              ))}
-            </div>
+      <MasterDetailLayout
+        showDetails={shouldShowCustomerDetails}
+        list={
+          isListLoading ? (
+            <ListSkeleton />
           ) : (
             <CustomerList
               customers={clients}
@@ -247,15 +215,9 @@ export function CustomersPage() {
                 void clientsQuery.fetchNextPage();
               }}
             />
-          )}
-        </div>
-
-        <div
-          className={`min-w-0 max-w-full ${
-            shouldShowCustomerDetails ? 'hidden 2xl:block' : 'hidden'
-          }`}
-          style={{ overflowAnchor: 'none' }}
-        >
+          )
+        }
+        details={
           <CustomerDetails
             customer={selectedCustomer}
             isLoading={isInitialLoading}
@@ -263,10 +225,10 @@ export function CustomersPage() {
             onDeleteClick={handleDeleteClick}
             onCloseClick={closeCustomerDetails}
           />
-        </div>
-      </section>
+        }
+      />
 
-      <Dialog.Root
+      <MobileDetailSheet
         open={
           !isDesktopDetailsLayout && isMobileDetailsOpen && !!selectedCustomerId
         }
@@ -278,42 +240,18 @@ export function CustomersPage() {
 
           closeCustomerDetails();
         }}
+        eyebrow="Szczegoly klienta"
+        title={selectedCustomer?.full_name ?? 'Wybrany klient'}
+        closeLabel="Zamknij szczegoly klienta"
       >
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-60 bg-black/70 backdrop-blur-sm 2xl:hidden" />
-          <Dialog.Content className="fixed inset-0 z-70 flex h-dvh flex-col overflow-hidden bg-[#121314] outline-none 2xl:hidden">
-            <div className="flex items-center justify-between gap-3 border-b border-white/8 px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))]">
-              <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-200">
-                  Szczegoly klienta
-                </p>
-                <p className="mt-1 truncate text-sm text-stone-400">
-                  {selectedCustomer?.full_name ?? 'Wybrany klient'}
-                </p>
-              </div>
-              <Dialog.Close asChild>
-                <button
-                  type="button"
-                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/6 text-stone-100 transition hover:border-white/16 hover:bg-white/10"
-                  aria-label="Zamknij szczegoly klienta"
-                >
-                  <X className="h-4.5 w-4.5" />
-                </button>
-              </Dialog.Close>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-              <CustomerDetails
-                customer={selectedCustomer}
-                isLoading={isInitialLoading}
-                onEditClick={handleEditClick}
-                onDeleteClick={handleDeleteClick}
-                variant="sheet"
-              />
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+        <CustomerDetails
+          customer={selectedCustomer}
+          isLoading={isInitialLoading}
+          onEditClick={handleEditClick}
+          onDeleteClick={handleDeleteClick}
+          variant="sheet"
+        />
+      </MobileDetailSheet>
 
       <CustomerModal
         isOpen={isModalOpen}

@@ -1,15 +1,20 @@
-import { Calendar, Car, Pencil, Trash2, User, X } from 'lucide-react';
+import { Calendar, Car, Pencil, Trash2, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { ClientWithRelations } from '../../lib/clients';
 import {
   BookingHistoryList,
   type BookingHistoryListItem,
 } from '../bookings/BookingHistoryList';
-import { CollapsibleDetailSection } from '../ui/CollapsibleDetailSection';
-import { DetailActionIconButton } from '../ui/DetailActionIconButton';
-import { DetailEmptyPanelMessage } from '../ui/DetailEmptyPanelMessage';
-import { DetailSummaryChip } from '../ui/DetailSummaryChip';
-import { Skeleton } from '../ui/Skeleton';
+import { CollapsibleDetailSection } from '../details/CollapsibleDetailSection';
+import { DetailActionIconButton } from '../details/DetailActionIconButton';
+import { DetailEmptyPanelMessage } from '../details/DetailEmptyPanelMessage';
+import {
+  DetailCloseButton,
+  DetailPanel,
+  DetailPlaceholder,
+} from '../details/DetailPanel';
+import { DetailSummaryChip } from '../details/DetailSummaryChip';
+import { Skeleton } from '../primitives/Skeleton';
 import { VehicleListEntry } from '../vehicles/VehicleListEntry';
 
 type CustomerDetailsProps = {
@@ -38,21 +43,11 @@ export function CustomerDetails({
 
   if (!customer) {
     return (
-      <article className="min-h-160 w-full max-w-full overflow-hidden rounded-4xl border border-white/10 bg-white/6 p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-7">
-        <div className="flex min-h-128 items-center justify-center rounded-3xl border border-dashed border-white/10 bg-black/15 px-4 py-8 text-center text-sm leading-7 text-stone-400">
-          <div>
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-white/4">
-              <User className="h-8 w-8 opacity-20" />
-            </div>
-            <h3 className="mt-6 font-semibold text-white/40">
-              Wybierz klienta
-            </h3>
-            <p className="mt-2 max-w-sm text-sm leading-relaxed">
-              Wybierz osobe z listy, aby zobaczyc pelna historie i szczegoly.
-            </p>
-          </div>
-        </div>
-      </article>
+      <DetailPlaceholder
+        icon={<User className="h-8 w-8 opacity-20" />}
+        title="Wybierz klienta"
+        message="Wybierz osobe z listy, aby zobaczyc pelna historie i szczegoly."
+      />
     );
   }
 
@@ -82,27 +77,14 @@ export function CustomerDetails({
     ? 'mt-1.5 break-all text-xs text-stone-400'
     : 'mt-1.5 break-all text-xs text-stone-400';
   const activityMetaClassName = 'mt-1 text-sm text-stone-400';
-  const containerClassName = isSheet
-    ? 'w-full max-w-full overflow-hidden'
-    : 'min-h-160 w-full max-w-full overflow-hidden rounded-4xl border border-white/10 bg-white/6 p-5 shadow-[0_30px_120px_rgba(0,0,0,0.35)]';
-
   return (
-    <article className={containerClassName}>
+    <DetailPanel variant={variant}>
       {!isSheet && onCloseClick ? (
         <div className="mb-3 flex justify-end">
-          <button
-            type="button"
+          <DetailCloseButton
+            label="Zamknij szczegoly klienta"
             onClick={onCloseClick}
-            onPointerDown={(event) => {
-              event.preventDefault();
-              onCloseClick();
-            }}
-            className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/6 text-white transition hover:border-white/16 hover:bg-white/10"
-            aria-label="Zamknij szczegoly klienta"
-            title="Zamknij szczegoly klienta"
-          >
-            <X className="h-4.5 w-4.5" />
-          </button>
+          />
         </div>
       ) : null}
 
@@ -205,7 +187,7 @@ export function CustomerDetails({
           </p>
         )}
       </CollapsibleDetailSection>
-    </article>
+    </DetailPanel>
   );
 }
 

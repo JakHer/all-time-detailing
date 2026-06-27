@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { selectableItemStyles } from '../design/styles';
 
 type SelectableListItemProps = {
   onClick: () => void;
@@ -22,27 +23,25 @@ export function SelectableListItem({
   desktopTrailing,
 }: SelectableListItemProps) {
   const buttonClassName = isActive
-    ? 'border-amber-200/30 bg-amber-300/10 shadow-[0_10px_30px_rgba(214,158,46,0.12)]'
-    : 'border-white/8 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/14 hover:bg-white/8';
+    ? selectableItemStyles.active
+    : selectableItemStyles.inactive;
 
   return (
     <>
       <button
         type="button"
         onClick={onClick}
-        className={`grid w-full min-w-0 grid-cols-[4.75rem_minmax(0,1fr)_auto] items-center gap-3 rounded-[20px] border px-3 py-3 text-left transition sm:hidden ${buttonClassName}`}
+        className={`${selectableItemStyles.mobile} ${buttonClassName}`}
       >
         <div className="min-w-0">{mobileLeading}</div>
         <div className="min-w-0">{mobileBody}</div>
-        <div className="flex min-w-0 items-center justify-end gap-2">
-          {mobileTrailing}
-        </div>
+        <div className={selectableItemStyles.trailing}>{mobileTrailing}</div>
       </button>
 
       <button
         type="button"
         onClick={onClick}
-        className={`hidden w-full min-w-0 max-w-full grid-cols-[minmax(0,4.5rem)_minmax(0,1fr)_auto] items-center gap-3 rounded-[18px] border px-3 py-2.5 text-left transition sm:grid ${buttonClassName}`}
+        className={`${selectableItemStyles.desktop} ${buttonClassName}`}
       >
         <div className="min-w-0">{desktopLeading}</div>
         <div className="min-w-0">{desktopBody}</div>
